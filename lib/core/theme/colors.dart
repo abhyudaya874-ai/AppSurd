@@ -7,13 +7,13 @@ import 'package:flutter/material.dart';
 /// tints live separately in [ProviderTints] so brand colors never leak into
 /// the core scheme.
 abstract final class AppColors {
-  // ---- Dark scheme ----
-  static const darkBg = Color(0xFF0C0E12);
-  static const darkSurface = Color(0xFF14171C);
-  static const darkSurfaceHigh = Color(0xFF1B1F27);
-  static const darkBorder = Color(0xFF262C36);
-  static const darkInk = Color(0xFFF2F4F7);
-  static const darkInkMuted = Color(0xFF9AA4B2);
+  // ---- Dark scheme (rule 09 palette: near-black + hairline borders) ----
+  static const darkBg = Color(0xFF0B0D10);
+  static const darkSurface = Color(0xFF13161A);
+  static const darkSurfaceHigh = Color(0xFF1A1D22);
+  static const darkBorder = Color(0x14FFFFFF); // rgba(255,255,255,.08)
+  static const darkInk = Color(0xFFECEEF0);
+  static const darkInkMuted = Color(0xFF8B9097);
 
   // ---- Light scheme ----
   static const lightBg = Color(0xFFF5F6F8);

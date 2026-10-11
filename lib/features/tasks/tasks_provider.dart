@@ -35,12 +35,16 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
   }
 
   /// Adds a task and returns it so the caller can navigate to its detail.
-  Future<Task> addTask({required String title, String description = ''}) async {
+  Future<Task> addTask(
+      {required String title,
+      String description = '',
+      String? groupId}) async {
     final task = Task(
       id: _uuid.v4(),
       title: title,
       description: description,
       createdAt: DateTime.now(),
+      groupId: groupId,
     );
     await _persist(task);
     return task;
@@ -51,6 +55,9 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
     await box.delete(id);
     state = AsyncData(await build());
   }
+
+  /// Re-inserts a deleted task (Undo snackbar support).
+  Future<void> restoreTask(Task task) => _persist(task);
 
   Future<void> updateTask(Task task) => _persist(task);
 

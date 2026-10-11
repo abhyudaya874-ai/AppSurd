@@ -1,5 +1,8 @@
 // READ THIS FIRST — custom-painted 4-detent slider. Thumb stretches on
 // drag, spring-snaps on release, haptic at detent crossing.
+import 'dart:math';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
@@ -181,84 +184,87 @@ class _SliderPainter extends CustomPainter {
     final usableW = size.width;
     double xAt(double v) => v / (detents - 1) * usableW;
     final thumbX = xAt(value);
+    final accent = colors[value.round() % colors.length];
 
-    // Track
-    final trackRect = Rect.fromCenter(
-      center: Offset(usableW / 2, cy),
-      width: usableW,
-      height: 4,
+    // Chunky inset pill track (darker than the card surface).
+    final track = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+          center: Offset(usableW / 2, cy), width: usableW, height: 34),
+      const Radius.circular(17),
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(trackRect, const Radius.circular(2)),
-      Paint()..color = trackColor.withValues(alpha: 0.4),
-    );
-
-    // Filled portion: horizontal gradient across detent colors, ending at the
-    // live thumb position so the hue visibly shifts as you drag.
-    if (thumbX > 0) {
-      final gradient = LinearGradient(
-        colors: [
-          for (var i = 0; i < detents; i++) colors[i % colors.length],
-        ],
-      );
-      final fillRect = Rect.fromLTWH(0, cy - 2, thumbX, 4);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(fillRect, const Radius.circular(2)),
-        Paint()..shader = gradient.createShader(Rect.fromLTWH(0, 0, usableW, 4)),
-      );
-    }
-
-    // Detent dots — filled when passed, hollow when ahead.
-    for (var i = 0; i < detents; i++) {
-      final dx = xAt(i.toDouble());
-      final active = i <= value;
-      final color = colors[i % colors.length];
-      canvas.drawCircle(
-        Offset(dx, cy),
-        4,
+        track, Paint()..color = trackColor.withValues(alpha: 0.35));
+    canvas.drawRRect(
+        track,
         Paint()
-          ..color = active ? color : trackColor.withValues(alpha: 0.5)
-          ..style = PaintingStyle.fill,
-      );
-      if (!active) {
-        canvas.drawCircle(
-          Offset(dx, cy),
-          4,
-          Paint()
-            ..color = color.withValues(alpha: 0.9)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.4,
-        );
+          ..color = trackColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.6);
+
+    // Halftone fill: a grid of teal dots INSIDE the filled region — radius
+    // grows toward the thumb (dot-matrix gradient, not a flat fill).
+    if (thumbX > 8) {
+      canvas.save();
+      canvas.clipRRect(track);
+      const step = 7.0;
+      for (double x = 6; x < thumbX - 6; x += step) {
+        // Proximity to thumb → dot scale 0.4..1.0
+        final prox = (x / thumbX).clamp(0.0, 1.0);
+        final r = 1.0 + 2.4 * pow(prox, 1.4);
+        for (double y = cy - 14; y <= cy + 14; y += step) {
+          canvas.drawCircle(
+            Offset(x, y),
+            r,
+            Paint()..color = accent.withValues(alpha: 0.9),
+          );
+        }
       }
+      canvas.restore();
     }
 
-    // Thumb — stretches horizontally (squash) while dragging.
-    final tw = 26 * stretch;
-    final th = 20 / (stretch * 0.6 + 0.4);
-    final thumbRect = Rect.fromCenter(
-      center: Offset(thumbX, cy),
-      width: tw,
-      height: th,
-    );
-    final thumbRRect =
-        RRect.fromRectAndRadius(thumbRect, Radius.circular(th / 2));
-    canvas.drawRRect(
-      thumbRRect.shift(const Offset(0, 1.5)),
-      Paint()..color = Colors.black.withValues(alpha: 0.35),
-    );
-    canvas.drawRRect(thumbRRect, Paint()..color = thumbColor);
-    canvas.drawRRect(
-      thumbRRect,
-      Paint()
-        ..color = colors[value.round() % colors.length]
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-    // Tiny grip dot so the thumb reads as draggable.
+    // Unreached detents: small grey dots on the track.
+    for (var i = 0; i < detents; i++) {
+      if (i <= value) continue;
+      canvas.drawCircle(
+        Offset(xAt(i.toDouble()), cy),
+        3,
+        Paint()..color = trackColor,
+      );
+    }
+
+    // Thumb — big white circle, teal ring, soft glow; squash while dragging.
+    final tr = 17.0 * (1 + (stretch - 1) * 0.35);
     canvas.drawCircle(
       Offset(thumbX, cy),
-      3.5,
-      Paint()..color = colors[value.round() % colors.length],
+      tr + 8,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(thumbX, cy),
+          tr + 8,
+          [accent.withValues(alpha: dragging ? 0.5 : 0.3),
+           accent.withValues(alpha: 0)],
+        ),
+    );
+    canvas.drawCircle(
+      Offset(thumbX, cy),
+      tr,
+      Paint()
+        ..color = Colors.white
+        ..maskFilter =
+            const MaskFilter.blur(BlurStyle.normal, 0.5),
+    );
+    canvas.drawCircle(
+      Offset(thumbX, cy),
+      tr,
+      Paint()
+        ..color = accent
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+    canvas.drawCircle(
+      Offset(thumbX, cy),
+      4.2,
+      Paint()..color = accent,
     );
   }
 

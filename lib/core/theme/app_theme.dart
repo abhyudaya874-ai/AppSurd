@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'colors.dart';
@@ -76,6 +77,16 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: bg,
       textTheme: textTheme,
       splashFactory: InkSparkle.splashFactory,
+      // Telegram/Perplexity-style pushes: page slides over, previous page
+      // parallaxes left and dims; edge-swipe back works on every platform.
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: CupertinoPageTransitionsBuilder(),
+      }),
       extensions: const [MotionTokens(), ProviderTints()],
       appBarTheme: AppBarTheme(
         backgroundColor: bg,
@@ -89,7 +100,7 @@ abstract final class AppTheme {
         color: surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           side: BorderSide(color: border),
         ),
         margin: EdgeInsets.zero,

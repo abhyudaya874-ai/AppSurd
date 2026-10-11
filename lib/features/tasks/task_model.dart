@@ -63,6 +63,7 @@ class Task {
     this.attempts = const [],
     this.integrityDelta = 0,
     this.isDemo = false,
+    this.groupId,
   });
 
   final String id;
@@ -80,6 +81,9 @@ class Task {
   /// Marks seeded demo content (labelled "Demo data" in the UI).
   final bool isDemo;
 
+  /// Optional group assignment (Personal / College / Work / custom).
+  final String? groupId;
+
   Task copyWith({
     String? title,
     String? description,
@@ -87,6 +91,7 @@ class Task {
     List<EvidenceAttempt>? attempts,
     int? integrityDelta,
     bool? isDemo,
+    String? groupId,
   }) {
     return Task(
       id: id,
@@ -97,6 +102,7 @@ class Task {
       attempts: attempts ?? this.attempts,
       integrityDelta: integrityDelta ?? this.integrityDelta,
       isDemo: isDemo ?? this.isDemo,
+      groupId: groupId ?? this.groupId,
     );
   }
 
@@ -109,6 +115,7 @@ class Task {
         'attempts': [for (final a in attempts) a.toJson()],
         'integrityDelta': integrityDelta,
         'isDemo': isDemo,
+        'groupId': groupId,
       };
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
@@ -125,5 +132,6 @@ class Task {
         ],
         integrityDelta: (json['integrityDelta'] as num?)?.toInt() ?? 0,
         isDemo: json['isDemo'] as bool? ?? false,
+        groupId: json['groupId'] as String?,
       );
 }

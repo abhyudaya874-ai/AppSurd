@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/utils/transitions.dart';
-import '../tasks/task_list_screen.dart';
+import '../shell/app_shell.dart';
 
 /// Launch sequence: the receipt logo mark draws itself (outline, then a
 /// checkmark via path metrics), the wordmark fades in, then we fade-through
@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
         Navigator.of(context).pushReplacement(
-          AppTransitions.fadeThrough(const TaskListScreen()),
+          AppTransitions.fadeThrough(const AppShell()),
         );
       }
     });

@@ -62,3 +62,21 @@ No keys? ─► labelled "[demo verdict]" heuristic over the REAL fetches.
 - Entry points: task-list mic FAB (dictate a task), evidence-sheet "Speak it".
 - Privacy: WAV deleted after transcription; cloud engine labelled; Settings
   picks the engine with availability dimming.
+
+## Phase 3a — UI revamp (done)
+- Palette rule 09: near-black `#0B0D10`, hairline `rgba(255,255,255,.08)`
+  borders, radius 24 cards. Fonts bundled in `assets/fonts/`: Inter (UI),
+  Space Grotesk (headings), **Fraunces serif** (display headlines) —
+  registered in pubspec `fonts:` (GoogleFonts runtime fetch is OFF).
+- `CupertinoPageTransitionsBuilder` for all platforms — every push slides
+  over with parallax + edge-swipe back.
+- `core/widgets/animated_app_icon.dart` — painted icons w/ draw-on animation.
+- `features/shell/app_shell.dart` — IndexedStack tabs + floating glass bar
+  (sliding blob, expanding label, raised orb). Arena tab hidden until a
+  lineup exists.
+- Composer card on Tasks home; FAB removed. Swipe right = Prove it, hard
+  long-swipe = "Nice try. Proof first." rubber-band, swipe left = delete
+  + Undo. Groups (name+color, persisted) with collapsible sections and a
+  filter chip bar.
+- Pill v2: dot-matrix glyph (tier = lit count), halftone-dot slider fill,
+  big white thumb — routing/haptics unchanged.

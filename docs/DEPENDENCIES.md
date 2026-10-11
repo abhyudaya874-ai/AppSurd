@@ -25,3 +25,4 @@ warns about majors we intentionally skip mid-hackathon.
 | flutter_tts | roast read-aloud + voice_quiz spoken questions | 4.x |
 | path_provider | temp dir for WAV captures (deleted after transcribe) | 2.x |
 | whisper_flutter_new | whisper.cpp on-device transcription; model downloads on first use (never bundled) | 1.0.1 (GPL-3.0) |
+| — bundled fonts — | Inter (UI), Space Grotesk (headings), Fraunces serif (display); pubspec `fonts:` section, google_fonts fetch disabled | — |

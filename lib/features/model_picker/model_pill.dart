@@ -101,23 +101,27 @@ class ModelPillState extends ConsumerState<ModelPill>
                   color: theme.colorScheme.outline.withValues(alpha: 0.6),
                 ),
               ),
+              // Cap the pill so it ellipsizes inside tight rows (composer).
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (arena)
                     _AvatarStack(models: lineupSpecs, tints: tints)
                   else ...[
-                    _ProviderGlyph(
-                      tint: tint,
-                      letter: model?.provider.label.substring(0, 1) ?? '?',
-                      locked: model == null,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    _StrengthDots(
-                        tierIndex: selection.preset.index, tint: tint),
+                    model == null
+                        ? _ProviderGlyph(
+                            tint: tint,
+                            letter: '?',
+                            locked: true,
+                          )
+                        : _DotMatrixGlyph(
+                            tierIndex: selection.preset.index,
+                            tint: tint,
+                          ),
                   ],
                   const SizedBox(width: AppSpacing.xs),
-                  AnimatedSwitcher(
+                  Flexible(
+                  child: AnimatedSwitcher(
                     duration: AppMotion.fast,
                     transitionBuilder: (child, anim) => FadeTransition(
                       opacity: anim,
@@ -133,6 +137,8 @@ class ModelPillState extends ConsumerState<ModelPill>
                       key: ValueKey(arena
                           ? 'arena-${selection.arenaLineup.length}'
                           : '${model?.id}-${selection.preset.name}'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       TextSpan(children: [
                         TextSpan(
                           text: arena
@@ -150,6 +156,7 @@ class ModelPillState extends ConsumerState<ModelPill>
                         ),
                       ]),
                     ),
+                  ),
                   ),
                   const SizedBox(width: AppSpacing.xxs),
                   Icon(
@@ -216,36 +223,48 @@ class _ProviderGlyph extends StatelessWidget {
   }
 }
 
-/// 4 tiny dots reflecting the current tier position — brighter as you go up.
-class _StrengthDots extends StatelessWidget {
-  const _StrengthDots({required this.tierIndex, required this.tint});
+
+/// 3×3 dot-matrix glyph — more dots lit = stronger tier (Swift 2, Balanced 4,
+/// Smart 6, Deep 9). Dots light up one by one with a short stagger.
+class _DotMatrixGlyph extends StatelessWidget {
+  const _DotMatrixGlyph({required this.tierIndex, required this.tint});
   final int tierIndex;
   final Color tint;
 
+  static const _lit = [2, 4, 6, 9]; // dots lit per tier
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < 4; i++)
-          Container(
-            width: 3.5,
-            height: 3.5,
-            margin: const EdgeInsets.only(right: 2.5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: i <= tierIndex
-                  ? tint
-                  : tint.withValues(alpha: 0.25),
+    final lit = _lit[tierIndex.clamp(0, 3)];
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: GridView.count(
+        crossAxisCount: 3,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        mainAxisSpacing: 2,
+        crossAxisSpacing: 2,
+        children: [
+          for (var i = 0; i < 9; i++)
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: i < lit ? 1 : 0),
+              duration: Duration(milliseconds: 140 + (i * 40)),
+              curve: Curves.easeOutBack,
+              builder: (context, v, _) => DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: tint.withValues(alpha: 0.25 + 0.75 * v),
+                ),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// Overlapping provider glyphs — the arena lineup at a glance. Springs when
-/// the lineup count changes (AnimatedSize parent does the resize).
+/// Overlapping provider glyphs — the arena lineup at a glance.
 class _AvatarStack extends StatelessWidget {
   const _AvatarStack({required this.models, required this.tints});
   final List<ModelSpec> models;
@@ -286,7 +305,8 @@ class _AvatarStack extends StatelessWidget {
           ),
         if (n == 0)
           Icon(Icons.groups_outlined,
-              size: size, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              size: size,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
       ]),
     );
   }
