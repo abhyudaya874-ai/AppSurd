@@ -17,6 +17,14 @@ abstract final class BrandResolver {
     (r'kimi|moonshot', 'moonshot'),
     (r'glm|chatglm|zhipu|z\.ai', 'zhipu'),
     (r'phi-|microsoft', 'microsoft'),
+    (r'claude|anthropic', 'anthropic'),
+    (r'grok|x-?ai/', 'xai'),
+    (r'cohere|command-[ar]', 'cohere'),
+    (r'minimax', 'minimax'),
+    (r'ai21|jamba', 'ai21'),
+    (r'tencent|hunyuan', 'tencent'),
+    (r'nous|hermes', 'nousresearch'),
+    (r'liquid|lfm', 'liquid'),
   ];
 
   /// Model-maker brand for [id]; falls back to provider logos for 'provider'.

@@ -20,6 +20,8 @@ import '../accountability/roast_card.dart';
 import '../tasks/task_model.dart';
 import '../tasks/tasks_provider.dart';
 import 'verification_service.dart';
+import '../../core/ai/model_catalog.dart';
+import '../../core/widgets/brand_icon.dart';
 import 'verdict_model.dart';
 
 /// The Perplexity-style verification screen: animated step list, a strip of
@@ -50,6 +52,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   List<SourceInfo> _sources = const [];
   Verdict? _verdict;
   String? _usedByLabel;
+  ModelSpec? _usedBySpec;
   String? _reroutedLabel;
   String? _visionSwapLabel;
   AiFailure? _failure;
@@ -101,6 +104,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         case VerdictReadyEvent():
           _verdict = event.verdict;
           _roastFallback = event.roastIsFallback;
+          _usedBySpec = event.usedBy;
           _usedByLabel = event.usedBy != null
               ? '${event.usedBy!.provider.label} · ${event.usedBy!.displayName}'
               : 'local rules · demo verdict';
@@ -232,6 +236,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     _VerdictSection(
                       verdict: _verdict!,
                       usedBy: _usedByLabel,
+                      usedBySpec: _usedBySpec,
                       rerouted: _reroutedLabel,
                       visionSwap: _visionSwapLabel,
                       roastIsFallback: _roastFallback,
@@ -463,6 +468,7 @@ class _VerdictSection extends StatelessWidget {
   const _VerdictSection({
     required this.verdict,
     required this.usedBy,
+    this.usedBySpec,
     required this.rerouted,
     required this.visionSwap,
     required this.roastIsFallback,
@@ -472,6 +478,9 @@ class _VerdictSection extends StatelessWidget {
 
   final Verdict verdict;
   final String? usedBy;
+
+  /// The judging model's spec — for the brand mark on the "used by" chip.
+  final ModelSpec? usedBySpec;
   final String? rerouted;
   final String? visionSwap;
   final bool roastIsFallback;
@@ -526,7 +535,14 @@ class _VerdictSection extends StatelessWidget {
           spacing: AppSpacing.xs,
           runSpacing: AppSpacing.xxs,
           children: [
-            if (usedBy != null) _Chip(icon: Icons.memory, label: usedBy!),
+            if (usedBy != null)
+              _Chip(
+                icon: Icons.memory,
+                label: usedBy!,
+                leading: usedBySpec == null
+                    ? null
+                    : BrandIcon(model: usedBySpec!, size: 14, showBadge: false),
+              ),
             if (rerouted != null)
               _Chip(icon: Icons.alt_route, label: rerouted!),
             if (visionSwap != null)
@@ -572,9 +588,13 @@ class _VerdictSection extends StatelessWidget {
 
 /// Tiny metadata chip (model used / reroute / vision swap).
 class _Chip extends StatelessWidget {
-  const _Chip({required this.icon, required this.label});
+  const _Chip({required this.icon, required this.label, this.leading});
   final IconData icon;
   final String label;
+
+  /// Optional widget replacing the generic icon (e.g. a BrandIcon for the
+  /// model that judged the attempt).
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -594,7 +614,10 @@ class _Chip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
+          if (leading != null)
+            leading!
+          else
+            Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 4),
           Text(
             label,
