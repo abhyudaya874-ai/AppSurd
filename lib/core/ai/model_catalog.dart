@@ -251,10 +251,13 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
     final cached = <String, dynamic>{};
     for (final provider in AiProvider.values) {
       final key = keys[provider];
-      // No key → we can't fetch /models, but still show the provider's
-      // free seed models as locked rows so users can see what exists and
-      // tap through to Settings.
-      if (key == null || key.isEmpty) {
+      final hasKey = key != null && key.isNotEmpty;
+      // OpenRouter's /models is public — fetch it with no key. NIM also
+      // answers keyless (rate-limited); try it and fall back to the user's
+      // key. Groq needs a key — without one its seed models show locked.
+      final keylessOk =
+          provider == AiProvider.openrouter || provider == AiProvider.nvidia;
+      if (!hasKey && !keylessOk) {
         all.addAll(kModelCatalog.where((m) => m.provider == provider));
         continue;
       }
@@ -262,7 +265,10 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
         final dio = Dio(
           BaseOptions(
             baseUrl: provider.baseUrl,
-            headers: {'Authorization': 'Bearer $key', ...provider.extraHeaders},
+            headers: {
+              if (hasKey) 'Authorization': 'Bearer $key',
+              ...provider.extraHeaders,
+            },
             connectTimeout: const Duration(seconds: 8),
             receiveTimeout: const Duration(seconds: 8),
           ),
@@ -288,7 +294,12 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
       }
     }
     if (all.isEmpty) return List.of(kModelCatalog);
-    return _withStrength(all);
+    // Live + seed lists can overlap — dedupe by id, first wins.
+    final seen = <String>{};
+    return _withStrength([
+      for (final m in all)
+        if (seen.add(m.id)) m,
+    ]);
   }
 
   /// Builds ModelSpecs from a provider's /models payload — free-only.
@@ -321,6 +332,7 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
 
       final isChat = switch (provider) {
         AiProvider.groq => FreeGuard.groqIsChat(id),
+        AiProvider.nvidia => FreeGuard.nimIsChat(id),
         _ => true,
       };
       final isFree = FreeGuard.evaluate(

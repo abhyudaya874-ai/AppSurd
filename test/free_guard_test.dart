@@ -52,7 +52,7 @@ void main() {
         isFalse,
       );
     });
-    test('NVIDIA needs allowlist + chat', () {
+    test('NVIDIA treats every chat-capable model as free-tier', () {
       expect(
         FreeGuard.evaluate(
           id: 'meta/llama-3.3-70b-instruct',
@@ -63,16 +63,20 @@ void main() {
         ),
         isTrue,
       );
+      // Non-chat ids (embed/rerank/guard) are still blocked — the parse
+      // layer marks them isChatCapable: false via nimIsChat.
       expect(
         FreeGuard.evaluate(
-          id: 'unlisted/model',
+          id: 'nvidia/nv-embed-v1',
           provider: AiProvider.nvidia,
           pricingIsZero: false,
           onNimAllowlist: false,
-          isChatCapable: true,
+          isChatCapable: false,
         ),
         isFalse,
       );
+      expect(FreeGuard.nimIsChat('nvidia/nv-embed-v1'), isFalse);
+      expect(FreeGuard.nimIsChat('meta/llama-3.3-70b-instruct'), isTrue);
     });
     test('Groq rejects speech/guard models', () {
       expect(

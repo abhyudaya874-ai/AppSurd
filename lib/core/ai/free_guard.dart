@@ -34,7 +34,9 @@ abstract final class FreeGuard {
       case AiProvider.openrouter:
         return pricingIsZero || id.endsWith(':free');
       case AiProvider.nvidia:
-        return onNimAllowlist && isChatCapable;
+        // NIM serves its whole chat catalog on free-tier credits — the old
+        // curated allowlist hid most of it from the picker.
+        return isChatCapable;
       case AiProvider.groq:
         return isChatCapable;
     }
@@ -43,6 +45,12 @@ abstract final class FreeGuard {
   /// Groq ids we treat as non-chat (speech/vision-audio/guard).
   static bool groqIsChat(String id) => !RegExp(
     r'(whisper|tts|playai|guard|distil-whisper)',
+    caseSensitive: false,
+  ).hasMatch(id);
+
+  /// NVIDIA ids we treat as non-chat (embedding / rerank / safety / retrieval).
+  static bool nimIsChat(String id) => !RegExp(
+    r'(embed|rerank|guard|retriev|baai/bge|nv-embed|llama-3.2-nv)',
     caseSensitive: false,
   ).hasMatch(id);
 
