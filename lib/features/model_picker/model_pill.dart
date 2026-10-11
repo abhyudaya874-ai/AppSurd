@@ -99,9 +99,6 @@ class ModelPillState extends ConsumerState<ModelPill>
                   alpha: 0.7,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.6),
-                ),
               ),
               // Cap the pill so it ellipsizes inside tight rows (composer).
               child: Row(

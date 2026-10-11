@@ -12,6 +12,7 @@ import '../../core/widgets/animated_app_icon.dart';
 import '../../core/widgets/app_chip.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../../core/widgets/pressable.dart';
+import '../arena/arena_home_screen.dart';
 import '../model_picker/model_pill.dart';
 import '../playground/playground_screen.dart' show askSeedProvider;
 import '../shell/app_shell.dart';
@@ -39,7 +40,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _groupId; // null = Inbox
   DateTime? _dueAt;
   final _images = <XFile>[];
-  bool _askMode = false; // centre pill: Task (default) vs Ask
+  // Centre pill: 0 = Task (default), 1 = Ask, 2 = Arena.
+  int _mode = 0;
 
   static const _suggestions = [
     'Finish an assignment',
@@ -75,9 +77,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    if (_askMode) {
+    if (_mode == 1) {
       ref.read(askSeedProvider.notifier).set(text);
       ref.read(navIndexProvider.notifier).set(3);
+      _ctrl.clear();
+      return;
+    }
+    if (_mode == 2) {
+      // Arena mode: hand the prompt to the Arena composer and switch.
+      ref.read(arenaSeedProvider.notifier).set(text);
+      ref.read(navIndexProvider.notifier).set(5);
       _ctrl.clear();
       return;
     }
@@ -203,8 +212,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const MenuAvatar(size: 40),
                     const Spacer(),
                     _ModePill(
-                      askMode: _askMode,
-                      onChanged: (v) => setState(() => _askMode = v),
+                      mode: _mode,
+                      onChanged: (v) => setState(() => _mode = v),
                     ),
                     const Spacer(),
                     _IntegrityButton(
@@ -342,7 +351,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 onSubmitted: (_) => _send(),
                 decoration: InputDecoration(
-                  hintText: _askMode ? 'Ask anything…' : 'Add a task…',
+                  hintText: _mode == 0 ? 'Add a task…' : 'Ask anything…',
                   hintStyle: TextStyle(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -487,12 +496,12 @@ class _GhostIcon extends StatelessWidget {
   }
 }
 
-/// Centre segmented pill — two icon buttons (Task / Ask) with an animated
-/// selected segment.
+/// Centre segmented pill — three icon buttons (Task / Ask / Arena) with an
+/// animated selected segment.
 class _ModePill extends StatelessWidget {
-  const _ModePill({required this.askMode, required this.onChanged});
-  final bool askMode;
-  final ValueChanged<bool> onChanged;
+  const _ModePill({required this.mode, required this.onChanged});
+  final int mode;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -511,17 +520,25 @@ class _ModePill extends StatelessWidget {
             context,
             theme,
             Icons.edit_note_rounded,
-            !askMode,
-            () => onChanged(false),
+            mode == 0,
+            () => onChanged(0),
             'Task mode',
           ),
           _seg(
             context,
             theme,
             Icons.chat_bubble_outline_rounded,
-            askMode,
-            () => onChanged(true),
+            mode == 1,
+            () => onChanged(1),
             'Ask mode',
+          ),
+          _seg(
+            context,
+            theme,
+            Icons.groups_rounded,
+            mode == 2,
+            () => onChanged(2),
+            'Arena — compare two models',
           ),
         ],
       ),
@@ -542,7 +559,7 @@ class _ModePill extends StatelessWidget {
         onTap: tap,
         child: AnimatedContainer(
           duration: AppMotion.of(context, AppMotion.fast),
-          width: 52,
+          width: 44,
           height: 32,
           margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(

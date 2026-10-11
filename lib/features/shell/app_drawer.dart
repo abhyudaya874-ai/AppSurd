@@ -9,7 +9,6 @@ import '../../core/theme/spacing.dart';
 import '../../core/theme/typography.dart';
 import '../../core/utils/transitions.dart';
 import '../../core/widgets/fade_slide_in.dart';
-import '../arena/arena_state.dart';
 import '../profile/profile_data.dart';
 import '../settings/settings_screen.dart';
 import '../tasks/group_model.dart';
@@ -53,7 +52,6 @@ class AppDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final index = ref.watch(navIndexProvider);
-    final arenaReady = ref.watch(arenaReadyProvider);
     final profile = ref.watch(profileProvider);
     final integrity = ref.watch(integrityScoreProvider);
     final tasks = ref.watch(tasksProvider).value ?? const [];
@@ -64,7 +62,7 @@ class AppDrawer extends ConsumerWidget {
       (Icons.calendar_month_rounded, 'Schedule', 2),
       (Icons.chat_bubble_outline_rounded, 'Ask', 3),
       (Icons.person_outline_rounded, 'Profile', 4),
-      if (arenaReady) (Icons.groups_rounded, 'Arena', 5),
+      (Icons.groups_rounded, 'Arena', 5),
     ];
 
     return Material(

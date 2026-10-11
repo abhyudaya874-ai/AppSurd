@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/motion.dart';
+import '../arena/arena_home_screen.dart';
 import '../arena/arena_state.dart';
 import '../home/home_screen.dart';
 import '../model_picker/model_selection.dart';
-import '../arena/arena_info_screen.dart';
 import '../playground/playground_screen.dart';
 import '../profile/profile_data.dart';
 import '../profile/profile_screen.dart';
@@ -210,18 +210,17 @@ class _AppShellState extends ConsumerState<AppShell>
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider).clamp(0, 5);
-    final arenaReady = ref.watch(arenaReadyProvider);
     final w = _drawerW(context);
     final isHome = index == 0;
 
-    // Destinations — Arena only exists when a lineup is configured.
+    // Destinations — Arena is always present (first-class, rev 4).
     final pages = <Widget>[
       const HomeScreen(),
       const TasksTabScreen(),
       const ScheduleScreen(),
       const PlaygroundScreen(),
       const ProfileScreen(),
-      if (arenaReady) const ArenaDestinationPage(),
+      const ArenaHomeScreen(),
     ];
     final tab = index.clamp(0, pages.length - 1);
 

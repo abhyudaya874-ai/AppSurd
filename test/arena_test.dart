@@ -6,6 +6,9 @@ import 'package:receipts/core/ai/model_catalog.dart';
 import 'package:receipts/features/arena/arena_models.dart';
 import 'package:receipts/features/arena/arena_service.dart';
 import 'package:receipts/features/verification/verdict_model.dart';
+import 'package:receipts/features/arena/arena_chat_state.dart';
+import 'package:receipts/features/model_picker/model_selection.dart';
+import 'package:receipts/core/ai/api_key_store.dart';
 
 JudgeResult _j(ModelSpec m, VerdictKind k, double conf) => JudgeResult(
   model: m,
@@ -68,4 +71,62 @@ void main() {
     expect(out.consensus, VerdictKind.fail);
     expect(out.agreement, 0);
   });
+
+  arenaChatTests();
+}
+
+// ---------------------------------------------------------------------------
+// Rev 4 — side-by-side arena chat: concurrency + Elo.
+// ---------------------------------------------------------------------------
+
+class _NoKeys extends ConfiguredKeys {
+  @override
+  Future<Map<AiProvider, String>> build() async => const {};
+}
+
+ProviderContainer _arenaContainer() => ProviderContainer(
+  overrides: [
+    configuredKeysProvider.overrideWith(_NoKeys.new),
+    modelSelectionProvider.overrideWith(ModelSelectionNotifier.new),
+  ],
+);
+
+void arenaChatTests() {
+  test('fan-out: one failing model does not block the other card', () async {
+    final c = _arenaContainer();
+    addTearDown(c.dispose);
+    final n = c.read(arenaChatProvider.notifier);
+    n.runnerForTest = (spec, prompt) async {
+      if (spec == c.read(arenaChatProvider).specA) {
+        throw Exception('model A blew up');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      return 'B says hi';
+    };
+    await n.send('test prompt');
+    final r = c.read(arenaChatProvider).rounds.single;
+    expect(r.cards[0].status, CardStatus.error);
+    expect(r.cards[1].status, CardStatus.done);
+    expect(r.cards[1].text, 'B says hi');
+  });
+
+  test(
+    'Elo: win increments winner, tie half-points both, one vote/round',
+    () async {
+      final c = _arenaContainer();
+      addTearDown(c.dispose);
+      final n = c.read(arenaChatProvider.notifier);
+      n.runnerForTest = (spec, prompt) async => 'ok';
+      // The arena box persists on disk between test runs — reset the tally.
+      await (await Hive.openBox('receipts_arena')).clear();
+      await n.send('p');
+      final r = c.read(arenaChatProvider).rounds.single;
+      await n.vote(0, 0); // A wins
+      await n.vote(0, 2); // ignored — already voted
+      final scores = await arenaScores();
+      expect(scores[r.cards[0].spec.id], [1, 0]);
+      expect(scores[r.cards[1].spec.id], [0, 1]);
+      expect(c.read(arenaChatProvider).rounds.single.vote, 0);
+    },
+  );
 }

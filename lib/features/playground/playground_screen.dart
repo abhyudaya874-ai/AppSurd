@@ -22,8 +22,6 @@ import '../research/research_pipeline.dart';
 import 'trace_mapper.dart';
 import '../research/research_trace_view.dart';
 import '../../core/theme/motion.dart';
-import '../arena/arena_info_screen.dart';
-import '../arena/arena_state.dart';
 import '../shell/app_shell.dart';
 
 /// One-shot text seed for the Ask composer — Home's Ask mode writes it, the
@@ -304,18 +302,12 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
         ),
         title: const Text('Ask'),
         actions: [
-          // Arena lives behind Ask/Profile now — entry point only when a
-          // jury is configured.
-          if (ref.watch(arenaReadyProvider))
-            IconButton(
-              tooltip: 'Arena lineup',
-              icon: const Icon(Icons.groups_rounded, size: 20),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ArenaInfoScreen(),
-                ),
-              ),
-            ),
+          // Arena is a first-class destination now — jump straight to it.
+          IconButton(
+            tooltip: 'Compare in Arena',
+            icon: const Icon(Icons.groups_rounded, size: 20),
+            onPressed: () => ref.read(navIndexProvider.notifier).set(5),
+          ),
         ],
       ),
       body: Column(
