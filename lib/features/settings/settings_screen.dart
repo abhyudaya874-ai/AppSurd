@@ -1,0 +1,254 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/ai/ai_failure.dart';
+import '../../core/ai/api_key_store.dart';
+import '../../core/ai/model_catalog.dart';
+import '../../core/ai/model_router.dart';
+import '../../core/ai/openai_compat_client.dart';
+import '../../core/theme/extensions.dart';
+import '../../core/theme/motion.dart';
+import '../../core/theme/spacing.dart';
+import '../../core/widgets/fade_slide_in.dart';
+
+/// Settings: paste a key per provider (stored in flutter_secure_storage),
+/// "Test key" validates it against GET /models, demo-mode toggle lives here
+/// too, plus a plain-English privacy note for the judges.
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          FadeSlideIn(
+            child: Text('AI providers',
+                style: theme.textTheme.titleLarge),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          FadeSlideIn(
+            index: 1,
+            child: Text(
+              'Keys are stored on-device in secure storage and only ever sent '
+              'to their own provider. Leave blank to keep a provider locked.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          for (var i = 0; i < AiProvider.values.length; i++)
+            FadeSlideIn(
+              index: 2 + i,
+              child: _ProviderKeyTile(provider: AiProvider.values[i]),
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          FadeSlideIn(
+            index: 5,
+            child: OutlinedButton.icon(
+              onPressed: () => ref.invalidate(aliveModelsProvider),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Refresh model lists'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          FadeSlideIn(
+            index: 6,
+            child: _DemoModeTile(),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          FadeSlideIn(
+            index: 7,
+            child: Text(
+              'About — Receipts keeps everything on this device. Evidence you '
+              'submit is sent only to the selected AI provider for verification. '
+              'No accounts, no analytics, no cloud sync.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One provider row: tinted name, obscured key field, save + test actions.
+class _ProviderKeyTile extends ConsumerStatefulWidget {
+  const _ProviderKeyTile({required this.provider});
+  final AiProvider provider;
+
+  @override
+  ConsumerState<_ProviderKeyTile> createState() => _ProviderKeyTileState();
+}
+
+enum _TestState { idle, testing, ok, failed }
+
+class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
+  final _controller = TextEditingController();
+  _TestState _test = _TestState.idle;
+  bool _loaded = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    await ref
+        .read(configuredKeysProvider.notifier)
+        .save(widget.provider, _controller.text.trim());
+    setState(() => _test = _TestState.idle);
+  }
+
+  Future<void> _testKey() async {
+    setState(() => _test = _TestState.testing);
+    final key = _controller.text.trim().isNotEmpty
+        ? _controller.text.trim()
+        : await ref.read(apiKeyStoreProvider).read(widget.provider);
+    if (key == null || key.isEmpty) {
+      setState(() => _test = _TestState.failed);
+      return;
+    }
+    try {
+      final client = OpenAiCompatClient(
+        baseUrl: widget.provider.baseUrl,
+        apiKey: key,
+        extraHeaders: widget.provider.extraHeaders,
+      );
+      await client.listModelIds();
+      if (mounted) setState(() => _test = _TestState.ok);
+      ref.invalidate(aliveModelsProvider);
+    } on AiFailure {
+      if (mounted) setState(() => _test = _TestState.failed);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tint =
+        theme.extension<ProviderTints>()!.forId(widget.provider.id);
+    final configured =
+        ref.watch(configuredKeysProvider).value?.containsKey(widget.provider) ??
+            false;
+
+    // Prefill hint once keys load (never echo the actual key).
+    if (!_loaded && configured) {
+      _loaded = true;
+      _controller.text = '';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration:
+                    BoxDecoration(color: tint, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(widget.provider.label, style: theme.textTheme.titleMedium),
+              const Spacer(),
+              AnimatedSwitcher(
+                duration: AppMotion.fast,
+                child: switch (_test) {
+                  _TestState.idle => configured
+                      ? Icon(Icons.check_circle_outline,
+                          key: const ValueKey('c'),
+                          size: 18,
+                          color: theme.colorScheme.primary)
+                      : const SizedBox.shrink(key: ValueKey('n')),
+                  _TestState.testing => const SizedBox(
+                      key: ValueKey('t'),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  _TestState.ok => Icon(Icons.check_circle,
+                      key: const ValueKey('ok'),
+                      size: 18,
+                      color: theme.colorScheme.primary),
+                  _TestState.failed => Icon(Icons.error_outline,
+                      key: const ValueKey('f'),
+                      size: 18,
+                      color: theme.colorScheme.error),
+                },
+              ),
+            ]),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _controller,
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: configured ? '••••••••  (saved)' : 'paste API key',
+              ),
+              onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(children: [
+              TextButton(onPressed: _save, child: const Text('Save')),
+              const SizedBox(width: AppSpacing.xs),
+              TextButton(onPressed: _testKey, child: const Text('Test key')),
+              const Spacer(),
+              AnimatedSwitcher(
+                duration: AppMotion.fast,
+                child: switch (_test) {
+                  _TestState.ok => Text('key works',
+                      key: const ValueKey('okt'),
+                      style: theme.textTheme.labelSmall
+                          ?.copyWith(color: theme.colorScheme.primary)),
+                  _TestState.failed => Text('rejected or unreachable',
+                      key: const ValueKey('ft'),
+                      style: theme.textTheme.labelSmall
+                          ?.copyWith(color: theme.colorScheme.error)),
+                  _ => const SizedBox.shrink(),
+                },
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Demo Mode toggle — seeds canned tasks/evidence (wired in phase 3).
+class _DemoModeTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final demoOn = ref.watch(demoModeProvider);
+    return SwitchListTile(
+      value: demoOn,
+      onChanged: (v) =>
+          ref.read(demoModeProvider.notifier).setEnabled(v),
+      title: const Text('Demo mode'),
+      subtitle: const Text('Seed example tasks + canned evidence for the pitch'),
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+}
+
+/// Whether demo mode is on — the tasks feature seeds demo data from this.
+final demoModeProvider = NotifierProvider<DemoModeNotifier, bool>(
+    DemoModeNotifier.new);
+
+/// Persists the demo-mode flag in the settings box.
+class DemoModeNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void setEnabled(bool value) => state = value;
+}
