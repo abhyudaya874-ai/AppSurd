@@ -15,8 +15,9 @@ import '../tasks/tasks_tab_screen.dart';
 
 /// The visible tab — writable so any screen can switch tabs (Create Task
 /// jumps to Tasks after save) without a navigator hack.
-final shellTabProvider =
-    NotifierProvider<ShellTabNotifier, int>(ShellTabNotifier.new);
+final shellTabProvider = NotifierProvider<ShellTabNotifier, int>(
+  ShellTabNotifier.new,
+);
 
 class ShellTabNotifier extends Notifier<int> {
   @override
@@ -30,7 +31,8 @@ class ShellTabNotifier extends Notifier<int> {
 /// user sees where it landed.
 final highlightedTaskProvider =
     NotifierProvider<HighlightedTaskNotifier, String?>(
-        HighlightedTaskNotifier.new);
+      HighlightedTaskNotifier.new,
+    );
 
 class HighlightedTaskNotifier extends Notifier<String?> {
   @override
@@ -157,39 +159,48 @@ class _GlassTabBar extends StatelessWidget {
               color: theme.colorScheme.surface.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(32),
               border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.6)),
+                color: theme.colorScheme.outline.withValues(alpha: 0.6),
+              ),
             ),
-            child: LayoutBuilder(builder: (context, c) {
-              final slotW = c.maxWidth / _tabSpecs.length;
-              return Stack(children: [
-                // Stretching highlight blob — centred on the active slot.
-                AnimatedPositioned(
-                  duration: AppMotion.of(context,
-                      const Duration(milliseconds: 350)),
-                  curve: Curves.easeOutBack,
-                  left: slotW * index + 4,
-                  top: 6,
-                  bottom: 6,
-                  width: slotW - 8,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                  ),
-                ),
-                Row(children: [
-                  for (var i = 0; i < _tabSpecs.length; i++)
-                    Expanded(
-                      child: _TabSlot(
-                        spec: _tabSpecs[i],
-                        active: i == index,
-                        onTap: () => onSelect(i),
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final slotW = c.maxWidth / _tabSpecs.length;
+                return Stack(
+                  children: [
+                    // Stretching highlight blob — centred on the active slot.
+                    AnimatedPositioned(
+                      duration: AppMotion.of(
+                        context,
+                        const Duration(milliseconds: 350),
+                      ),
+                      curve: Curves.easeOutBack,
+                      left: slotW * index + 4,
+                      top: 6,
+                      bottom: 6,
+                      width: slotW - 8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(26),
+                        ),
                       ),
                     ),
-                ]),
-              ]);
-            }),
+                    Row(
+                      children: [
+                        for (var i = 0; i < _tabSpecs.length; i++)
+                          Expanded(
+                            child: _TabSlot(
+                              spec: _tabSpecs[i],
+                              active: i == index,
+                              onTap: () => onSelect(i),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -222,33 +233,37 @@ class _TabSlot extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Center(
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            AnimatedScale(
-              scale: active ? 1.1 : 1.0,
-              duration: AppMotion.of(context, AppMotion.fast),
-              curve: AppMotion.standard,
-              child: Icon(spec.icon, size: 21, color: color),
-            ),
-            // Label expands beside the active icon.
-            ClipRect(
-              child: AnimatedSize(
-                duration: AppMotion.of(context, AppMotion.base),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
+                scale: active ? 1.1 : 1.0,
+                duration: AppMotion.of(context, AppMotion.fast),
                 curve: AppMotion.standard,
-                child: active
-                    ? Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Text(
-                          spec.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.clip,
-                          style: theme.textTheme.labelMedium
-                              ?.copyWith(color: color),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                child: Icon(spec.icon, size: 21, color: color),
               ),
-            ),
-          ]),
+              // Label expands beside the active icon.
+              ClipRect(
+                child: AnimatedSize(
+                  duration: AppMotion.of(context, AppMotion.base),
+                  curve: AppMotion.standard,
+                  child: active
+                      ? Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            spec.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: color,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -9,21 +9,29 @@ class TavilyClient {
   TavilyClient({required this.apiKey});
   final String apiKey;
 
-  final _dio = Dio(BaseOptions(
-    baseUrl: 'https://api.tavily.com',
-    connectTimeout: const Duration(seconds: 8),
-    receiveTimeout: const Duration(seconds: 8),
-  ));
+  final _dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://api.tavily.com',
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+    ),
+  );
 
   /// Returns up to [maxResults] hits for [query].
-  Future<List<SearchHit>> search(String query,
-      {int maxResults = 5, String? topic}) async {
-    final res = await _dio.post<Map<String, dynamic>>('/search', data: {
-      'api_key': apiKey,
-      'query': query,
-      'max_results': maxResults,
-      if (topic != null) 'topic': topic,
-    });
+  Future<List<SearchHit>> search(
+    String query, {
+    int maxResults = 5,
+    String? topic,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/search',
+      data: {
+        'api_key': apiKey,
+        'query': query,
+        'max_results': maxResults,
+        if (topic != null) 'topic': topic,
+      },
+    );
     final results = (res.data?['results'] as List? ?? const []);
     return [
       for (final r in results)
@@ -40,10 +48,10 @@ class TavilyClient {
   /// Fetches clean page text for up to a few URLs.
   Future<Map<String, String>> extract(List<String> urls) async {
     if (urls.isEmpty) return const {};
-    final res = await _dio.post<Map<String, dynamic>>('/extract', data: {
-      'api_key': apiKey,
-      'urls': urls.take(4).toList(),
-    });
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/extract',
+      data: {'api_key': apiKey, 'urls': urls.take(4).toList()},
+    );
     final results = (res.data?['results'] as List? ?? const []);
     return {
       for (final r in results)

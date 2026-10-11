@@ -9,5 +9,6 @@ abstract final class RequestCounterStats {
       counts[providerId] = (counts[providerId] ?? 0) + 1;
 }
 
-final requestCounterProvider =
-    Provider<Map<String, int>>((ref) => Map.of(RequestCounterStats.counts));
+final requestCounterProvider = Provider<Map<String, int>>(
+  (ref) => Map.of(RequestCounterStats.counts),
+);

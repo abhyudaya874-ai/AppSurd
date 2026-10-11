@@ -42,9 +42,9 @@ abstract final class FreeGuard {
 
   /// Groq ids we treat as non-chat (speech/vision-audio/guard).
   static bool groqIsChat(String id) => !RegExp(
-              r'(whisper|tts|playai|guard|distil-whisper)',
-              caseSensitive: false)
-          .hasMatch(id);
+    r'(whisper|tts|playai|guard|distil-whisper)',
+    caseSensitive: false,
+  ).hasMatch(id);
 
   /// NVIDIA curated chat allowlist — intersected with live /models.
   static const nimAllowlist = {

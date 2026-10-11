@@ -35,8 +35,10 @@ class LinkCheck {
 /// Concurrency-limited to 4 in-flight fetches.
 class LinkVerifier {
   LinkVerifier([Dio? dio])
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               connectTimeout: const Duration(seconds: 8),
               receiveTimeout: const Duration(seconds: 8),
               followRedirects: true,
@@ -46,7 +48,8 @@ class LinkVerifier {
                 'User-Agent': 'Mozilla/5.0 (compatible; ReceiptsBot/1.0)',
                 'Accept': 'text/html,application/xhtml+xml,*/*',
               },
-            ));
+            ),
+          );
 
   final Dio _dio;
   static const _maxBytes = 200 * 1024;
@@ -114,11 +117,15 @@ class LinkVerifier {
       final doc = html_parser.parse(body);
       final title = doc.querySelector('title')?.text.trim();
       final meta = doc
-          .querySelector('meta[name="description"],meta[property="og:description"]')
+          .querySelector(
+            'meta[name="description"],meta[property="og:description"]',
+          )
           ?.attributes['content']
           ?.trim();
       // Drop non-visible noise before collecting text.
-      for (final el in doc.querySelectorAll('script,style,noscript,svg,nav,footer')) {
+      for (final el in doc.querySelectorAll(
+        'script,style,noscript,svg,nav,footer',
+      )) {
         el.remove();
       }
       final text = _visibleText(doc.body)

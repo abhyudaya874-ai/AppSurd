@@ -44,7 +44,9 @@ class TaskRowState extends ConsumerState<TaskRow>
         if (mounted) setState(() => _dx = _rubber.value);
       });
     _pulse = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
   }
 
   @override
@@ -98,14 +100,16 @@ class TaskRowState extends ConsumerState<TaskRow>
   void _delete() {
     final t = widget.task;
     ref.read(tasksProvider.notifier).deleteTask(t.id);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Task deleted'),
-      duration: const Duration(seconds: 4),
-      action: SnackBarAction(
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Task deleted'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
           label: 'Undo',
-          onPressed: () =>
-              ref.read(tasksProvider.notifier).restoreTask(t)),
-    ));
+          onPressed: () => ref.read(tasksProvider.notifier).restoreTask(t),
+        ),
+      ),
+    );
     setState(() => _dx = 0);
   }
 
@@ -134,8 +138,9 @@ class TaskRowState extends ConsumerState<TaskRow>
             borderRadius: BorderRadius.circular(24),
             border: _pulse.value > 0
                 ? Border.all(
-                    color: theme.colorScheme.primary
-                        .withValues(alpha: 0.9 * glow),
+                    color: theme.colorScheme.primary.withValues(
+                      alpha: 0.9 * glow,
+                    ),
                     width: 2,
                   )
                 : null,
@@ -148,58 +153,67 @@ class TaskRowState extends ConsumerState<TaskRow>
         onHorizontalDragEnd: (_) => _onDragEnd(),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          child: Stack(children: [
-            // Revealed action layers.
-            Positioned.fill(
-              child: Row(children: [
-                if (_dx > 0)
-                  Container(
-                    width: _dx.clamp(0.0, _nopeAt + 30),
-                    color: _showNope
-                        ? theme.colorScheme.error.withValues(alpha: 0.2)
-                        : theme.colorScheme.primary.withValues(alpha: 0.15),
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: AppSpacing.md),
-                    child: Text(
-                      _showNope ? 'Nice try. Proof first.' : 'Prove it →',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                          color: _showNope
-                              ? theme.colorScheme.error
-                              : theme.colorScheme.primary),
+          child: Stack(
+            children: [
+              // Revealed action layers.
+              Positioned.fill(
+                child: Row(
+                  children: [
+                    if (_dx > 0)
+                      Container(
+                        width: _dx.clamp(0.0, _nopeAt + 30),
+                        color: _showNope
+                            ? theme.colorScheme.error.withValues(alpha: 0.2)
+                            : theme.colorScheme.primary.withValues(alpha: 0.15),
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: AppSpacing.md),
+                        child: Text(
+                          _showNope ? 'Nice try. Proof first.' : 'Prove it →',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: _showNope
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    const Spacer(),
+                    if (_dx < 0)
+                      Container(
+                        width: (-_dx).clamp(0.0, 160.0),
+                        color: theme.colorScheme.error.withValues(alpha: 0.2),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: AppSpacing.md),
+                        child: AnimatedAppIcon(
+                          type: AppIconType.trash,
+                          active: _dx < -70,
+                          size: 20,
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Transform.translate(
+                offset: Offset(_dx, 0),
+                child: TaskCard(
+                  task: t,
+                  groupName: ref
+                      .watch(groupsProvider)
+                      .where((g) => g.id == t.groupId)
+                      .firstOrNull
+                      ?.name,
+                  accountabilityPending:
+                      t.status != TaskStatus.locked &&
+                      ref.watch(anyLockedProvider),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => TaskDetailScreen(taskId: t.id),
                     ),
                   ),
-                const Spacer(),
-                if (_dx < 0)
-                  Container(
-                    width: (-_dx).clamp(0.0, 160.0),
-                    color: theme.colorScheme.error.withValues(alpha: 0.2),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: AppSpacing.md),
-                    child: AnimatedAppIcon(
-                        type: AppIconType.trash,
-                        active: _dx < -70,
-                        size: 20,
-                        color: theme.colorScheme.error),
-                  ),
-              ]),
-            ),
-            Transform.translate(
-              offset: Offset(_dx, 0),
-              child: TaskCard(
-                task: t,
-                groupName: ref
-                    .watch(groupsProvider)
-                    .where((g) => g.id == t.groupId)
-                    .firstOrNull
-                    ?.name,
-                accountabilityPending: t.status != TaskStatus.locked &&
-                    ref.watch(anyLockedProvider),
-                onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                        builder: (_) => TaskDetailScreen(taskId: t.id))),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );

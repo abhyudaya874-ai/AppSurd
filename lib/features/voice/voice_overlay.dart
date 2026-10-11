@@ -31,8 +31,10 @@ class VoiceOrbButton extends ConsumerWidget {
   final VoiceIntent intent;
   final ValueChanged<VoiceResult>? onResult;
 
-  static Future<VoiceResult?> show(BuildContext context,
-      {required VoiceIntent intent}) {
+  static Future<VoiceResult?> show(
+    BuildContext context, {
+    required VoiceIntent intent,
+  }) {
     HapticFeedback.selectionClick();
     return showGeneralDialog<VoiceResult>(
       context: context,
@@ -51,8 +53,9 @@ class VoiceOrbButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final tint = ref.watch(resolvedModelProvider) != null
-        ? (theme.extension<ProviderTints>() ?? const ProviderTints())
-            .forId(ref.watch(resolvedModelProvider)!.provider.id)
+        ? (theme.extension<ProviderTints>() ?? const ProviderTints()).forId(
+            ref.watch(resolvedModelProvider)!.provider.id,
+          )
         : theme.colorScheme.primary;
     return SizedBox(
       width: 56,
@@ -151,8 +154,9 @@ class _VoiceOverlayState extends ConsumerState<_VoiceOverlay> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tint = ref.watch(resolvedModelProvider) != null
-        ? (theme.extension<ProviderTints>() ?? const ProviderTints())
-            .forId(ref.watch(resolvedModelProvider)!.provider.id)
+        ? (theme.extension<ProviderTints>() ?? const ProviderTints()).forId(
+            ref.watch(resolvedModelProvider)!.provider.id,
+          )
         : theme.colorScheme.primary;
 
     return GestureDetector(
@@ -164,106 +168,121 @@ class _VoiceOverlayState extends ConsumerState<_VoiceOverlay> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: Column(children: [
-            const Spacer(),
-            // The orb — tap toggles start/stop.
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                switch (_orb) {
-                  case OrbState.idle:
-                    if (_final == null) _start();
-                  case OrbState.listening:
-                    _stop();
-                  case OrbState.error:
-                    _start();
-                  case _:
-                    break;
-                }
-              },
-              child: VoiceOrb(
-                  state: _orb, tint: tint, level: _level, size: 220),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            // Live transcript / result.
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: AnimatedSwitcher(
-                duration: AppMotion.fast,
-                child: Text(
-                  _final ?? _error ?? (_partial.isEmpty ? _hint() : _partial),
-                  key: ValueKey(_final ?? _error ?? _partial),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: _error != null
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurface,
+          child: Column(
+            children: [
+              const Spacer(),
+              // The orb — tap toggles start/stop.
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  switch (_orb) {
+                    case OrbState.idle:
+                      if (_final == null) _start();
+                    case OrbState.listening:
+                      _stop();
+                    case OrbState.error:
+                      _start();
+                    case _:
+                      break;
+                  }
+                },
+                child: VoiceOrb(
+                  state: _orb,
+                  tint: tint,
+                  level: _level,
+                  size: 220,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Live transcript / result.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: AnimatedSwitcher(
+                  duration: AppMotion.fast,
+                  child: Text(
+                    _final ?? _error ?? (_partial.isEmpty ? _hint() : _partial),
+                    key: ValueKey(_final ?? _error ?? _partial),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: _error != null
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            // Engine chip — always say who transcribed.
-            if (_t != null)
-              Chip(
-                avatar: Icon(
+              const SizedBox(height: AppSpacing.lg),
+              // Engine chip — always say who transcribed.
+              if (_t != null)
+                Chip(
+                  avatar: Icon(
                     _t!.info.onDevice
                         ? Icons.memory
                         : _t!.info.id == 'system'
-                            ? Icons.mic
-                            : Icons.cloud_outlined,
-                    size: 14),
-                label: Text(_t!.info.label,
-                    style: theme.textTheme.labelSmall),
-              ),
-            const Spacer(),
-            if (_final != null)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Row(children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => setState(() {
-                        _final = null;
-                        _partial = '';
-                      }),
-                      child: const Text('Retry'),
-                    ),
+                        ? Icons.mic
+                        : Icons.cloud_outlined,
+                    size: 14,
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(context).pop(
-                          VoiceResult(
+                  label: Text(
+                    _t!.info.label,
+                    style: theme.textTheme.labelSmall,
+                  ),
+                ),
+              const Spacer(),
+              if (_final != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => setState(() {
+                            _final = null;
+                            _partial = '';
+                          }),
+                          child: const Text('Retry'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(context).pop(
+                            VoiceResult(
                               _final!.replaceAll(RegExp(r'^\[[\d.]+s\] '), ''),
                               _t!.info,
-                              _stopwatch.elapsedMilliseconds)),
-                      child: Text(widget.intent == VoiceIntent.proof
-                          ? 'Use as proof'
-                          : 'Use as task'),
-                    ),
+                              _stopwatch.elapsedMilliseconds,
+                            ),
+                          ),
+                          child: Text(
+                            widget.intent == VoiceIntent.proof
+                                ? 'Use as proof'
+                                : 'Use as task',
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-            if (_final == null)
-              TextButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.keyboard, size: 16),
-                label: const Text('Type instead'),
-              ),
-            const SizedBox(height: AppSpacing.lg),
-          ]),
+                ),
+              if (_final == null)
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.keyboard, size: 16),
+                  label: const Text('Type instead'),
+                ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
         ),
       ),
     );
   }
 
   String _hint() => switch (_orb) {
-        OrbState.listening => 'Listening… tap to stop',
-        OrbState.thinking => 'Transcribing…',
-        _ => 'Tap the orb to speak',
-      };
+    OrbState.listening => 'Listening… tap to stop',
+    OrbState.thinking => 'Transcribing…',
+    _ => 'Tap the orb to speak',
+  };
 }

@@ -33,7 +33,9 @@ class AppChip extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: 6),
+            horizontal: AppSpacing.sm,
+            vertical: 6,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
@@ -42,15 +44,21 @@ class AppChip extends StatelessWidget {
                   : theme.colorScheme.outline,
             ),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            ?leading,
-            Text(label,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ?leading,
+              Text(
+                label,
                 style: theme.textTheme.labelSmall?.copyWith(
-                    color: filled
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant)),
-            ?trailing,
-          ]),
+                  color: filled
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
         ),
       ),
     );

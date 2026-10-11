@@ -26,10 +26,7 @@ class CustomPanel extends ConsumerWidget {
       children: [
         // ---- Model list (rule 11): recents / recommended / all ----
         _SectionLabel('Model'),
-        const SizedBox(
-          height: 320,
-          child: ModelListPanel(),
-        ),
+        const SizedBox(height: 320, child: ModelListPanel()),
 
         // ---- Reasoning effort (hidden when unsupported) ----
         if (resolved?.supportsReasoning ?? false) ...[
@@ -91,16 +88,13 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: AppSpacing.sm,
-        bottom: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
       child: Text(
         text.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              letterSpacing: 1.2,
-            ),
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }

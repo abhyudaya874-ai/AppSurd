@@ -43,7 +43,12 @@ class _ModelPickerOverlayState extends State<ModelPickerOverlay> {
     const gap = 10.0;
 
     final cardW = _cardW.clamp(0.0, screen.width - margin * 2);
-    final cardH = _cardH.clamp(0.0, screen.height - margin * 2 - keyboard);
+    // Never exceed 60% of the viewport so the card stays a popover, not a
+    // page; the model list scrolls internally when space is tight.
+    final cardH = _cardH
+        .clamp(0.0, screen.height * 0.6)
+        .clamp(0.0, screen.height - margin * 2 - keyboard)
+        .toDouble();
 
     // Horizontal clamp: keep the card fully on-screen.
     final left = widget.anchorRect.left
@@ -57,10 +62,14 @@ class _ModelPickerOverlayState extends State<ModelPickerOverlay> {
         screen.height - keyboard - widget.anchorRect.bottom - margin;
     final openUp = spaceAbove >= cardH + gap || spaceAbove > spaceBelow;
     final top = openUp
-        ? (widget.anchorRect.top - cardH - gap)
-            .clamp(margin, screen.height - cardH - keyboard - margin)
-        : (widget.anchorRect.bottom + gap)
-            .clamp(margin, screen.height - cardH - keyboard - margin);
+        ? (widget.anchorRect.top - cardH - gap).clamp(
+            margin,
+            screen.height - cardH - keyboard - margin,
+          )
+        : (widget.anchorRect.bottom + gap).clamp(
+            margin,
+            screen.height - cardH - keyboard - margin,
+          );
 
     return Stack(
       children: [
@@ -90,8 +99,10 @@ class _ModelPickerOverlayState extends State<ModelPickerOverlay> {
               // touches the pill so it reads as "the pill became the card".
               final fromH = widget.anchorRect.height;
               final h = fromH + (cardH - fromH) * t;
-              final w = (widget.anchorRect.width + (cardW - widget.anchorRect.width) * t)
-                  .clamp(0.0, cardW);
+              final w =
+                  (widget.anchorRect.width +
+                          (cardW - widget.anchorRect.width) * t)
+                      .clamp(0.0, cardW);
               final alignY = openUp ? -1.0 : 1.0;
               return Align(
                 alignment: Alignment(0, alignY),

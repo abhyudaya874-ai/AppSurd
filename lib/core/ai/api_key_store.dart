@@ -11,7 +11,7 @@ import 'model_catalog.dart';
 /// logged and only ever sent to their own provider's base URL.
 class ApiKeyStore {
   ApiKeyStore([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -19,11 +19,10 @@ class ApiKeyStore {
 
   /// Compile-time fallback read from env.json via --dart-define-from-file.
   static String _defineFor(AiProvider p) => switch (p) {
-        AiProvider.groq => const String.fromEnvironment('GROQ_API_KEY'),
-        AiProvider.nvidia => const String.fromEnvironment('NVIDIA_API_KEY'),
-        AiProvider.openrouter =>
-          const String.fromEnvironment('OPENROUTER_API_KEY'),
-      };
+    AiProvider.groq => const String.fromEnvironment('GROQ_API_KEY'),
+    AiProvider.nvidia => const String.fromEnvironment('NVIDIA_API_KEY'),
+    AiProvider.openrouter => const String.fromEnvironment('OPENROUTER_API_KEY'),
+  };
 
   /// Effective key for a provider: secure storage wins, dart-define fills in.
   Future<String?> read(AiProvider p) async {
@@ -58,7 +57,8 @@ final apiKeyStoreProvider = Provider<ApiKeyStore>((ref) => ApiKeyStore());
 /// Holds the currently-configured keys; rebuilt when settings save.
 final configuredKeysProvider =
     AsyncNotifierProvider<ConfiguredKeys, Map<AiProvider, String>>(
-        ConfiguredKeys.new);
+      ConfiguredKeys.new,
+    );
 
 /// Loads and refreshes the {provider: key} map used by router + settings UI.
 class ConfiguredKeys extends AsyncNotifier<Map<AiProvider, String>> {

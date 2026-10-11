@@ -19,10 +19,9 @@ class WhisperLocalTranscriber implements Transcriber {
 
   /// Lazily built — the Whisper() constructor fetches the model if absent.
   Whisper get _w => _whisper ??= Whisper(
-        model: WhisperModel.tiny,
-        downloadHost:
-            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main',
-      );
+    model: WhisperModel.tiny,
+    downloadHost: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main',
+  );
 
   @override
   EngineInfo get info =>
@@ -44,12 +43,12 @@ class WhisperLocalTranscriber implements Transcriber {
   @override
   Future<void> start() async {
     if (!await _recorder.ensurePermission()) {
-      _events.add(const TranscriptError(
-          AuthFailure('Microphone permission denied')));
+      _events.add(
+        const TranscriptError(AuthFailure('Microphone permission denied')),
+      );
       return;
     }
-    await _recorder.start(
-        onLevel: (l) => _events.add(LevelEvent(l)));
+    await _recorder.start(onLevel: (l) => _events.add(LevelEvent(l)));
   }
 
   /// Post-hoc transcription — record first, transcribe on stop. The orb is
@@ -58,8 +57,9 @@ class WhisperLocalTranscriber implements Transcriber {
   Future<void> stop() async {
     final p = await _recorder.stop();
     if (p == null) {
-      _events.add(const TranscriptError(
-          BadResponseFailure('No audio captured')));
+      _events.add(
+        const TranscriptError(BadResponseFailure('No audio captured')),
+      );
       return;
     }
     final sw = Stopwatch()..start();
@@ -79,14 +79,17 @@ class WhisperLocalTranscriber implements Transcriber {
           .replaceAll(RegExp(r'[\[(][^\])]*[\])]'), ' ')
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
-      _events.add(text.isEmpty
-          ? const TranscriptError(
-              BadResponseFailure('Nothing was heard'))
-          : FinalEvent(
-              '[${(sw.elapsedMilliseconds / 1000).toStringAsFixed(1)}s] $text'));
+      _events.add(
+        text.isEmpty
+            ? const TranscriptError(BadResponseFailure('Nothing was heard'))
+            : FinalEvent(
+                '[${(sw.elapsedMilliseconds / 1000).toStringAsFixed(1)}s] $text',
+              ),
+      );
     } catch (e) {
-      _events.add(TranscriptError(
-          BadResponseFailure('Whisper failed: ${e.runtimeType}')));
+      _events.add(
+        TranscriptError(BadResponseFailure('Whisper failed: ${e.runtimeType}')),
+      );
     } finally {
       final f = File(p);
       if (f.existsSync()) f.deleteSync();

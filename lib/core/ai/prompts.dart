@@ -48,10 +48,7 @@ String verifierUser({
 }) {
   final sourcesBlock = sourceTexts.isEmpty
       ? ''
-      : '\n<sources>\n${[
-          for (var i = 0; i < sourceTexts.length; i++)
-            '<source index="$i">${sourceTexts[i]}</source>',
-        ].join('\n')}\n</sources>';
+      : '\n<sources>\n${[for (var i = 0; i < sourceTexts.length; i++) '<source index="$i">${sourceTexts[i]}</source>'].join('\n')}\n</sources>';
   return '''
 Task: $taskTitle
 Proof expected: ${taskProofHint.isEmpty ? 'any reasonable evidence' : taskProofHint}

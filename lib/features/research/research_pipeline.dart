@@ -73,8 +73,7 @@ class ResearchPipeline {
     final allHits = <SearchHit>[];
     for (final q in queries) {
       yield PipelineEvent.query(q);
-      final (hits, provider) =
-          await searchRouter.run(q, override_: override);
+      final (hits, provider) = await searchRouter.run(q, override_: override);
       yield PipelineEvent.queryDone(q, provider);
       for (final h in hits.take(5)) {
         if (seen.add(h.url)) allHits.add(h);
@@ -90,12 +89,14 @@ class ResearchPipeline {
         try {
           final check = await verifier.verify(Uri.parse(h.url));
           final text = check.textExtract;
-          verified.add(h.copyWith(
-            status: check.ok ? HitStatus.verified : HitStatus.dead,
-            body: check.ok
-                ? text.substring(0, text.length.clamp(0, 1200))
-                : null,
-          ));
+          verified.add(
+            h.copyWith(
+              status: check.ok ? HitStatus.verified : HitStatus.dead,
+              body: check.ok
+                  ? text.substring(0, text.length.clamp(0, 1200))
+                  : null,
+            ),
+          );
         } catch (_) {
           verified.add(h.copyWith(status: HitStatus.unverified));
         }
@@ -148,7 +149,8 @@ class ResearchPipeline {
       final s = sources[i];
       b.writeln('[${i + 1}] ${s.title} — ${s.host}');
       final body = (s.body ?? s.snippet).trim();
-      if (body.isNotEmpty) b.writeln(body.substring(0, body.length.clamp(0, 600)));
+      if (body.isNotEmpty)
+        b.writeln(body.substring(0, body.length.clamp(0, 600)));
       b.writeln();
     }
     return b.toString();

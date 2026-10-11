@@ -66,8 +66,11 @@ class _DrawnCheckState extends State<DrawnCheck>
 }
 
 class _CheckPainter extends CustomPainter {
-  const _CheckPainter(
-      {required this.t, required this.color, required this.strokeWidth});
+  const _CheckPainter({
+    required this.t,
+    required this.color,
+    required this.strokeWidth,
+  });
   final double t;
   final Color color;
   final double strokeWidth;

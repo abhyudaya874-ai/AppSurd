@@ -8,8 +8,9 @@ import 'task_model.dart';
 
 /// The task list, persisted to Hive. Every mutation writes straight through —
 /// tasks must survive a restart mid-demo.
-final tasksProvider =
-    AsyncNotifierProvider<TasksNotifier, List<Task>>(TasksNotifier.new);
+final tasksProvider = AsyncNotifierProvider<TasksNotifier, List<Task>>(
+  TasksNotifier.new,
+);
 
 /// CRUD + persistence for tasks; also owns the Integrity Score derived state.
 class TasksNotifier extends AsyncNotifier<List<Task>> {
@@ -73,19 +74,25 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
   Future<void> updateTask(Task task) => _persist(task);
 
   /// Appends an evidence attempt and sets status (usually `verifying`).
-  Future<void> addAttempt(String taskId, EvidenceAttempt attempt,
-      {TaskStatus status = TaskStatus.verifying}) async {
+  Future<void> addAttempt(
+    String taskId,
+    EvidenceAttempt attempt, {
+    TaskStatus status = TaskStatus.verifying,
+  }) async {
     final task = _find(taskId);
     if (task == null) return;
-    await _persist(task.copyWith(
-      status: status,
-      attempts: [...task.attempts, attempt],
-    ));
+    await _persist(
+      task.copyWith(status: status, attempts: [...task.attempts, attempt]),
+    );
   }
 
   /// Attaches the parsed verdict to the latest attempt.
-  Future<void> attachVerdict(String taskId, Map<String, dynamic> verdictJson,
-      {required TaskStatus status, int integrityDelta = 0}) async {
+  Future<void> attachVerdict(
+    String taskId,
+    Map<String, dynamic> verdictJson, {
+    required TaskStatus status,
+    int integrityDelta = 0,
+  }) async {
     final task = _find(taskId);
     if (task == null || task.attempts.isEmpty) return;
     final last = task.attempts.last;
@@ -96,11 +103,16 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
       submittedAt: last.submittedAt,
       verdictJson: verdictJson,
     );
-    await _persist(task.copyWith(
-      status: status,
-      integrityDelta: task.integrityDelta + integrityDelta,
-      attempts: [...task.attempts.sublist(0, task.attempts.length - 1), updated],
-    ));
+    await _persist(
+      task.copyWith(
+        status: status,
+        integrityDelta: task.integrityDelta + integrityDelta,
+        attempts: [
+          ...task.attempts.sublist(0, task.attempts.length - 1),
+          updated,
+        ],
+      ),
+    );
   }
 
   Task? _find(String id) {

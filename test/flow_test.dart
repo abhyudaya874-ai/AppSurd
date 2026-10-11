@@ -16,19 +16,22 @@ void main() {
 
   setUpAll(() => Hive.init('/tmp/receipts_flow_test_hive'));
 
-  testWidgets('evidence sheet: 4 modes switch with sliding control',
-      (tester) async {
+  testWidgets('evidence sheet: 4 modes switch with sliding control', (
+    tester,
+  ) async {
     final task = Task(
       id: 't1',
       title: 'Probe',
       description: '',
       createdAt: DateTime.now(),
     );
-    await tester.pumpWidget(ProviderScope(
-      child: MaterialApp(
-        home: Scaffold(body: EvidenceSheet(task: task)),
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: EvidenceSheet(task: task)),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     for (final label in ['URL', 'Shot', 'Text', 'Commit']) {

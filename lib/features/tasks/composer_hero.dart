@@ -19,13 +19,12 @@ Widget composerTextShuttle(
 ) {
   TextField? fieldOf(BuildContext ctx) =>
       (ctx.widget as Hero).child is TextField
-          ? (ctx.widget as Hero).child as TextField
-          : null;
+      ? (ctx.widget as Hero).child as TextField
+      : null;
   final from = fieldOf(fromHeroContext);
   final to = fieldOf(toHeroContext);
-  final text = (direction == HeroFlightDirection.push ? to : from)
-          ?.controller
-          ?.text ??
+  final text =
+      (direction == HeroFlightDirection.push ? to : from)?.controller?.text ??
       '';
   final fromSize = from?.style?.fontSize ?? 15;
   final toSize = to?.style?.fontSize ?? 28;

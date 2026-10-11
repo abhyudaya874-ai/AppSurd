@@ -33,77 +33,87 @@ class JuryBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (final m in lineup)
-          Builder(builder: (context) {
-            final r =
-                results.where((r) => r.model.id == m.id).firstOrNull;
-            final isRunning = running.contains(m.id);
-            final tint = tints.forId(m.provider.id);
-            final (icon, fill) = switch (r) {
-              null when isRunning => (null, 0.0),
-              null => (null, 0.0),
-              JudgeResult(verdict: null) => (-1, 1.0),
-              JudgeResult(verdict: Verdict(kind: VerdictKind.pass)) =>
-                (1, 1.0),
-              JudgeResult(verdict: Verdict(kind: VerdictKind.partial)) =>
-                (0, 1.0),
-              _ => (-2, 1.0),
-            };
-            return Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-              child: Column(children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: fill),
-                  duration: AppMotion.slow,
-                  curve: AppMotion.standard,
-                  builder: (context, t, _) => Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox.square(
-                        dimension: 34,
-                        child: CircularProgressIndicator(
-                          value: t,
-                          strokeWidth: 3,
-                          color: tint,
-                          backgroundColor:
-                              tint.withValues(alpha: 0.15),
-                        ),
+          Builder(
+            builder: (context) {
+              final r = results.where((r) => r.model.id == m.id).firstOrNull;
+              final isRunning = running.contains(m.id);
+              final tint = tints.forId(m.provider.id);
+              final (icon, fill) = switch (r) {
+                null when isRunning => (null, 0.0),
+                null => (null, 0.0),
+                JudgeResult(verdict: null) => (-1, 1.0),
+                JudgeResult(verdict: Verdict(kind: VerdictKind.pass)) => (
+                  1,
+                  1.0,
+                ),
+                JudgeResult(verdict: Verdict(kind: VerdictKind.partial)) => (
+                  0,
+                  1.0,
+                ),
+                _ => (-2, 1.0),
+              };
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+                child: Column(
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: fill),
+                      duration: AppMotion.slow,
+                      curve: AppMotion.standard,
+                      builder: (context, t, _) => Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox.square(
+                            dimension: 34,
+                            child: CircularProgressIndicator(
+                              value: t,
+                              strokeWidth: 3,
+                              color: tint,
+                              backgroundColor: tint.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          if (icon == 1)
+                            Icon(Icons.check, size: 16, color: tint)
+                          else if (icon == 0)
+                            Text('~', style: TextStyle(color: tint))
+                          else if (icon == -1)
+                            Icon(
+                              Icons.close,
+                              size: 14,
+                              color: theme.colorScheme.error,
+                            )
+                          else if (icon == -2)
+                            Icon(
+                              Icons.close,
+                              size: 14,
+                              color: theme.colorScheme.error,
+                            )
+                          else
+                            SizedBox.square(
+                              dimension: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: tint.withValues(alpha: 0.8),
+                              ),
+                            ),
+                        ],
                       ),
-                      if (icon == 1)
-                        Icon(Icons.check, size: 16, color: tint)
-                      else if (icon == 0)
-                        Text('~', style: TextStyle(color: tint))
-                      else if (icon == -1)
-                        Icon(Icons.close,
-                            size: 14, color: theme.colorScheme.error)
-                      else if (icon == -2)
-                        Icon(Icons.close,
-                            size: 14, color: theme.colorScheme.error)
-                      else
-                        SizedBox.square(
-                          dimension: 14,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: tint.withValues(alpha: 0.8)),
-                        ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      r == null
+                          ? (isRunning ? '…' : m.provider.label.substring(0, 1))
+                          : (r.verdict == null ? 'DNF' : '${r.latencyMs}ms'),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  r == null
-                      ? (isRunning ? '…' : m.provider.label.substring(0, 1))
-                      : (r.verdict == null
-                          ? 'DNF'
-                          : '${r.latencyMs}ms'),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 9,
-                  ),
-                ),
-              ]),
-            );
-          }),
+              );
+            },
+          ),
       ],
     );
   }
@@ -137,10 +147,10 @@ class JudgeCards extends StatelessWidget {
         JudgeCard(
           key: ValueKey(m.id),
           model: m,
-          result:
-              results.where((r) => r.model.id == m.id).firstOrNull,
+          result: results.where((r) => r.model.id == m.id).firstOrNull,
           running: running.contains(m.id),
-          dissent: outcome != null &&
+          dissent:
+              outcome != null &&
               (outcome!.dissenters.any((d) => d.model.id == m.id)),
         ),
     ];
@@ -152,15 +162,24 @@ class JudgeCards extends StatelessWidget {
         children: cards,
       );
     }
-    return PageView(controller: page, onPageChanged: onPage, children: [
-      for (var i = 0; i < cards.length; i++)
-        FadeSlideIn(index: i, stagger: const Duration(milliseconds: 90),
+    return PageView(
+      controller: page,
+      onPageChanged: onPage,
+      children: [
+        for (var i = 0; i < cards.length; i++)
+          FadeSlideIn(
+            index: i,
+            stagger: const Duration(milliseconds: 90),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
               child: cards[i],
-            )),
-    ]);
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -181,8 +200,7 @@ class JudgeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tints =
-        theme.extension<ProviderTints>() ?? const ProviderTints();
+    final tints = theme.extension<ProviderTints>() ?? const ProviderTints();
     final tint = tints.forId(model.provider.id);
     final v = result?.verdict;
     final (vLabel, vColor) = v == null
@@ -202,65 +220,84 @@ class JudgeCard extends StatelessWidget {
             : Border.all(color: tint.withValues(alpha: 0.5)),
       ),
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          CircleAvatar(
-            radius: 10,
-            backgroundColor: tint.withValues(alpha: 0.2),
-            child: Text(model.provider.label.substring(0, 1),
-                style: TextStyle(
-                    fontSize: 10, color: tint, fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-              child: Text(model.displayName,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 10,
+                backgroundColor: tint.withValues(alpha: 0.2),
+                child: Text(
+                  model.provider.label.substring(0, 1),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: tint,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  model.displayName,
                   style: theme.textTheme.titleSmall,
-                  overflow: TextOverflow.ellipsis)),
-          if (dissent)
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.xxs),
-              child: Text('dissent',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.tertiary)),
-            ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs, vertical: 2),
-            decoration: BoxDecoration(
-              color: vColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: vColor),
-            ),
-            child: Text(vLabel,
-                style:
-                    theme.textTheme.labelSmall?.copyWith(color: vColor)),
-          ),
-        ]),
-        const SizedBox(height: AppSpacing.xs),
-        Expanded(
-          child: running && result == null
-              ? const JudgeThinking()
-              : Text(
-                  result?.error != null
-                      ? 'DNF — ${result!.error}'
-                      : (v?.summary ?? ''),
-                  style: theme.textTheme.bodySmall,
-                  maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
-        ),
-        if (result != null && v != null)
-          Text(
-            '${(v.confidence * 100).round()}% · ${result!.latencyMs}ms',
-            style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant),
+              ),
+              if (dissent)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xxs),
+                  child: Text(
+                    'dissent',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: vColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: vColor),
+                ),
+                child: Text(
+                  vLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(color: vColor),
+                ),
+              ),
+            ],
           ),
-      ]),
+          const SizedBox(height: AppSpacing.xs),
+          Expanded(
+            child: running && result == null
+                ? const JudgeThinking()
+                : Text(
+                    result?.error != null
+                        ? 'DNF — ${result!.error}'
+                        : (v?.summary ?? ''),
+                    style: theme.textTheme.bodySmall,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+          ),
+          if (result != null && v != null)
+            Text(
+              '${(v.confidence * 100).round()}% · ${result!.latencyMs}ms',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
     );
     if (!dissent) return card;
     return CustomPaint(
-      foregroundPainter:
-          DashedBorderPainter(color: theme.colorScheme.tertiary),
+      foregroundPainter: DashedBorderPainter(color: theme.colorScheme.tertiary),
       child: card,
     );
   }
@@ -269,18 +306,21 @@ class JudgeCard extends StatelessWidget {
 class JudgeThinking extends StatelessWidget {
   const JudgeThinking();
   @override
-  Widget build(BuildContext context) => Text('deliberating…',
-      style: Theme.of(context)
-          .textTheme
-          .bodySmall
-          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant));
+  Widget build(BuildContext context) => Text(
+    'deliberating…',
+    style: Theme.of(context).textTheme.bodySmall
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+  );
 }
 
 /// Consensus meter + final verdict + strictest-judge roast/challenge.
 class ConsensusSection extends StatelessWidget {
   const ConsensusSection({
     super.key,
-    required this.outcome, required this.tints, required this.taskId});
+    required this.outcome,
+    required this.tints,
+    required this.taskId,
+  });
 
   final ArenaOutcome outcome;
   final ProviderTints tints;
@@ -296,55 +336,69 @@ class ConsensusSection extends StatelessWidget {
       VerdictKind.fail => ('Rejected', theme.colorScheme.error),
     };
     final unanimous = outcome.agreement >= 1;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        ConsensusMeter(ratio: outcome.agreement, color: color),
-        const SizedBox(width: AppSpacing.md),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(unanimous ? 'Unanimous' : 'Split decision',
-              style: theme.textTheme.titleMedium),
-          Text(
-            '${(outcome.agreement * 100).round()}% agree · '
-            '${outcome.dissenters.length} dissent',
-            style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ]),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: color),
-          ),
-          child: Text(label,
-              style: theme.textTheme.labelLarge?.copyWith(color: color)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            ConsensusMeter(ratio: outcome.agreement, color: color),
+            const SizedBox(width: AppSpacing.md),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  unanimous ? 'Unanimous' : 'Split decision',
+                  style: theme.textTheme.titleMedium,
+                ),
+                Text(
+                  '${(outcome.agreement * 100).round()}% agree · '
+                  '${outcome.dissenters.length} dissent',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
+              ),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: color),
+              ),
+              child: Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(color: color),
+              ),
+            ),
+          ],
         ),
-      ]),
-      const SizedBox(height: AppSpacing.sm),
-      Text(v.summary, style: theme.textTheme.bodyMedium),
-      if (v.roast != null && outcome.consensus != VerdictKind.pass)
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.md),
-          child: RoastCard(
-            roast:
-                'Roast by ${outcome.strictest?.model.displayName ?? 'the jury'}: ${v.roast}',
-            fallback: false,
-            challenge: v.challenge,
-            taskId: taskId,
+        const SizedBox(height: AppSpacing.sm),
+        Text(v.summary, style: theme.textTheme.bodyMedium),
+        if (v.roast != null && outcome.consensus != VerdictKind.pass)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: RoastCard(
+              roast:
+                  'Roast by ${outcome.strictest?.model.displayName ?? 'the jury'}: ${v.roast}',
+              fallback: false,
+              challenge: v.challenge,
+              taskId: taskId,
+            ),
           ),
-        ),
-      const SizedBox(height: AppSpacing.lg),
-    ]);
+        const SizedBox(height: AppSpacing.lg),
+      ],
+    );
   }
 }
 
 /// Animated arc filling to the agreement ratio.
 class ConsensusMeter extends StatefulWidget {
-  const ConsensusMeter({
-    super.key,required this.ratio, required this.color});
+  const ConsensusMeter({super.key, required this.ratio, required this.color});
   final double ratio;
   final Color color;
 
@@ -380,8 +434,7 @@ class ConsensusMeterState extends State<ConsensusMeter>
 
   @override
   Widget build(BuildContext context) {
-    final track =
-        Theme.of(context).colorScheme.outline.withValues(alpha: 0.3);
+    final track = Theme.of(context).colorScheme.outline.withValues(alpha: 0.3);
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) => CustomPaint(
@@ -406,8 +459,11 @@ class ConsensusMeterState extends State<ConsensusMeter>
 }
 
 class MeterPainter extends CustomPainter {
-  const MeterPainter(
-      {required this.progress, required this.color, required this.track});
+  const MeterPainter({
+    required this.progress,
+    required this.color,
+    required this.track,
+  });
   final double progress;
   final Color color;
   final Color track;
@@ -416,18 +472,25 @@ class MeterPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
     final r = size.width / 2 - 4;
-    canvas.drawCircle(c, r,
-        Paint()
-          ..color = track
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -pi / 2,
-        2 * pi * progress, false,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5
-          ..strokeCap = StrokeCap.round);
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = track
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: c, radius: r),
+      -pi / 2,
+      2 * pi * progress,
+      false,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round,
+    );
   }
 
   @override
@@ -435,29 +498,31 @@ class MeterPainter extends CustomPainter {
 }
 
 class PageDots extends StatelessWidget {
-  const PageDots({
-    super.key,required this.count, required this.index});
+  const PageDots({super.key, required this.count, required this.index});
   final int count;
   final int index;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      for (var i = 0; i < count; i++)
-        AnimatedContainer(
-          duration: AppMotion.fast,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: i == index ? 16 : 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: i == index
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(3),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var i = 0; i < count; i++)
+          AnimatedContainer(
+            duration: AppMotion.fast,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: i == index ? 16 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: i == index
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
-        ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -474,7 +539,9 @@ class DashedBorderPainter extends CustomPainter {
       ..strokeWidth = 1.5;
     const dash = 6.0, gap = 4.0;
     final rr = RRect.fromRectAndRadius(
-        Offset.zero & size, const Radius.circular(16));
+      Offset.zero & size,
+      const Radius.circular(16),
+    );
     final path = Path()..addRRect(rr);
     for (final metric in path.computeMetrics()) {
       var d = 0.0;

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:html/parser.dart' as html;
 
 /// A GitHub commit summarized for the verifier: message, files touched, and a
 /// trimmed patch (≤6KB total so prompts stay small).
@@ -24,30 +25,36 @@ class CommitInfo {
 /// (rate-limited, fine for a demo) and read-only.
 class GitHubClient {
   GitHubClient([Dio? dio])
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               connectTimeout: const Duration(seconds: 8),
               receiveTimeout: const Duration(seconds: 10),
               headers: {
                 'Accept': 'application/vnd.github+json',
                 'X-GitHub-Api-Version': '2022-11-28',
               },
-            ));
+            ),
+          );
 
   final Dio _dio;
   static const _patchCap = 6 * 1024;
 
   /// Parses `github.com/{owner}/{repo}/commit/{sha}` or `/pull/{n}` URLs.
   Future<CommitInfo> fetchCommit(String rawUrl) async {
-    final commitRe =
-        RegExp(r'github\.com/([^/]+)/([^/]+)/commit/([0-9a-fA-F]{6,40})');
-    final pullRe =
-        RegExp(r'github\.com/([^/]+)/([^/]+)/pull/(\d+)');
+    final commitRe = RegExp(
+      r'github\.com/([^/]+)/([^/]+)/commit/([0-9a-fA-F]{6,40})',
+    );
+    final pullRe = RegExp(r'github\.com/([^/]+)/([^/]+)/pull/(\d+)');
     final cm = commitRe.firstMatch(rawUrl);
     final pm = pullRe.firstMatch(rawUrl);
     if (cm == null && pm == null) {
       return CommitInfo(
-          url: rawUrl, ok: false, error: 'Not a GitHub commit/PR URL');
+        url: rawUrl,
+        ok: false,
+        error: 'Not a GitHub commit/PR URL',
+      );
     }
     try {
       if (cm != null) {
@@ -64,9 +71,14 @@ class GitHubClient {
   }
 
   Future<CommitInfo> _fetchCommit(
-      String owner, String repo, String sha, String url) async {
+    String owner,
+    String repo,
+    String sha,
+    String url,
+  ) async {
     final res = await _dio.get<Map<String, dynamic>>(
-        'https://api.github.com/repos/$owner/$repo/commits/$sha');
+      'https://api.github.com/repos/$owner/$repo/commits/$sha',
+    );
     final data = res.data;
     if (data == null) return CommitInfo(url: url, ok: false);
     final files = <String>[];
@@ -92,12 +104,55 @@ class GitHubClient {
     );
   }
 
+  /// Scrapes `github.com/users/<name>/contributions` — the public calendar SVG
+  /// — into a day→level map plus day→count map. Used by the Profile heatmap
+  /// so we can show a real GitHub-style graph without an API token.
+  /// Returns null on network/parse failure (caller shows the offline state).
+  Future<Map<DateTime, ({int count, int level})>?> fetchContributionCalendar(
+    String username,
+  ) async {
+    try {
+      final res = await _dio.get<String>(
+        'https://github.com/users/$username/contributions',
+        options: Options(headers: const {'Accept': 'text/html'}),
+      );
+      final body = res.data;
+      if (body == null) return null;
+      final doc = html.parse(body);
+      final out = <DateTime, ({int count, int level})>{};
+      for (final td in doc.querySelectorAll('td.ContributionCalendar-day')) {
+        final dateStr = td.attributes['data-date'];
+        final levelStr = td.attributes['data-level'];
+        if (dateStr == null) continue;
+        final day = DateTime.tryParse(dateStr);
+        if (day == null) continue;
+        final level = int.tryParse(levelStr ?? '0') ?? 0;
+        // The tooltip text carries "N contributions" when N>0.
+        var count = 0;
+        final tool = td.querySelector('tool-tip');
+        final text = tool?.text ?? '';
+        final m = RegExp(r'(\d+) contribution').firstMatch(text);
+        if (m != null) count = int.parse(m.group(1)!);
+        out[day] = (count: count, level: level);
+      }
+      return out.isEmpty ? null : out;
+    } on DioException {
+      return null;
+    }
+  }
+
   Future<CommitInfo> _fetchPull(
-      String owner, String repo, String num, String url) async {
+    String owner,
+    String repo,
+    String num,
+    String url,
+  ) async {
     final pr = await _dio.get<Map<String, dynamic>>(
-        'https://api.github.com/repos/$owner/$repo/pulls/$num');
+      'https://api.github.com/repos/$owner/$repo/pulls/$num',
+    );
     final files = await _dio.get<List<dynamic>>(
-        'https://api.github.com/repos/$owner/$repo/pulls/$num/files?per_page=30');
+      'https://api.github.com/repos/$owner/$repo/pulls/$num/files?per_page=30',
+    );
     final names = <String>[];
     final patch = StringBuffer();
     for (final f in files.data ?? const []) {

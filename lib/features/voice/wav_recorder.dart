@@ -16,18 +16,23 @@ class WavRecorder {
   /// Start recording; [onLevel] gets ~60ms amplitude 0..1 for the orb.
   Future<void> start({required void Function(double) onLevel}) async {
     final dir = await getTemporaryDirectory();
-    _path = '${dir.path}/receipts_voice_${DateTime.now().millisecondsSinceEpoch}.wav';
+    _path =
+        '${dir.path}/receipts_voice_${DateTime.now().millisecondsSinceEpoch}.wav';
     await _recorder.start(
-      const RecordConfig(encoder: AudioEncoder.wav, sampleRate: 16000, numChannels: 1),
+      const RecordConfig(
+        encoder: AudioEncoder.wav,
+        sampleRate: 16000,
+        numChannels: 1,
+      ),
       path: _path!,
     );
     _amp = _recorder
         .onAmplitudeChanged(const Duration(milliseconds: 60))
         .listen((a) {
-      // dBFS −160..0 → perceptual 0..1.
-      final l = ((a.current + 45) / 45).clamp(0.0, 1.0);
-      onLevel(l);
-    });
+          // dBFS −160..0 → perceptual 0..1.
+          final l = ((a.current + 45) / 45).clamp(0.0, 1.0);
+          onLevel(l);
+        });
   }
 
   /// Stop and return the WAV path (caller deletes after transcribing).

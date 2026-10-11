@@ -79,18 +79,12 @@ class _RoastCardState extends State<RoastCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final curved = CurvedAnimation(
-      parent: _drop,
-      curve: Curves.easeOutBack,
-    );
+    final curved = CurvedAnimation(parent: _drop, curve: Curves.easeOutBack);
     return AnimatedBuilder(
       animation: _drop,
       builder: (context, child) => Transform.translate(
         offset: Offset(0, -60 * (1 - curved.value)),
-        child: Opacity(
-          opacity: _drop.value.clamp(0.0, 1.0),
-          child: child,
-        ),
+        child: Opacity(opacity: _drop.value.clamp(0.0, 1.0), child: child),
       ),
       child: Transform.rotate(
         angle: -0.025, // paper-note tilt
@@ -100,7 +94,8 @@ class _RoastCardState extends State<RoastCard>
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-                color: theme.colorScheme.error.withValues(alpha: 0.4)),
+              color: theme.colorScheme.error.withValues(alpha: 0.4),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.25),
@@ -109,85 +104,103 @@ class _RoastCardState extends State<RoastCard>
               ),
             ],
           ),
-          child: Stack(children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Text('The auditor has notes',
-                      style: theme.textTheme.titleMedium),
-                  // Read the roast aloud — the orb's speaking state plays
-                  // under it on the verdict screen.
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Read aloud',
-                    icon: Icon(
-                      _speaking
-                          ? Icons.volume_up_rounded
-                          : Icons.volume_up_outlined,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    onPressed: _speak,
-                  ),
-                  const Spacer(),
-                  // NOPE stamp — pops in late with overshoot.
-                  ScaleTransition(
-                    scale: CurvedAnimation(
-                      parent: _drop,
-                      curve:
-                          const Interval(0.55, 1, curve: Curves.easeOutBack),
-                    ),
-                    child: Transform.rotate(
-                      angle: -0.12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs, vertical: 2),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                              color: theme.colorScheme.error, width: 2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text('NOPE',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.error,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.w800,
-                            )),
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'The auditor has notes',
+                        style: theme.textTheme.titleMedium,
                       ),
-                    ),
+                      // Read the roast aloud — the orb's speaking state plays
+                      // under it on the verdict screen.
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Read aloud',
+                        icon: Icon(
+                          _speaking
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_up_outlined,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: _speak,
+                      ),
+                      const Spacer(),
+                      // NOPE stamp — pops in late with overshoot.
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _drop,
+                          curve: const Interval(
+                            0.55,
+                            1,
+                            curve: Curves.easeOutBack,
+                          ),
+                        ),
+                        child: Transform.rotate(
+                          angle: -0.12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: theme.colorScheme.error,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'NOPE',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.error,
+                                letterSpacing: 2,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ]),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  widget.roast,
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
-                ),
-                if (widget.fallback)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text('offline roast · model unavailable',
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    widget.roast,
+                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
+                  ),
+                  if (widget.fallback)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'offline roast · model unavailable',
                         style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant)),
-                  ),
-                if (widget.challenge != null) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  FilledButton.tonalIcon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => ChallengeScreen(
-                          challenge: widget.challenge!,
-                          taskId: widget.taskId,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
-                    icon: const Icon(Icons.timer_outlined, size: 18),
-                    label: Text('Challenge: ${widget.challenge!.title}'),
-                  ),
+                  if (widget.challenge != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    FilledButton.tonalIcon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ChallengeScreen(
+                            challenge: widget.challenge!,
+                            taskId: widget.taskId,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.timer_outlined, size: 18),
+                      label: Text('Challenge: ${widget.challenge!.title}'),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          ]),
+              ),
+            ],
+          ),
         ),
       ),
     );

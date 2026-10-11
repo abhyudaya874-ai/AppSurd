@@ -45,8 +45,7 @@ class TaskDetailScreen extends ConsumerWidget {
               tag: 'task-title-${task.id}',
               child: Material(
                 type: MaterialType.transparency,
-                child: Text(task.title,
-                    style: theme.textTheme.headlineMedium),
+                child: Text(task.title, style: theme.textTheme.headlineMedium),
               ),
             ),
             if (task.description.isNotEmpty)
@@ -55,15 +54,19 @@ class TaskDetailScreen extends ConsumerWidget {
                 child: Text(
                   'Proof expected: ${task.description}',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant),
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             if (task.isDemo)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.xs),
-                child: Text('Demo data',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: theme.colorScheme.tertiary)),
+                child: Text(
+                  'Demo data',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
               ),
             const SizedBox(height: AppSpacing.lg),
             if (done)
@@ -80,12 +83,18 @@ class TaskDetailScreen extends ConsumerWidget {
             Text('Attempts', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.xs),
             if (task.attempts.isEmpty)
-              Text('No evidence submitted yet.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant))
+              Text(
+                'No evidence submitted yet.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
             else
               for (var i = 0; i < task.attempts.length; i++)
-                FadeSlideIn(index: i, child: _AttemptTile(attempt: task.attempts[i])),
+                FadeSlideIn(
+                  index: i,
+                  child: _AttemptTile(attempt: task.attempts[i]),
+                ),
           ],
         ),
       ),
@@ -126,8 +135,9 @@ class _AttemptTile extends StatelessWidget {
         ),
         subtitle: Text(
           attempt.type.name,
-          style: theme.textTheme.labelSmall
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         trailing: AnimatedDefaultTextStyle(
           duration: AppMotion.fast,
@@ -157,40 +167,48 @@ class _LockedBanner extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.lock_outline, color: theme.colorScheme.tertiary),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                'Accountability challenge pending — finish it to submit new evidence.',
-                style: theme.textTheme.bodyMedium,
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lock_outline, color: theme.colorScheme.tertiary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Accountability challenge pending — finish it to submit new evidence.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: AppSpacing.sm),
-          FilledButton.tonalIcon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => ChallengeScreen(
-                  challenge: challenge ??
-                      const ChallengeDef(
-                        title: 'Say it like you mean it',
-                        instructions:
-                            'Retype: I will submit real proof next time.',
-                        seconds: 60,
-                        kind: 'retype',
-                      ),
-                  taskId: task.id,
+            const SizedBox(height: AppSpacing.sm),
+            FilledButton.tonalIcon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChallengeScreen(
+                    challenge:
+                        challenge ??
+                        const ChallengeDef(
+                          title: 'Say it like you mean it',
+                          instructions:
+                              'Retype: I will submit real proof next time.',
+                          seconds: 60,
+                          kind: 'retype',
+                        ),
+                    taskId: task.id,
+                  ),
                 ),
               ),
+              icon: const Icon(Icons.timer_outlined, size: 18),
+              label: Text(
+                challenge == null
+                    ? 'Resume challenge'
+                    : 'Resume: ${challenge.title}',
+              ),
             ),
-            icon: const Icon(Icons.timer_outlined, size: 18),
-            label: Text(challenge == null
-                ? 'Resume challenge'
-                : 'Resume: ${challenge.title}'),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -204,22 +222,33 @@ class _DoneBanner extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(children: [
-          Icon(Icons.verified, color: theme.colorScheme.primary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text('Verified complete. Receipt earned.',
-                style: theme.textTheme.bodyMedium),
-          ),
-        ]),
+        child: Row(
+          children: [
+            Icon(Icons.verified, color: theme.colorScheme.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Verified complete. Receipt earned.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 /// Kept for phase-4 navigation convenience.
-void openVerification(BuildContext context, Task task, EvidenceAttempt attempt) {
-  Navigator.of(context).push(MaterialPageRoute<void>(
-    builder: (_) => VerificationScreen(taskId: task.id, attemptId: attempt.id),
-  ));
+void openVerification(
+  BuildContext context,
+  Task task,
+  EvidenceAttempt attempt,
+) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          VerificationScreen(taskId: task.id, attemptId: attempt.id),
+    ),
+  );
 }

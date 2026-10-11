@@ -14,7 +14,10 @@ abstract final class AppTransitions {
       reverseTransitionDuration: AppMotion.base,
       pageBuilder: (context, animation, secondary) => page,
       transitionsBuilder: (context, animation, secondary, child) {
-        final curved = CurvedAnimation(parent: animation, curve: AppMotion.standard);
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: AppMotion.standard,
+        );
         return FadeTransition(
           opacity: curved,
           child: SlideTransition(

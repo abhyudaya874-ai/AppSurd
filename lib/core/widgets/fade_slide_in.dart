@@ -59,7 +59,10 @@ class _FadeSlideInState extends State<FadeSlideIn>
 
   @override
   Widget build(BuildContext context) {
-    final fade = CurvedAnimation(parent: _controller, curve: AppMotion.standard);
+    final fade = CurvedAnimation(
+      parent: _controller,
+      curve: AppMotion.standard,
+    );
     final slide = Tween<Offset>(
       begin: Offset(widget.offset.dx / 100, widget.offset.dy / 100),
       end: Offset.zero,

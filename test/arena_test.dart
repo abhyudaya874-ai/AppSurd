@@ -8,11 +8,16 @@ import 'package:receipts/features/arena/arena_service.dart';
 import 'package:receipts/features/verification/verdict_model.dart';
 
 JudgeResult _j(ModelSpec m, VerdictKind k, double conf) => JudgeResult(
-      model: m,
-      latencyMs: 100,
-      verdict: Verdict(
-          kind: k, confidence: conf, summary: 's', checks: const [], claims: const []),
-    );
+  model: m,
+  latencyMs: 100,
+  verdict: Verdict(
+    kind: k,
+    confidence: conf,
+    summary: 's',
+    checks: const [],
+    claims: const [],
+  ),
+);
 
 void main() {
   setUpAll(() => Hive.init('/tmp/arena_test_hive'));

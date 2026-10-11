@@ -46,8 +46,9 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
   @override
   void initState() {
     super.initState();
-    _confetti =
-        ConfettiController(duration: const Duration(milliseconds: 1200));
+    _confetti = ConfettiController(
+      duration: const Duration(milliseconds: 1200),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _run());
   }
 
@@ -61,12 +62,15 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
   Future<void> _run() async {
     final task = ref.read(taskByIdProvider(widget.taskId));
     if (task == null) return;
-    final attempt =
-        task.attempts.where((a) => a.id == widget.attemptId).firstOrNull;
+    final attempt = task.attempts
+        .where((a) => a.id == widget.attemptId)
+        .firstOrNull;
     if (attempt == null) return;
 
-    await for (final e in ref.read(arenaServiceProvider).run(
-        task, attempt, widget.lineup, widget.strictness)) {
+    await for (final e
+        in ref
+            .read(arenaServiceProvider)
+            .run(task, attempt, widget.lineup, widget.strictness)) {
       if (!mounted) return;
       switch (e) {
         case JudgeStarted():
@@ -92,9 +96,14 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
       VerdictKind.fail => -5,
       VerdictKind.partial => 0,
     };
-    await ref.read(tasksProvider.notifier).attachVerdict(
-        widget.taskId, o.consensusVerdict.toJson(),
-        status: status, integrityDelta: delta);
+    await ref
+        .read(tasksProvider.notifier)
+        .attachVerdict(
+          widget.taskId,
+          o.consensusVerdict.toJson(),
+          status: status,
+          integrityDelta: delta,
+        );
     if (o.consensus == VerdictKind.pass) {
       _confetti.play();
     } else {
@@ -105,53 +114,59 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tints =
-        theme.extension<ProviderTints>() ?? const ProviderTints();
+    final tints = theme.extension<ProviderTints>() ?? const ProviderTints();
     final o = _outcome;
     return Scaffold(
       appBar: AppBar(title: Text('Arena · ${widget.lineup.length} judges')),
-      body: Stack(children: [
-        ConstrainedContent(
-          child: Column(children: [
-            const SizedBox(height: AppSpacing.sm),
-            JuryBar(
-                lineup: widget.lineup,
-                results: _results,
-                running: _running,
-                tints: tints),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: JudgeCards(
-                lineup: widget.lineup,
-                results: _results,
-                running: _running,
-                outcome: o,
-                page: _page,
-                onPage: (i) => setState(() => _pageIndex = i),
-              ),
+      body: Stack(
+        children: [
+          ConstrainedContent(
+            child: Column(
+              children: [
+                const SizedBox(height: AppSpacing.sm),
+                JuryBar(
+                  lineup: widget.lineup,
+                  results: _results,
+                  running: _running,
+                  tints: tints,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Expanded(
+                  child: JudgeCards(
+                    lineup: widget.lineup,
+                    results: _results,
+                    running: _running,
+                    outcome: o,
+                    page: _page,
+                    onPage: (i) => setState(() => _pageIndex = i),
+                  ),
+                ),
+                if (widget.lineup.length > 1)
+                  PageDots(count: widget.lineup.length, index: _pageIndex),
+                const SizedBox(height: AppSpacing.sm),
+                if (o != null)
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: ConsensusSection(
+                      outcome: o,
+                      tints: tints,
+                      taskId: widget.taskId,
+                    ),
+                  ),
+              ],
             ),
-            if (widget.lineup.length > 1)
-              PageDots(
-                  count: widget.lineup.length, index: _pageIndex),
-            const SizedBox(height: AppSpacing.sm),
-            if (o != null)
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: ConsensusSection(
-                    outcome: o, tints: tints, taskId: widget.taskId),
-              ),
-          ]),
-        ),
-        Align(
-          alignment: Alignment.topCenter,
-          child: ConfettiWidget(
-            confettiController: _confetti,
-            blastDirectionality: BlastDirectionality.explosive,
-            numberOfParticles: 24,
-            gravity: 0.35,
           ),
-        ),
-      ]),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confetti,
+              blastDirectionality: BlastDirectionality.explosive,
+              numberOfParticles: 24,
+              gravity: 0.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

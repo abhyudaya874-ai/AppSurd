@@ -26,8 +26,11 @@ import 'verdict_model.dart';
 /// sources the app fetched itself, the verdict with citations, and the roast /
 /// challenge card on weak evidence.
 class VerificationScreen extends ConsumerStatefulWidget {
-  const VerificationScreen(
-      {super.key, required this.taskId, required this.attemptId});
+  const VerificationScreen({
+    super.key,
+    required this.taskId,
+    required this.attemptId,
+  });
 
   final String taskId;
   final String attemptId;
@@ -54,8 +57,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   @override
   void initState() {
     super.initState();
-    _confetti =
-        ConfettiController(duration: const Duration(milliseconds: 1200));
+    _confetti = ConfettiController(
+      duration: const Duration(milliseconds: 1200),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _run());
   }
 
@@ -69,8 +73,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   Future<void> _run() async {
     final task = ref.read(taskByIdProvider(widget.taskId));
     if (task == null) return;
-    final attempt =
-        task.attempts.where((a) => a.id == widget.attemptId).firstOrNull;
+    final attempt = task.attempts
+        .where((a) => a.id == widget.attemptId)
+        .firstOrNull;
     if (attempt == null) return;
 
     await for (final event
@@ -114,9 +119,14 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       VerdictKind.fail => -5,
       VerdictKind.partial => 0,
     };
-    await ref.read(tasksProvider.notifier).attachVerdict(
-        widget.taskId, e.verdict.toJson(),
-        status: status, integrityDelta: delta);
+    await ref
+        .read(tasksProvider.notifier)
+        .attachVerdict(
+          widget.taskId,
+          e.verdict.toJson(),
+          status: status,
+          integrityDelta: delta,
+        );
     if (e.verdict.kind == VerdictKind.pass) {
       _confetti.play();
     } else {
@@ -129,8 +139,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final key = _sourceKeys[index];
     final ctx = key?.currentContext;
     if (ctx != null) {
-      Scrollable.ensureVisible(ctx,
-          duration: AppMotion.base, curve: AppMotion.standard);
+      Scrollable.ensureVisible(
+        ctx,
+        duration: AppMotion.base,
+        curve: AppMotion.standard,
+      );
       HapticFeedback.selectionClick();
     }
   }
@@ -145,59 +158,61 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           _VerdictShake(
             verdict: _verdict?.kind,
             child: ConstrainedContent(
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                _StepList(states: _stepStates),
-                const SizedBox(height: AppSpacing.md),
-                if (_sources.isNotEmpty) ...[
-                  Text('Sources', style: theme.textTheme.titleSmall),
-                  const SizedBox(height: AppSpacing.xs),
-                  SizedBox(
-                    height: 96,
-                    child: ListView(
-                      controller: _stripScroll,
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        for (var i = 0; i < _sources.length; i++)
-                          FadeSlideIn(
-                            index: i,
-                            stagger: const Duration(milliseconds: 90),
-                            child: _SourceCard(
-                              key: _sourceKeys.putIfAbsent(
-                                  i, () => GlobalKey()),
-                              source: _sources[i],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                children: [
+                  _StepList(states: _stepStates),
                   const SizedBox(height: AppSpacing.md),
+                  if (_sources.isNotEmpty) ...[
+                    Text('Sources', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: AppSpacing.xs),
+                    SizedBox(
+                      height: 96,
+                      child: ListView(
+                        controller: _stripScroll,
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          for (var i = 0; i < _sources.length; i++)
+                            FadeSlideIn(
+                              index: i,
+                              stagger: const Duration(milliseconds: 90),
+                              child: _SourceCard(
+                                key: _sourceKeys.putIfAbsent(
+                                  i,
+                                  () => GlobalKey(),
+                                ),
+                                source: _sources[i],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                  if (_failure != null)
+                    _FailureCard(
+                      failure: _failure!,
+                      onRetry: () => setState(() {
+                        _failure = null;
+                        _stepStates.clear();
+                        _sources = const [];
+                        _verdict = null;
+                        _run();
+                      }),
+                    ),
+                  if (_verdict != null)
+                    _VerdictSection(
+                      verdict: _verdict!,
+                      usedBy: _usedByLabel,
+                      rerouted: _reroutedLabel,
+                      visionSwap: _visionSwapLabel,
+                      roastIsFallback: _roastFallback,
+                      onCitationTap: _pulseSource,
+                      taskId: widget.taskId,
+                    ),
                 ],
-                if (_failure != null)
-                  _FailureCard(
-                    failure: _failure!,
-                    onRetry: () => setState(() {
-                      _failure = null;
-                      _stepStates.clear();
-                      _sources = const [];
-                      _verdict = null;
-                      _run();
-                    }),
-                  ),
-                if (_verdict != null)
-                  _VerdictSection(
-                    verdict: _verdict!,
-                    usedBy: _usedByLabel,
-                    rerouted: _reroutedLabel,
-                    visionSwap: _visionSwapLabel,
-                    roastIsFallback: _roastFallback,
-                    onCitationTap: _pulseSource,
-                    taskId: widget.taskId,
-                  ),
-              ],
+              ),
             ),
-          ),
           ),
           Align(
             alignment: Alignment.topCenter,
@@ -210,7 +225,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 theme.colorScheme.primary,
                 theme.colorScheme.tertiary,
                 theme.colorScheme.error,
-                (theme.extension<ProviderTints>() ?? const ProviderTints()).groq,
+                (theme.extension<ProviderTints>() ?? const ProviderTints())
+                    .groq,
               ],
             ),
           ),
@@ -240,38 +256,41 @@ class _StepList extends StatelessWidget {
         for (final step in VerifyStep.values)
           AnimatedContainer(
             duration: AppMotion.fast,
-            padding:
-                const EdgeInsets.symmetric(vertical: AppSpacing.xxs + 2),
-            child: Row(children: [
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: switch (states[step]) {
-                  VerifyStepState.done => DrawnCheck(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs + 2),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: switch (states[step]) {
+                    VerifyStepState.done => DrawnCheck(
                       color: theme.colorScheme.primary,
                     ),
-                  VerifyStepState.started => const Padding(
+                    VerifyStepState.started => const Padding(
                       padding: EdgeInsets.all(2),
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2)),
-                  _ => Icon(Icons.circle_outlined,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    _ => Icon(
+                      Icons.circle_outlined,
                       size: 18,
-                      color: theme.colorScheme.outline),
-                },
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              AnimatedDefaultTextStyle(
-                duration: AppMotion.fast,
-                style: theme.textTheme.bodyMedium!.copyWith(
-                  color: switch (states[step]) {
-                    VerifyStepState.done => theme.colorScheme.onSurface,
-                    VerifyStepState.started => theme.colorScheme.onSurface,
-                    _ => theme.colorScheme.onSurfaceVariant,
+                      color: theme.colorScheme.outline,
+                    ),
                   },
                 ),
-                child: Text(_labels[step]!),
-              ),
-            ]),
+                const SizedBox(width: AppSpacing.sm),
+                AnimatedDefaultTextStyle(
+                  duration: AppMotion.fast,
+                  style: theme.textTheme.bodyMedium!.copyWith(
+                    color: switch (states[step]) {
+                      VerifyStepState.done => theme.colorScheme.onSurface,
+                      VerifyStepState.started => theme.colorScheme.onSurface,
+                      _ => theme.colorScheme.onSurfaceVariant,
+                    },
+                  ),
+                  child: Text(_labels[step]!),
+                ),
+              ],
+            ),
           ),
       ],
     );
@@ -292,7 +311,10 @@ class _SourceCard extends StatelessWidget {
       SourceStatus.verified => ('Verified ✓', theme.colorScheme.primary),
       SourceStatus.reachable => ('Reachable', theme.colorScheme.tertiary),
       SourceStatus.dead => ('Dead link ✗', theme.colorScheme.error),
-      SourceStatus.checking => ('Checking…', theme.colorScheme.onSurfaceVariant),
+      SourceStatus.checking => (
+        'Checking…',
+        theme.colorScheme.onSurfaceVariant,
+      ),
     };
     return Opacity(
       opacity: dead ? 0.55 : 1,
@@ -304,43 +326,51 @@ class _SourceCard extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: dead
-                  ? theme.colorScheme.error.withValues(alpha: 0.5)
-                  : theme.colorScheme.outline.withValues(alpha: 0.6)),
+            color: dead
+                ? theme.colorScheme.error.withValues(alpha: 0.5)
+                : theme.colorScheme.outline.withValues(alpha: 0.6),
+          ),
         ),
         child: InkWell(
-          onTap: () => launchUrl(Uri.parse(source.url),
-              mode: LaunchMode.externalApplication),
+          onTap: () => launchUrl(
+            Uri.parse(source.url),
+            mode: LaunchMode.externalApplication,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    source.favicon,
-                    width: 16,
-                    height: 16,
-                    errorBuilder: (_, _, _) => Icon(Icons.public,
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      source.favicon,
+                      width: 16,
+                      height: 16,
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.public,
                         size: 16,
-                        color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    source.domain,
-                    style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        decoration:
-                            dead ? TextDecoration.lineThrough : null),
-                    overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
-                ),
-                Text(chip,
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: color)),
-              ]),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      source.domain,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        decoration: dead ? TextDecoration.lineThrough : null,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    chip,
+                    style: theme.textTheme.labelSmall?.copyWith(color: color),
+                  ),
+                ],
+              ),
               const SizedBox(height: AppSpacing.xs),
               Expanded(
                 child: Text(
@@ -348,8 +378,8 @@ class _SourceCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                      decoration:
-                          dead ? TextDecoration.lineThrough : null),
+                    decoration: dead ? TextDecoration.lineThrough : null,
+                  ),
                 ),
               ),
             ],
@@ -370,8 +400,7 @@ class _FailureCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final msg = switch (failure) {
-      AuthFailure() =>
-        'The provider rejected our key — check Settings.',
+      AuthFailure() => 'The provider rejected our key — check Settings.',
       RateLimitFailure() =>
         'Everyone is rate-limited right now. Try again in a moment.',
       NetworkFailure() =>
@@ -381,17 +410,20 @@ class _FailureCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Verification failed', style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Text(msg, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: AppSpacing.sm),
-          TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Try again'),
-          ),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Verification failed', style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.xs),
+            Text(msg, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: AppSpacing.sm),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -426,69 +458,87 @@ class _VerdictSection extends StatelessWidget {
       VerdictKind.partial => ('Not quite', theme.colorScheme.tertiary),
       VerdictKind.fail => ('Rejected', theme.colorScheme.error),
     };
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const SizedBox(height: AppSpacing.sm),
-      Row(children: [
-        _PulseRing(
-          fire: verdict.kind == VerdictKind.pass,
-          color: color,
-          child: AnimatedContainer(
-            duration: AppMotion.base,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: color),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            _PulseRing(
+              fire: verdict.kind == VerdictKind.pass,
+              color: color,
+              child: AnimatedContainer(
+                duration: AppMotion.base,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xxs,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: color),
+                ),
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(color: color),
+                ),
+              ),
             ),
-            child: Text(label,
-                style: theme.textTheme.labelLarge?.copyWith(color: color)),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Text('${(verdict.confidence * 100).round()}% confident',
-            style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant)),
-      ]),
-      const SizedBox(height: AppSpacing.sm),
-      Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xxs, children: [
-        if (usedBy != null)
-          _Chip(icon: Icons.memory, label: usedBy!),
-        if (rerouted != null)
-          _Chip(icon: Icons.alt_route, label: rerouted!),
-        if (visionSwap != null)
-          _Chip(icon: Icons.visibility_outlined, label: visionSwap!),
-      ]),
-      const SizedBox(height: AppSpacing.md),
-      _CitationText(text: verdict.summary, onCitationTap: onCitationTap),
-      const SizedBox(height: AppSpacing.md),
-      for (final check in verdict.checks)
-        Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xxs + 2),
-          child: Row(children: [
-            Icon(
-              check.ok ? Icons.check_circle : Icons.cancel_outlined,
-              size: 16,
-              color: check.ok
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.error,
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '${(verdict.confidence * 100).round()}% confident',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            Expanded(
-                child: Text(check.label, style: theme.textTheme.bodySmall)),
-          ]),
+          ],
         ),
-      if (verdict.roast != null && verdict.kind != VerdictKind.pass)
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.md),
-          child: RoastCard(
-            roast: verdict.roast!,
-            fallback: roastIsFallback,
-            challenge: verdict.challenge,
-            taskId: taskId,
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xxs,
+          children: [
+            if (usedBy != null) _Chip(icon: Icons.memory, label: usedBy!),
+            if (rerouted != null)
+              _Chip(icon: Icons.alt_route, label: rerouted!),
+            if (visionSwap != null)
+              _Chip(icon: Icons.visibility_outlined, label: visionSwap!),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _CitationText(text: verdict.summary, onCitationTap: onCitationTap),
+        const SizedBox(height: AppSpacing.md),
+        for (final check in verdict.checks)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xxs + 2),
+            child: Row(
+              children: [
+                Icon(
+                  check.ok ? Icons.check_circle : Icons.cancel_outlined,
+                  size: 16,
+                  color: check.ok
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.error,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(check.label, style: theme.textTheme.bodySmall),
+                ),
+              ],
+            ),
           ),
-        ),
-    ]);
+        if (verdict.roast != null && verdict.kind != VerdictKind.pass)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: RoastCard(
+              roast: verdict.roast!,
+              fallback: roastIsFallback,
+              challenge: verdict.challenge,
+              taskId: taskId,
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -503,20 +553,29 @@ class _Chip extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs, vertical: 3),
+        horizontal: AppSpacing.xs,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
-        border:
-            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.6),
+        ),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Text(label,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -578,35 +637,48 @@ class _CitationTextState extends State<_CitationText>
         var last = 0;
         for (final m in re.allMatches(visible)) {
           if (m.start > last) {
-            spans.add(TextSpan(
+            spans.add(
+              TextSpan(
                 text: visible.substring(last, m.start),
-                style: theme.textTheme.bodyMedium));
+                style: theme.textTheme.bodyMedium,
+              ),
+            );
           }
           final idx = (int.tryParse(m.group(1)!) ?? 1) - 1;
-          spans.add(WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: GestureDetector(
-              onTap: () => widget.onCitationTap(idx),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 1),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text('${idx + 1}',
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: GestureDetector(
+                onTap: () => widget.onCitationTap(idx),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${idx + 1}',
                     style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary)),
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ));
+          );
           last = m.end;
         }
         if (last < visible.length) {
-          spans.add(TextSpan(
+          spans.add(
+            TextSpan(
               text: visible.substring(last),
-              style: theme.textTheme.bodyMedium));
+              style: theme.textTheme.bodyMedium,
+            ),
+          );
         }
         return Text.rich(TextSpan(children: spans));
       },
@@ -633,7 +705,9 @@ class _VerdictShakeState extends State<_VerdictShake>
   void initState() {
     super.initState();
     _c = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 400));
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
   }
 
   @override
@@ -658,10 +732,7 @@ class _VerdictShakeState extends State<_VerdictShake>
       animation: _c,
       // Damped sine: 3 wobbles decaying to zero over 400ms.
       builder: (context, child) => Transform.translate(
-        offset: Offset(
-          6 * sin(_c.value * 3 * 2 * pi) * (1 - _c.value),
-          0,
-        ),
+        offset: Offset(6 * sin(_c.value * 3 * 2 * pi) * (1 - _c.value), 0),
         child: child,
       ),
       child: widget.child,
@@ -672,8 +743,11 @@ class _VerdictShakeState extends State<_VerdictShake>
 /// Expanding ring that fires once behind the verdict badge on a pass — the
 /// green pulse moment. Static otherwise.
 class _PulseRing extends StatefulWidget {
-  const _PulseRing(
-      {required this.fire, required this.color, required this.child});
+  const _PulseRing({
+    required this.fire,
+    required this.color,
+    required this.child,
+  });
   final bool fire;
   final Color color;
   final Widget child;
@@ -710,20 +784,19 @@ class _PulseRingState extends State<_PulseRing>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _c,
-      builder: (context, child) => Stack(children: [
-        if (_c.isAnimating || _c.value > 0 && _c.value < 1)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: _RingPulsePainter(
-                  t: _c.value,
-                  color: widget.color,
+      builder: (context, child) => Stack(
+        children: [
+          if (_c.isAnimating || _c.value > 0 && _c.value < 1)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _RingPulsePainter(t: _c.value, color: widget.color),
                 ),
               ),
             ),
-          ),
-        child!,
-      ]),
+          child!,
+        ],
+      ),
       child: widget.child,
     );
   }
@@ -747,7 +820,9 @@ class _RingPulsePainter extends CustomPainter {
       height: size.height + 28 * t,
     );
     canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(999)), paint);
+      RRect.fromRectAndRadius(rect, const Radius.circular(999)),
+      paint,
+    );
   }
 
   @override

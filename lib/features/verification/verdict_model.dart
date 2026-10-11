@@ -16,9 +16,9 @@ class VerdictCheck {
   final bool ok;
 
   factory VerdictCheck.fromJson(Map<String, dynamic> j) => VerdictCheck(
-        label: j['label'] as String? ?? '',
-        ok: j['ok'] as bool? ?? false,
-      );
+    label: j['label'] as String? ?? '',
+    ok: j['ok'] as bool? ?? false,
+  );
 
   Map<String, dynamic> toJson() => {'label': label, 'ok': ok};
 }
@@ -30,12 +30,11 @@ class VerdictClaim {
   final int sourceIndex;
 
   factory VerdictClaim.fromJson(Map<String, dynamic> j) => VerdictClaim(
-        text: j['text'] as String? ?? '',
-        sourceIndex: (j['source_index'] as num?)?.toInt() ?? -1,
-      );
+    text: j['text'] as String? ?? '',
+    sourceIndex: (j['source_index'] as num?)?.toInt() ?? -1,
+  );
 
-  Map<String, dynamic> toJson() =>
-      {'text': text, 'source_index': sourceIndex};
+  Map<String, dynamic> toJson() => {'text': text, 'source_index': sourceIndex};
 }
 
 /// Accountability challenge issued on partial/fail.
@@ -55,18 +54,18 @@ class ChallengeDef {
   final String kind;
 
   factory ChallengeDef.fromJson(Map<String, dynamic> j) => ChallengeDef(
-        title: j['title'] as String? ?? 'Prove it',
-        instructions: j['instructions'] as String? ?? '',
-        seconds: (j['seconds'] as num?)?.toInt() ?? 60,
-        kind: j['kind'] as String? ?? 'retype',
-      );
+    title: j['title'] as String? ?? 'Prove it',
+    instructions: j['instructions'] as String? ?? '',
+    seconds: (j['seconds'] as num?)?.toInt() ?? 60,
+    kind: j['kind'] as String? ?? 'retype',
+  );
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'instructions': instructions,
-        'seconds': seconds,
-        'kind': kind,
-      };
+    'title': title,
+    'instructions': instructions,
+    'seconds': seconds,
+    'kind': kind,
+  };
 }
 
 /// The parsed verdict — what the whole verification UI renders from.
@@ -110,14 +109,14 @@ class Verdict {
   }
 
   Map<String, dynamic> toJson() => {
-        'verdict': kind.name,
-        'confidence': confidence,
-        'summary': summary,
-        'checks': [for (final c in checks) c.toJson()],
-        'claims': [for (final c in claims) c.toJson()],
-        'roast': roast,
-        'challenge': challenge?.toJson(),
-      };
+    'verdict': kind.name,
+    'confidence': confidence,
+    'summary': summary,
+    'checks': [for (final c in checks) c.toJson()],
+    'claims': [for (final c in claims) c.toJson()],
+    'roast': roast,
+    'challenge': challenge?.toJson(),
+  };
 
   /// Defensive parse — never throws; returns a safe "partial-ish" fallback.
   factory Verdict.fromJson(Map<String, dynamic> j) {
@@ -140,7 +139,8 @@ class Verdict {
       roast: j['roast'] as String?,
       challenge: j['challenge'] is Map
           ? ChallengeDef.fromJson(
-              (j['challenge'] as Map).cast<String, dynamic>())
+              (j['challenge'] as Map).cast<String, dynamic>(),
+            )
           : null,
     );
   }

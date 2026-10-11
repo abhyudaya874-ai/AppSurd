@@ -16,13 +16,13 @@ void main() {
   });
 
   testWidgets('pill opens picker card with 4 tier stops', (tester) async {
-    await tester.pumpWidget(const ProviderScope(
-      child: MaterialApp(
-        home: Scaffold(
-          body: Center(child: ModelPill()),
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: Center(child: ModelPill())),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     // Collapsed pill shows the preset label even with no keys configured.

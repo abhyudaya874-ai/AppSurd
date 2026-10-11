@@ -27,7 +27,8 @@ class BlockBox {
 /// by start; a block takes the first lane whose last block doesn't overlap.
 /// `lanes` is the max lane count of the cluster the block belongs to.
 List<BlockBox> layoutDayBlocks(
-    List<({String taskId, int startMin, int endMin})> blocks) {
+  List<({String taskId, int startMin, int endMin})> blocks,
+) {
   final sorted = [...blocks]..sort((a, b) => a.startMin - b.startMin);
   final laneEnds = <int>[]; // lane -> last end minute
   final assigned = <({String taskId, int startMin, int endMin, int lane})>[];
@@ -46,7 +47,12 @@ List<BlockBox> layoutDayBlocks(
     } else {
       laneEnds[lane] = b.endMin;
     }
-    assigned.add((taskId: b.taskId, startMin: b.startMin, endMin: b.endMin, lane: lane));
+    assigned.add((
+      taskId: b.taskId,
+      startMin: b.startMin,
+      endMin: b.endMin,
+      lane: lane,
+    ));
   }
 
   // Cluster width = number of lanes concurrently in use around the block —
@@ -59,8 +65,7 @@ List<BlockBox> layoutDayBlocks(
         endMin: a.endMin,
         lane: a.lane,
         lanes: assigned
-            .where((o) =>
-                o.startMin < a.endMin && a.startMin < o.endMin)
+            .where((o) => o.startMin < a.endMin && a.startMin < o.endMin)
             .fold<int>(1, (m, o) => o.lane + 1 > m ? o.lane + 1 : m),
       ),
   ];

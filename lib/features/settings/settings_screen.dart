@@ -30,8 +30,7 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           FadeSlideIn(
-            child: Text('AI providers',
-                style: theme.textTheme.titleLarge),
+            child: Text('AI providers', style: theme.textTheme.titleLarge),
           ),
           const SizedBox(height: AppSpacing.xs),
           FadeSlideIn(
@@ -39,8 +38,9 @@ class SettingsScreen extends ConsumerWidget {
             child: Text(
               'Keys are stored on-device in secure storage and only ever sent '
               'to their own provider. Leave blank to keep a provider locked.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -59,15 +59,11 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          FadeSlideIn(
-            index: 6,
-            child: _EnginePickerTile(),
-          ),
+          FadeSlideIn(index: 6, child: _EnginePickerTile()),
           const SizedBox(height: AppSpacing.xl),
           FadeSlideIn(
             index: 7,
-            child: Text('Web search',
-                style: theme.textTheme.titleLarge),
+            child: Text('Web search', style: theme.textTheme.titleLarge),
           ),
           const SizedBox(height: AppSpacing.xs),
           FadeSlideIn(
@@ -75,17 +71,15 @@ class SettingsScreen extends ConsumerWidget {
             child: Text(
               'Search keys let Ask fetch live sources. Only the query text '
               'is sent to Tavily/Exa — never images or evidence.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           _SearchKeyTile(engine: 'tavily', label: 'Tavily'),
           _SearchKeyTile(engine: 'exa', label: 'Exa'),
           const SizedBox(height: AppSpacing.xl),
-          FadeSlideIn(
-            index: 7,
-            child: _DemoModeTile(),
-          ),
+          FadeSlideIn(index: 7, child: _DemoModeTile()),
           const SizedBox(height: AppSpacing.xl),
           FadeSlideIn(
             index: 8,
@@ -98,8 +92,9 @@ class SettingsScreen extends ConsumerWidget {
               'uploaded unless you pick the Groq cloud engine. Brand logos are '
               'trademarks of their owners, shown only to identify models. '
               'No accounts, no analytics, no cloud sync.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -121,8 +116,9 @@ class _RequestCounter extends ConsumerWidget {
     if (counts.isEmpty) return const SizedBox.shrink();
     return Text(
       'Requests this session: ${counts.entries.map((e) => '${e.key}×${e.value}').join('  ')}',
-      style: theme.textTheme.labelSmall
-          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }
@@ -184,7 +180,7 @@ class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
     final theme = Theme.of(context);
     final configured =
         ref.watch(configuredKeysProvider).value?.containsKey(widget.provider) ??
-            false;
+        false;
 
     // Prefill hint once keys load (never echo the actual key).
     if (!_loaded && configured) {
@@ -199,45 +195,61 @@ class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              SizedBox(
-                width: 18, height: 18,
-                child: BrandIcon(
-                  model: ModelSpec(
+            Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: BrandIcon(
+                    model: ModelSpec(
                       id: widget.provider.id,
                       provider: widget.provider,
                       displayName: widget.provider.label,
-                      tier: Tier.swift, strength: 0, blurb: ''),
-                  size: 16, showBadge: false),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(widget.provider.label, style: theme.textTheme.titleMedium),
-              const Spacer(),
-              AnimatedSwitcher(
-                duration: AppMotion.fast,
-                child: switch (_test) {
-                  _TestState.idle => configured
-                      ? Icon(Icons.check_circle_outline,
-                          key: const ValueKey('c'),
-                          size: 18,
-                          color: theme.colorScheme.primary)
-                      : const SizedBox.shrink(key: ValueKey('n')),
-                  _TestState.testing => const SizedBox(
+                      tier: Tier.swift,
+                      strength: 0,
+                      blurb: '',
+                    ),
+                    size: 16,
+                    showBadge: false,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(widget.provider.label, style: theme.textTheme.titleMedium),
+                const Spacer(),
+                AnimatedSwitcher(
+                  duration: AppMotion.fast,
+                  child: switch (_test) {
+                    _TestState.idle =>
+                      configured
+                          ? Icon(
+                              Icons.check_circle_outline,
+                              key: const ValueKey('c'),
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            )
+                          : const SizedBox.shrink(key: ValueKey('n')),
+                    _TestState.testing => const SizedBox(
                       key: ValueKey('t'),
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  _TestState.ok => Icon(Icons.check_circle,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    _TestState.ok => Icon(
+                      Icons.check_circle,
                       key: const ValueKey('ok'),
                       size: 18,
-                      color: theme.colorScheme.primary),
-                  _TestState.failed => Icon(Icons.error_outline,
+                      color: theme.colorScheme.primary,
+                    ),
+                    _TestState.failed => Icon(
+                      Icons.error_outline,
                       key: const ValueKey('f'),
                       size: 18,
-                      color: theme.colorScheme.error),
-                },
-              ),
-            ]),
+                      color: theme.colorScheme.error,
+                    ),
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: _controller,
@@ -251,26 +263,34 @@ class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
               onSubmitted: (_) => _save(),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Row(children: [
-              TextButton(onPressed: _save, child: const Text('Save')),
-              const SizedBox(width: AppSpacing.xs),
-              TextButton(onPressed: _testKey, child: const Text('Test key')),
-              const Spacer(),
-              AnimatedSwitcher(
-                duration: AppMotion.fast,
-                child: switch (_test) {
-                  _TestState.ok => Text('key works',
+            Row(
+              children: [
+                TextButton(onPressed: _save, child: const Text('Save')),
+                const SizedBox(width: AppSpacing.xs),
+                TextButton(onPressed: _testKey, child: const Text('Test key')),
+                const Spacer(),
+                AnimatedSwitcher(
+                  duration: AppMotion.fast,
+                  child: switch (_test) {
+                    _TestState.ok => Text(
+                      'key works',
                       key: const ValueKey('okt'),
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.primary)),
-                  _TestState.failed => Text('rejected or unreachable',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    _TestState.failed => Text(
+                      'rejected or unreachable',
                       key: const ValueKey('ft'),
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.error)),
-                  _ => const SizedBox.shrink(),
-                },
-              ),
-            ]),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                    _ => const SizedBox.shrink(),
+                  },
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -285,10 +305,11 @@ class _DemoModeTile extends ConsumerWidget {
     final demoOn = ref.watch(demoModeProvider);
     return SwitchListTile(
       value: demoOn,
-      onChanged: (v) =>
-          ref.read(demoModeProvider.notifier).setEnabled(v),
+      onChanged: (v) => ref.read(demoModeProvider.notifier).setEnabled(v),
       title: const Text('Demo mode'),
-      subtitle: const Text('Seed example tasks + canned evidence for the pitch'),
+      subtitle: const Text(
+        'Seed example tasks + canned evidence for the pitch',
+      ),
       contentPadding: EdgeInsets.zero,
     );
   }
@@ -296,7 +317,8 @@ class _DemoModeTile extends ConsumerWidget {
 
 /// Whether demo mode is on — the tasks feature seeds demo data from this.
 final demoModeProvider = NotifierProvider<DemoModeNotifier, bool>(
-    DemoModeNotifier.new);
+  DemoModeNotifier.new,
+);
 
 /// Persists the demo-mode flag in the settings box and seeds example tasks.
 class DemoModeNotifier extends Notifier<bool> {
@@ -332,55 +354,71 @@ class _EnginePickerTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final choice = ref.watch(engineChoiceProvider);
     final engines = ref.watch(engineListProvider).value ?? const [];
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Transcription engine', style: theme.textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.xs),
-      Text(
-        'Mic audio is deleted right after transcription — it only leaves '
-        'the device if you pick the cloud engine below.',
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
-      const SizedBox(height: AppSpacing.sm),
-      for (final (engine, avail) in engines)
-        ListTile(
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          enabled: avail,
-          leading: Icon(
-            engine.info.id == 'whisper'
-                ? Icons.memory
-                : engine.info.id == 'groq'
-                    ? Icons.cloud_outlined
-                    : Icons.mic,
-            size: 20,
-            color: avail
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Transcription engine', style: theme.textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Mic audio is deleted right after transcription — it only leaves '
+          'the device if you pick the cloud engine below.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-          title: Text(engine.info.label,
-              style: theme.textTheme.bodyMedium),
-          subtitle: engine.info.id == 'groq'
-              ? const Text('Audio is uploaded — cloud engine',
-                  style: TextStyle(fontSize: 11))
-              : null,
-          trailing: EngineChoice.values.firstWhere(
-                      (c) => c.name == engine.info.id,
-                      orElse: () => EngineChoice.system) ==
-                  choice
-              ? Icon(Icons.check_circle,
-                  size: 18, color: theme.colorScheme.primary)
-              : Icon(Icons.circle_outlined,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant),
-          onTap: avail
-              ? () => ref.read(engineChoiceProvider.notifier).set(
-                  EngineChoice.values.firstWhere(
-                      (c) => c.name == engine.info.id,
-                      orElse: () => EngineChoice.system))
-              : null,
         ),
-    ]);
+        const SizedBox(height: AppSpacing.sm),
+        for (final (engine, avail) in engines)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            enabled: avail,
+            leading: Icon(
+              engine.info.id == 'whisper'
+                  ? Icons.memory
+                  : engine.info.id == 'groq'
+                  ? Icons.cloud_outlined
+                  : Icons.mic,
+              size: 20,
+              color: avail
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            title: Text(engine.info.label, style: theme.textTheme.bodyMedium),
+            subtitle: engine.info.id == 'groq'
+                ? const Text(
+                    'Audio is uploaded — cloud engine',
+                    style: TextStyle(fontSize: 11),
+                  )
+                : null,
+            trailing:
+                EngineChoice.values.firstWhere(
+                      (c) => c.name == engine.info.id,
+                      orElse: () => EngineChoice.system,
+                    ) ==
+                    choice
+                ? Icon(
+                    Icons.check_circle,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  )
+                : Icon(
+                    Icons.circle_outlined,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+            onTap: avail
+                ? () => ref
+                      .read(engineChoiceProvider.notifier)
+                      .set(
+                        EngineChoice.values.firstWhere(
+                          (c) => c.name == engine.info.id,
+                          orElse: () => EngineChoice.system,
+                        ),
+                      )
+                : null,
+          ),
+      ],
+    );
   }
 }
 
@@ -407,83 +445,94 @@ class _SearchKeyTileState extends ConsumerState<_SearchKeyTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final configured = ref
-            .watch(searchKeysProvider)
-            .value
-            ?[widget.engine]
-            ?.isNotEmpty ??
+    final configured =
+        ref.watch(searchKeysProvider).value?[widget.engine]?.isNotEmpty ??
         false;
     return Card(
       margin: const EdgeInsets.only(top: AppSpacing.sm),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-          Row(children: [
-            Text(widget.label, style: theme.textTheme.titleMedium),
-            const Spacer(),
-            AnimatedSwitcher(
-              duration: AppMotion.fast,
-              child: switch (_test) {
-                _TestState.testing => const SizedBox(
-                    key: ValueKey('t'),
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-                _TestState.ok => Icon(Icons.check_circle,
-                    key: const ValueKey('ok'),
-                    size: 18,
-                    color: theme.colorScheme.primary),
-                _TestState.failed => Icon(Icons.error_outline,
-                    key: const ValueKey('f'),
-                    size: 18,
-                    color: theme.colorScheme.error),
-                _TestState.idle => configured
-                    ? Icon(Icons.check_circle_outline,
-                        key: const ValueKey('c'),
-                        size: 18,
-                        color: theme.colorScheme.primary)
-                    : const SizedBox.shrink(key: ValueKey('n')),
-              },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(widget.label, style: theme.textTheme.titleMedium),
+                const Spacer(),
+                AnimatedSwitcher(
+                  duration: AppMotion.fast,
+                  child: switch (_test) {
+                    _TestState.testing => const SizedBox(
+                      key: ValueKey('t'),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    _TestState.ok => Icon(
+                      Icons.check_circle,
+                      key: const ValueKey('ok'),
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    _TestState.failed => Icon(
+                      Icons.error_outline,
+                      key: const ValueKey('f'),
+                      size: 18,
+                      color: theme.colorScheme.error,
+                    ),
+                    _TestState.idle =>
+                      configured
+                          ? Icon(
+                              Icons.check_circle_outline,
+                              key: const ValueKey('c'),
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            )
+                          : const SizedBox.shrink(key: ValueKey('n')),
+                  },
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: _controller,
-            obscureText: true,
-            enableSuggestions: false,
-            autocorrect: false,
-            decoration: InputDecoration(
-              isDense: true,
-              hintText:
-                  configured ? '••••••••  (saved)' : 'paste API key',
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _controller,
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: configured ? '••••••••  (saved)' : 'paste API key',
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(children: [
-            TextButton(
-              onPressed: () async {
-                await ref
-                    .read(searchKeysProvider.notifier)
-                    .save(widget.engine, _controller.text.trim());
-              },
-              child: const Text('Save'),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () async {
+                    await ref
+                        .read(searchKeysProvider.notifier)
+                        .save(widget.engine, _controller.text.trim());
+                  },
+                  child: const Text('Save'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    setState(() => _test = _TestState.testing);
+                    final ok = await ref
+                        .read(searchKeysProvider.notifier)
+                        .testKey(widget.engine);
+                    if (mounted) {
+                      setState(
+                        () => _test = ok ? _TestState.ok : _TestState.failed,
+                      );
+                    }
+                  },
+                  child: const Text('Test key'),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () async {
-                setState(() => _test = _TestState.testing);
-                final ok = await ref
-                    .read(searchKeysProvider.notifier)
-                    .testKey(widget.engine);
-                if (mounted) {
-                  setState(() =>
-                      _test = ok ? _TestState.ok : _TestState.failed);
-                }
-              },
-              child: const Text('Test key'),
-            ),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }

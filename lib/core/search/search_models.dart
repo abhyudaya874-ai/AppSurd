@@ -39,8 +39,7 @@ class SearchHit {
   final String? body;
 
   String get host => Uri.tryParse(url)?.host ?? url;
-  String get favicon =>
-      'https://www.google.com/s2/favicons?domain=$host&sz=64';
+  String get favicon => 'https://www.google.com/s2/favicons?domain=$host&sz=64';
 
   /// "host › first path segment" breadcrumb.
   String get breadcrumb {
@@ -51,13 +50,13 @@ class SearchHit {
   }
 
   SearchHit copyWith({HitStatus? status, String? body}) => SearchHit(
-        url: url,
-        title: title,
-        snippet: snippet,
-        provider: provider,
-        status: status ?? this.status,
-        body: body ?? this.body,
-      );
+    url: url,
+    title: title,
+    snippet: snippet,
+    provider: provider,
+    status: status ?? this.status,
+    body: body ?? this.body,
+  );
 }
 
 /// One line in the research trace tree the UI renders.
@@ -68,8 +67,7 @@ sealed class TraceEvent {
 
 /// A step header: planning/searching/reading/writing.
 class TraceStep extends TraceEvent {
-  const TraceStep(
-      {required super.at, required this.label, required this.kind});
+  const TraceStep({required super.at, required this.label, required this.kind});
   final String label;
 
   /// 'plan' | 'search' | 'read' | 'write' — icon pick in the UI.
@@ -78,8 +76,7 @@ class TraceStep extends TraceEvent {
 
 /// "Searching: <q>" row with provider tag.
 class TraceQuery extends TraceEvent {
-  const TraceQuery(
-      {required super.at, required this.query, this.provider});
+  const TraceQuery({required super.at, required this.query, this.provider});
   final SearchQuery query;
   final String? provider;
 }
@@ -96,11 +93,10 @@ class ResearchTrace {
   final startedAt = DateTime.now();
   DateTime? finishedAt;
 
-  Duration get elapsed =>
-      (finishedAt ?? DateTime.now()).difference(startedAt);
+  Duration get elapsed => (finishedAt ?? DateTime.now()).difference(startedAt);
 
   List<SearchHit> get sources => [
-        for (final e in events)
-          if (e is TraceSource) e.hit,
-      ];
+    for (final e in events)
+      if (e is TraceSource) e.hit,
+  ];
 }

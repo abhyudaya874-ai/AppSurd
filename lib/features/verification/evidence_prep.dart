@@ -50,16 +50,16 @@ Future<PreparedEvidence> prepareEvidence(EvidenceAttempt attempt) async {
       fetchFailed = !check.ok;
       evidenceText = check.ok
           ? 'Fetched page — title: ${check.title ?? 'none'}\n'
-              'description: ${check.description ?? 'none'}\n'
-              'content: ${check.textExtract.substring(0, check.textExtract.length > 8000 ? 8000 : check.textExtract.length)}'
+                'description: ${check.description ?? 'none'}\n'
+                'content: ${check.textExtract.substring(0, check.textExtract.length > 8000 ? 8000 : check.textExtract.length)}'
           : 'The URL could not be fetched (HTTP ${check.statusCode ?? 'error'}).';
     case EvidenceType.commit:
       commit = await GitHubClient().fetchCommit(attempt.payload);
       fetchFailed = !commit.ok;
       evidenceText = commit.ok
           ? 'GitHub commit — message: ${commit.message}\n'
-              'files changed: ${commit.files.join(', ')}\n'
-              'patch:\n${commit.patch}'
+                'files changed: ${commit.files.join(', ')}\n'
+                'patch:\n${commit.patch}'
           : 'The commit could not be fetched (${commit.error}).';
     case EvidenceType.screenshot:
       needsVision = true;
@@ -88,6 +88,6 @@ Future<PreparedEvidence> prepareEvidence(EvidenceAttempt attempt) async {
 
 /// Judge-visible source texts, in source order — index matches the strip.
 List<String> evidenceSourceTexts(PreparedEvidence p) => [
-      for (final c in p.checks) c.textExtract,
-      if (p.commit != null) p.commit!.patch,
-    ];
+  for (final c in p.checks) c.textExtract,
+  if (p.commit != null) p.commit!.patch,
+];

@@ -23,21 +23,29 @@ void main() {
     final reloaded = await container.read(tasksProvider.future);
     expect(reloaded.any((t) => t.id == task.id), isTrue);
 
-    await container.read(tasksProvider.notifier).addAttempt(
-        task.id,
-        EvidenceAttempt(
-          id: 'a1',
-          type: EvidenceType.url,
-          payload: 'https://example.com',
-          submittedAt: DateTime.now(),
-        ));
+    await container
+        .read(tasksProvider.notifier)
+        .addAttempt(
+          task.id,
+          EvidenceAttempt(
+            id: 'a1',
+            type: EvidenceType.url,
+            payload: 'https://example.com',
+            submittedAt: DateTime.now(),
+          ),
+        );
     Task? after = container.read(taskByIdProvider(task.id));
     expect(after!.status, TaskStatus.verifying);
     expect(after.attempts.length, 1);
 
-    await container.read(tasksProvider.notifier).attachVerdict(
-        task.id, {'verdict': 'pass'},
-        status: TaskStatus.done, integrityDelta: 10);
+    await container
+        .read(tasksProvider.notifier)
+        .attachVerdict(
+          task.id,
+          {'verdict': 'pass'},
+          status: TaskStatus.done,
+          integrityDelta: 10,
+        );
     after = container.read<Task?>(taskByIdProvider(task.id));
     expect(after!.status, TaskStatus.done);
     expect(container.read(integrityScoreProvider), 60);

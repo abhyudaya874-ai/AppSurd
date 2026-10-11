@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
-
 import '../../core/theme/motion.dart';
 
 /// The signature strength slider: 4 detents (Swift → Deep), a thumb that
@@ -84,8 +83,10 @@ class _StrengthSliderState extends State<StrengthSlider>
   }
 
   void _onDrag(DragUpdateDetails d, double width) {
-    final next = (_value + d.primaryDelta! / width * (_detents - 1))
-        .clamp(0.0, (_detents - 1).toDouble());
+    final next = (_value + d.primaryDelta! / width * (_detents - 1)).clamp(
+      0.0,
+      (_detents - 1).toDouble(),
+    );
     // Thumb widens with drag speed — the squash; springs back on release.
     final vel = d.primaryDelta!.abs();
     setState(() {
@@ -189,17 +190,23 @@ class _SliderPainter extends CustomPainter {
     // Chunky inset pill track (darker than the card surface).
     final track = RRect.fromRectAndRadius(
       Rect.fromCenter(
-          center: Offset(usableW / 2, cy), width: usableW, height: 34),
+        center: Offset(usableW / 2, cy),
+        width: usableW,
+        height: 34,
+      ),
       const Radius.circular(17),
     );
     canvas.drawRRect(
-        track, Paint()..color = trackColor.withValues(alpha: 0.35));
+      track,
+      Paint()..color = trackColor.withValues(alpha: 0.35),
+    );
     canvas.drawRRect(
-        track,
-        Paint()
-          ..color = trackColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.6);
+      track,
+      Paint()
+        ..color = trackColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.6,
+    );
 
     // Halftone fill: a grid of teal dots INSIDE the filled region — radius
     // grows toward the thumb (dot-matrix gradient, not a flat fill).
@@ -238,20 +245,17 @@ class _SliderPainter extends CustomPainter {
       Offset(thumbX, cy),
       tr + 8,
       Paint()
-        ..shader = ui.Gradient.radial(
-          Offset(thumbX, cy),
-          tr + 8,
-          [accent.withValues(alpha: dragging ? 0.5 : 0.3),
-           accent.withValues(alpha: 0)],
-        ),
+        ..shader = ui.Gradient.radial(Offset(thumbX, cy), tr + 8, [
+          accent.withValues(alpha: dragging ? 0.5 : 0.3),
+          accent.withValues(alpha: 0),
+        ]),
     );
     canvas.drawCircle(
       Offset(thumbX, cy),
       tr,
       Paint()
         ..color = Colors.white
-        ..maskFilter =
-            const MaskFilter.blur(BlurStyle.normal, 0.5),
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5),
     );
     canvas.drawCircle(
       Offset(thumbX, cy),
@@ -261,11 +265,7 @@ class _SliderPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.2,
     );
-    canvas.drawCircle(
-      Offset(thumbX, cy),
-      4.2,
-      Paint()..color = accent,
-    );
+    canvas.drawCircle(Offset(thumbX, cy), 4.2, Paint()..color = accent);
   }
 
   @override

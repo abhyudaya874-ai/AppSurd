@@ -28,12 +28,12 @@ enum AiProvider {
 
   /// Extra headers a provider wants (OpenRouter asks for referer + title).
   Map<String, String> get extraHeaders => switch (this) {
-        AiProvider.openrouter => {
-            'HTTP-Referer': 'https://receipts.app',
-            'X-Title': 'Receipts',
-          },
-        _ => const {},
-      };
+    AiProvider.openrouter => {
+      'HTTP-Referer': 'https://receipts.app',
+      'X-Title': 'Receipts',
+    },
+    _ => const {},
+  };
 }
 
 /// Slider presets — coarse "how much brain do I need" choices that map onto
@@ -231,8 +231,10 @@ const List<ModelSpec> kModelCatalog = [
 // ---------------------------------------------------------------------------
 
 /// Result of building the catalog — the list plus which models are free.
-final liveCatalogProvider = AsyncNotifierProvider<CatalogNotifier,
-    List<ModelSpec>>(CatalogNotifier.new);
+final liveCatalogProvider =
+    AsyncNotifierProvider<CatalogNotifier, List<ModelSpec>>(
+      CatalogNotifier.new,
+    );
 
 class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
   static const _box = 'receipts_settings';
@@ -251,15 +253,14 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
       final key = keys[provider];
       if (key == null || key.isEmpty) continue;
       try {
-        final dio = Dio(BaseOptions(
-          baseUrl: provider.baseUrl,
-          headers: {
-            'Authorization': 'Bearer $key',
-            ...provider.extraHeaders,
-          },
-          connectTimeout: const Duration(seconds: 8),
-          receiveTimeout: const Duration(seconds: 8),
-        ));
+        final dio = Dio(
+          BaseOptions(
+            baseUrl: provider.baseUrl,
+            headers: {'Authorization': 'Bearer $key', ...provider.extraHeaders},
+            connectTimeout: const Duration(seconds: 8),
+            receiveTimeout: const Duration(seconds: 8),
+          ),
+        );
         final res = await dio.get<Map<String, dynamic>>('/models');
         cached[provider.id] = res.data;
         all.addAll(_parse(provider, res.data ?? const {}));
@@ -268,11 +269,9 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
         final box = await Hive.openBox(_box);
         final raw = box.get('$_key.${provider.id}');
         if (raw is Map) {
-          all.addAll(_parse(provider,
-              Map<String, dynamic>.from(raw)));
+          all.addAll(_parse(provider, Map<String, dynamic>.from(raw)));
         } else {
-          all.addAll(kModelCatalog
-              .where((m) => m.provider == provider));
+          all.addAll(kModelCatalog.where((m) => m.provider == provider));
         }
       }
     }
@@ -297,22 +296,21 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
       if (id.isEmpty) continue;
 
       final pricing = raw['pricing'] as Map?;
-      final promptZero =
-          (pricing?['prompt'] as num?)?.toDouble() == 0;
-      final completionZero =
-          (pricing?['completion'] as num?)?.toDouble() == 0;
+      final promptZero = (pricing?['prompt'] as num?)?.toDouble() == 0;
+      final completionZero = (pricing?['completion'] as num?)?.toDouble() == 0;
       final arch = raw['architecture'] as Map?;
-      final modalities =
-          (arch?['input_modalities'] as List? ?? const []).cast<String>();
-      final supported =
-          (raw['supported_parameters'] as List? ?? const []).cast<String>();
-      final context =
-          (raw['context_length'] as num?)?.toInt() ?? 0;
+      final modalities = (arch?['input_modalities'] as List? ?? const [])
+          .cast<String>();
+      final supported = (raw['supported_parameters'] as List? ?? const [])
+          .cast<String>();
+      final context = (raw['context_length'] as num?)?.toInt() ?? 0;
 
-      final vision = modalities.contains('image') ||
+      final vision =
+          modalities.contains('image') ||
           RegExp(r'vision|\bvl\b|llava|scout|maverick|gemma-3|llama-4')
               .hasMatch(id);
-      final reasoning = supported.contains('reasoning') ||
+      final reasoning =
+          supported.contains('reasoning') ||
           RegExp(r'r1|gpt-oss|qwq|thinking').hasMatch(id);
 
       final isChat = switch (provider) {
@@ -328,24 +326,26 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
       );
       if (!isFree) continue;
 
-      out.add(ModelSpec(
-        id: id,
-        provider: provider,
-        displayName: _prettyName(id, raw),
-        tier: Tier.swift, // reassigned from quartiles below
-        strength: 0,
-        supportsVision: vision,
-        supportsReasoning: reasoning,
-        isFree: true,
-        freeReason: switch (provider) {
-          AiProvider.openrouter => 'OpenRouter pricing = 0',
-          AiProvider.nvidia => 'NIM free catalog allowlist',
-          AiProvider.groq => 'Groq free plan',
-        },
-        brand: BrandResolver.fromModel(id, provider),
-        contextK: context ~/ 1000,
-        blurb: _blurb(vision, reasoning, context),
-      ));
+      out.add(
+        ModelSpec(
+          id: id,
+          provider: provider,
+          displayName: _prettyName(id, raw),
+          tier: Tier.swift, // reassigned from quartiles below
+          strength: 0,
+          supportsVision: vision,
+          supportsReasoning: reasoning,
+          isFree: true,
+          freeReason: switch (provider) {
+            AiProvider.openrouter => 'OpenRouter pricing = 0',
+            AiProvider.nvidia => 'NIM free catalog allowlist',
+            AiProvider.groq => 'Groq free plan',
+          },
+          brand: BrandResolver.fromModel(id, provider),
+          contextK: context ~/ 1000,
+          blurb: _blurb(vision, reasoning, context),
+        ),
+      );
     }
     return out;
   }
@@ -354,8 +354,7 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
   static List<ModelSpec> _withStrength(List<ModelSpec> models) {
     final strength = StrengthEstimator.normalized(models);
     final sorted = models.toList()
-      ..sort((a, b) =>
-          (strength[a.id] ?? 0).compareTo(strength[b.id] ?? 0));
+      ..sort((a, b) => (strength[a.id] ?? 0).compareTo(strength[b.id] ?? 0));
     final n = sorted.length;
     return [
       for (var i = 0; i < n; i++)
@@ -390,9 +389,9 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
   }
 
   static String _blurb(bool vision, bool reasoning, int ctx) => [
-        if (reasoning) 'reasoning',
-        if (vision) 'vision',
-        if (ctx >= 128000) 'long context',
-        if (!reasoning && !vision && ctx < 128000) 'chat',
-      ].join(' · ');
+    if (reasoning) 'reasoning',
+    if (vision) 'vision',
+    if (ctx >= 128000) 'long context',
+    if (!reasoning && !vision && ctx < 128000) 'chat',
+  ].join(' · ');
 }

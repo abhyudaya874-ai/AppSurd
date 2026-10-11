@@ -15,7 +15,8 @@ enum EngineChoice { whisper, system, groq }
 /// when the chosen one can't run.
 final engineChoiceProvider =
     NotifierProvider<EngineChoiceNotifier, EngineChoice>(
-        EngineChoiceNotifier.new);
+      EngineChoiceNotifier.new,
+    );
 
 class EngineChoiceNotifier extends Notifier<EngineChoice> {
   static const _key = 'voiceEngine';
@@ -55,8 +56,9 @@ final transcriberProvider = Provider<Transcriber>((ref) {
 });
 
 /// All engines with availability — powers the Settings picker (dimmed rows).
-final engineListProvider =
-    FutureProvider<List<(Transcriber, bool)>>((ref) async {
+final engineListProvider = FutureProvider<List<(Transcriber, bool)>>((
+  ref,
+) async {
   final keys = ref.watch(configuredKeysProvider).value ?? const {};
   final engines = <Transcriber>[
     WhisperLocalTranscriber(),
@@ -64,7 +66,5 @@ final engineListProvider =
     if (keys.containsKey(AiProvider.groq))
       GroqWhisperTranscriber(apiKey: keys[AiProvider.groq]!),
   ];
-  return [
-    for (final e in engines) (e, await e.available),
-  ];
+  return [for (final e in engines) (e, await e.available)];
 });

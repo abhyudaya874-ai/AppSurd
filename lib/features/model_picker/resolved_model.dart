@@ -23,10 +23,10 @@ final resolvedModelProvider = Provider<ModelSpec?>((ref) {
 
 /// Provider → ARGB tint (kept in sync with `ProviderTints`).
 int providerTintValue(AiProvider p) => switch (p) {
-      AiProvider.groq => 0xFFF97316,
-      AiProvider.nvidia => 0xFF76B900,
-      AiProvider.openrouter => 0xFF8B5CF6,
-    };
+  AiProvider.groq => 0xFFF97316,
+  AiProvider.nvidia => 0xFF76B900,
+  AiProvider.openrouter => 0xFF8B5CF6,
+};
 
 /// Pretty fallback ramp when a tier has no routable model (no key configured).
 const _fallbackTints = [0xFFF97316, 0xFF4FD8E0, 0xFF76B900, 0xFF8B5CF6];

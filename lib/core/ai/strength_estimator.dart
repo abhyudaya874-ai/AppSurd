@@ -21,24 +21,22 @@ abstract final class StrengthEstimator {
     }
     double s = 0.45; // unknown → middle default
     // Parameter count parsed from the id ("8b", "70b", "235b", "1.5b").
-    final m = RegExp(r'(\d+(?:\.\d+)?)[bB](?:[_-]|$|[^a-z])')
-        .firstMatch(id);
+    final m = RegExp(r'(\d+(?:\.\d+)?)[bB](?:[_-]|$|[^a-z])').firstMatch(id);
     if (m != null) {
       final b = double.parse(m.group(1)!);
       s = (b <= 4
-              ? 0.15
-              : b <= 12
-                  ? 0.3
-                  : b <= 32
-                      ? 0.5
-                      : b <= 100
-                          ? 0.7
-                          : 0.85);
+          ? 0.15
+          : b <= 12
+          ? 0.3
+          : b <= 32
+          ? 0.5
+          : b <= 100
+          ? 0.7
+          : 0.85);
     }
     if (reasoning) s += 0.12;
     if (vision) s += 0.05;
-    if (RegExp(r'(mini|small|flash|lite|instant|nano|micro)')
-        .hasMatch(id)) {
+    if (RegExp(r'(mini|small|flash|lite|instant|nano|micro)').hasMatch(id)) {
       s -= 0.15;
     }
     return s.clamp(0.0, 1.0);
@@ -46,14 +44,18 @@ abstract final class StrengthEstimator {
 
   /// Normalize raw scores to 0..1 across the set (min/max anchored).
   static Map<String, double> normalized(Iterable<ModelSpec> models) {
-    final raws = {for (final m in models) m.id: raw(m.id,
-        reasoning: m.supportsReasoning, vision: m.supportsVision)};
+    final raws = {
+      for (final m in models)
+        m.id: raw(
+          m.id,
+          reasoning: m.supportsReasoning,
+          vision: m.supportsVision,
+        ),
+    };
     if (raws.isEmpty) return const {};
     final lo = raws.values.reduce((a, b) => a < b ? a : b);
     final hi = raws.values.reduce((a, b) => a > b ? a : b);
     final span = (hi - lo) == 0 ? 1 : (hi - lo);
-    return {
-      for (final e in raws.entries) e.key: (e.value - lo) / span
-    };
+    return {for (final e in raws.entries) e.key: (e.value - lo) / span};
   }
 }

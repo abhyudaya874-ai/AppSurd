@@ -34,11 +34,14 @@ class OpenAiCompatClient {
     required this.apiKey,
     this.extraHeaders = const {},
     Dio? dio,
-  }) : _dio = dio ??
-            Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 8),
-              receiveTimeout: const Duration(seconds: 30),
-            ));
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: const Duration(seconds: 8),
+               receiveTimeout: const Duration(seconds: 30),
+             ),
+           );
 
   final String baseUrl;
   final String apiKey;
@@ -124,7 +127,11 @@ class OpenAiCompatClient {
     int maxTokens = 1024,
   }) async* {
     await for (final c in streamRich(
-        model: model, messages: messages, temperature: temperature, maxTokens: maxTokens)) {
+      model: model,
+      messages: messages,
+      temperature: temperature,
+      maxTokens: maxTokens,
+    )) {
       if (c.text.isNotEmpty) yield c.text;
     }
   }
@@ -186,7 +193,8 @@ class OpenAiCompatClient {
           if (choices is List && choices.isNotEmpty) {
             final delta = (choices.first as Map)['delta'];
             if (delta is Map) {
-              final reasoning = delta['reasoning'] ??
+              final reasoning =
+                  delta['reasoning'] ??
                   delta['reasoning_content'] ??
                   delta['thinking'];
               final content = delta['content'];
@@ -204,8 +212,7 @@ class OpenAiCompatClient {
                       yield StreamChunk(reasoning: rest);
                       rest = '';
                     } else {
-                      yield StreamChunk(
-                          reasoning: rest.substring(0, close));
+                      yield StreamChunk(reasoning: rest.substring(0, close));
                       rest = rest.substring(close + 8);
                       _inThink = false;
                     }
@@ -216,8 +223,7 @@ class OpenAiCompatClient {
                       rest = '';
                     } else {
                       if (open > 0) {
-                        yield StreamChunk(
-                            text: rest.substring(0, open));
+                        yield StreamChunk(text: rest.substring(0, open));
                       }
                       rest = rest.substring(open + 7);
                       _inThink = true;

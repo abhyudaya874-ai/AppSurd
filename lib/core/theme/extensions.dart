@@ -35,7 +35,8 @@ class MotionTokens extends ThemeExtension<MotionTokens> {
 
   /// Durations are discrete — snap at the midpoint instead of interpolating.
   @override
-  MotionTokens lerp(MotionTokens? other, double t) => t < 0.5 ? this : (other ?? this);
+  MotionTokens lerp(MotionTokens? other, double t) =>
+      t < 0.5 ? this : (other ?? this);
 }
 
 /// Per-provider brand tints, used sparingly: pill glyph, source chips, and
@@ -54,11 +55,11 @@ class ProviderTints extends ThemeExtension<ProviderTints> {
 
   /// Tint for a provider id string ('groq' | 'nvidia' | 'openrouter').
   Color forId(String providerId) => switch (providerId) {
-        'groq' => groq,
-        'nvidia' => nvidia,
-        'openrouter' => openrouter,
-        _ => groq,
-      };
+    'groq' => groq,
+    'nvidia' => nvidia,
+    'openrouter' => openrouter,
+    _ => groq,
+  };
 
   @override
   ProviderTints copyWith({Color? groq, Color? nvidia, Color? openrouter}) {

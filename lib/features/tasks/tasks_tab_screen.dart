@@ -34,8 +34,8 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
   TaskStatus? _statusFilter;
   String? _groupFilter; // '' = Inbox, null = all
 
-  static const _avatarRowH = 76.0;
-  static const _headerMax = 150.0;
+  static const _avatarRowH = 84.0;
+  static const _headerMax = 158.0;
   static const _headerMin = 64.0;
 
   @override
@@ -66,105 +66,122 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
     return Scaffold(
       body: SafeArea(
         child: ConstrainedContent(
-          child: CustomScrollView(slivers: [
-            // ---- Collapsing header: title row + stories avatars ----
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StoriesHeaderDelegate(
-                minExtent: _headerMin,
-                maxExtent: _headerMax,
-                avatarRowHeight: _avatarRowH,
-                builder: (context, t) =>
-                    _header(context, theme, groups, tasksAsync.value ?? const [], t),
+          child: CustomScrollView(
+            slivers: [
+              // ---- Collapsing header: title row + stories avatars ----
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StoriesHeaderDelegate(
+                  minExtent: _headerMin,
+                  maxExtent: _headerMax,
+                  avatarRowHeight: _avatarRowH,
+                  builder: (context, t) => _header(
+                    context,
+                    theme,
+                    groups,
+                    tasksAsync.value ?? const [],
+                    t,
+                  ),
+                ),
               ),
-            ),
 
-            // ---- Collapsing search field ----
-            SliverToBoxAdapter(
-              child: AnimatedSize(
-                duration: AppMotion.of(context, AppMotion.base),
-                curve: AppMotion.standard,
-                child: _searchOpen
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md),
-                        child: TextField(
-                          controller: _searchCtrl,
-                          autofocus: true,
-                          onChanged: (_) => setState(() {}),
-                          decoration: InputDecoration(
-                            hintText: 'Search tasks',
-                            isDense: true,
-                            prefixIcon: const Icon(Icons.search, size: 18),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () => setState(() {
-                                _searchOpen = false;
-                                _searchCtrl.clear();
-                              }),
+              // ---- Collapsing search field ----
+              SliverToBoxAdapter(
+                child: AnimatedSize(
+                  duration: AppMotion.of(context, AppMotion.base),
+                  curve: AppMotion.standard,
+                  child: _searchOpen
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                          child: TextField(
+                            controller: _searchCtrl,
+                            autofocus: true,
+                            onChanged: (_) => setState(() {}),
+                            decoration: InputDecoration(
+                              hintText: 'Search tasks',
+                              isDense: true,
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () => setState(() {
+                                  _searchOpen = false;
+                                  _searchCtrl.clear();
+                                }),
+                              ),
                             ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
-            ),
 
-            // ---- Status filter chips ----
-            SliverToBoxAdapter(child: _filterBar(theme)),
+              // ---- Status filter chips ----
+              SliverToBoxAdapter(child: _filterBar(theme)),
 
-            // ---- Content ----
-            tasksAsync.when(
-              loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator())),
-              error: (e, _) => const SliverFillRemaining(
-                  child: Center(child: Text('Could not load tasks.'))),
-              data: (tasks) {
-                var list = _filtered(tasks, now);
-                if (list.isEmpty) {
-                  return SliverFillRemaining(
-                    child: _EmptyState(filtered: tasks.isNotEmpty),
-                  );
-                }
-                if (_focusMode) {
-                  return SliverFillRemaining(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: bottomPad - 60),
-                      child: FocusTaskFeed(tasks: list),
-                    ),
-                  );
-                }
-                final sections = groupTasks(list, groups, view.groupBy, now);
-                return SliverList(
-                  delegate: SliverChildListDelegate([
-                    for (final s in sections) ...[
-                      if (s.label.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                              AppSpacing.sm, AppSpacing.lg, AppSpacing.xxs),
-                          child: Text(s.label,
+              // ---- Content ----
+              tasksAsync.when(
+                loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (e, _) => const SliverFillRemaining(
+                  child: Center(child: Text('Could not load tasks.')),
+                ),
+                data: (tasks) {
+                  var list = _filtered(tasks, now);
+                  if (list.isEmpty) {
+                    return SliverFillRemaining(
+                      child: _EmptyState(filtered: tasks.isNotEmpty),
+                    );
+                  }
+                  if (_focusMode) {
+                    return SliverFillRemaining(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: bottomPad - 60),
+                        child: FocusTaskFeed(tasks: list),
+                      ),
+                    );
+                  }
+                  final sections = groupTasks(list, groups, view.groupBy, now);
+                  return SliverList(
+                    delegate: SliverChildListDelegate([
+                      for (final s in sections) ...[
+                        if (s.label.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.sm,
+                              AppSpacing.lg,
+                              AppSpacing.xxs,
+                            ),
+                            child: Text(
+                              s.label,
                               style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme
-                                      .colorScheme.onSurfaceVariant)),
-                        ),
-                      for (var i = 0; i < s.tasks.length; i++)
-                        FadeSlideIn(
-                          index: i,
-                          stagger: const Duration(milliseconds: 40),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.xxs),
-                            child: TaskRow(task: s.tasks[i]),
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ),
-                        ),
-                    ],
-                    SizedBox(height: bottomPad),
-                  ]),
-                );
-              },
-            ),
-          ]),
+                        for (var i = 0; i < s.tasks.length; i++)
+                          FadeSlideIn(
+                            index: i,
+                            stagger: const Duration(milliseconds: 40),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.xxs,
+                              ),
+                              child: TaskRow(task: s.tasks[i]),
+                            ),
+                          ),
+                      ],
+                      SizedBox(height: bottomPad),
+                    ]),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -173,89 +190,100 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
   /// Header content rendered inside the persistent sliver. [t] is collapse
   /// progress 0→1; avatars fade/slide away while a compact overlapped
   /// cluster fades in beside the title.
-  Widget _header(BuildContext context, ThemeData theme, List<Group> groups,
-      List<Task> all, double t) {
+  Widget _header(
+    BuildContext context,
+    ThemeData theme,
+    List<Group> groups,
+    List<Task> all,
+    double t,
+  ) {
     final avatarT = (1 - (t / 0.7)).clamp(0.0, 1.0); // gone by 70% collapse
     final clusterT = ((t - 0.45) / 0.55).clamp(0.0, 1.0);
     final storyGroups = _storyGroups(groups, all);
 
     return Container(
       color: theme.colorScheme.surface.withValues(alpha: 0.0),
-      child: Stack(children: [
-        // Title row (always visible).
-        Positioned(
-          top: 8,
-          left: AppSpacing.lg,
-          right: AppSpacing.xs,
-          child: Row(children: [
-            Text('Tasks', style: theme.textTheme.headlineLarge),
-            const SizedBox(width: AppSpacing.sm),
-            // Overlapped avatar cluster beside the title.
-            Expanded(
-              child: Opacity(
-                opacity: clusterT,
-                child: _AvatarCluster(
-                  groups: storyGroups,
-                  all: all,
-                  onPick: _pickGroupFilter,
+      child: Stack(
+        children: [
+          // Title row (always visible).
+          Positioned(
+            top: 8,
+            left: AppSpacing.lg,
+            right: AppSpacing.xs,
+            child: Row(
+              children: [
+                Text('Tasks', style: theme.textTheme.headlineLarge),
+                const SizedBox(width: AppSpacing.sm),
+                // Overlapped avatar cluster beside the title.
+                Expanded(
+                  child: Opacity(
+                    opacity: clusterT,
+                    child: _AvatarCluster(
+                      groups: storyGroups,
+                      all: all,
+                      onPick: _pickGroupFilter,
+                    ),
+                  ),
+                ),
+                _segToggle(theme),
+                IconButton(
+                  tooltip: 'Search',
+                  icon: const Icon(Icons.search, size: 20),
+                  onPressed: () => setState(() {
+                    _searchOpen = !_searchOpen;
+                    if (!_searchOpen) _searchCtrl.clear();
+                  }),
+                ),
+                IconButton(
+                  tooltip: 'Group & sort',
+                  icon: const Icon(Icons.tune_rounded, size: 20),
+                  onPressed: _openViewMenu,
+                ),
+              ],
+            ),
+          ),
+          // Stories avatar row — fades and slides up as the header collapses.
+          Positioned(
+            top: 56,
+            left: 0,
+            right: 0,
+            height: _avatarRowH,
+            child: Opacity(
+              opacity: avatarT,
+              child: Transform.translate(
+                offset: Offset(0, -14 * t),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _GroupAvatar(
+                      label: 'All',
+                      count: all.length,
+                      color: theme.colorScheme.primary,
+                      selected: _groupFilter == null,
+                      onTap: () => _pickGroupFilter(null),
+                    ),
+                    for (final g in storyGroups)
+                      _GroupAvatar(
+                        label: g.name,
+                        count: g.id == ''
+                            ? all.where((t) => _isInbox(t, groups)).length
+                            : all.where((t) => t.groupId == g.id).length,
+                        color: g.color,
+                        selected: _groupFilter == g.id,
+                        onTap: () => _pickGroupFilter(g.id),
+                      ),
+                  ],
                 ),
               ),
             ),
-            _segToggle(theme),
-            IconButton(
-              tooltip: 'Search',
-              icon: const Icon(Icons.search, size: 20),
-              onPressed: () => setState(() {
-                _searchOpen = !_searchOpen;
-                if (!_searchOpen) _searchCtrl.clear();
-              }),
-            ),
-            IconButton(
-              tooltip: 'Group & sort',
-              icon: const Icon(Icons.tune_rounded, size: 20),
-              onPressed: _openViewMenu,
-            ),
-          ]),
-        ),
-        // Stories avatar row — fades and slides up as the header collapses.
-        Positioned(
-          top: 56,
-          left: 0,
-          right: 0,
-          height: _avatarRowH,
-          child: Opacity(
-            opacity: avatarT,
-            child: Transform.translate(
-              offset: Offset(0, -14 * t),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _GroupAvatar(
-                    label: 'All',
-                    count: all.length,
-                    color: theme.colorScheme.primary,
-                    selected: _groupFilter == null,
-                    onTap: () => _pickGroupFilter(null),
-                  ),
-                  for (final g in storyGroups)
-                    _GroupAvatar(
-                      label: g.name,
-                      count: g.id == ''
-                          ? all.where((t) => _isInbox(t, groups)).length
-                          : all.where((t) => t.groupId == g.id).length,
-                      color: g.color,
-                      selected: _groupFilter == g.id,
-                      onTap: () => _pickGroupFilter(g.id),
-                    ),
-                ],
-              ),
-            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -289,17 +317,35 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: theme.colorScheme.outline),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        _seg(theme, Icons.view_list_rounded, !_focusMode,
-            () => setState(() => _focusMode = false), 'List view'),
-        _seg(theme, Icons.view_carousel_rounded, _focusMode,
-            () => setState(() => _focusMode = true), 'Focus view'),
-      ]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _seg(
+            theme,
+            Icons.view_list_rounded,
+            !_focusMode,
+            () => setState(() => _focusMode = false),
+            'List view',
+          ),
+          _seg(
+            theme,
+            Icons.view_carousel_rounded,
+            _focusMode,
+            () => setState(() => _focusMode = true),
+            'Focus view',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _seg(ThemeData theme, IconData icon, bool on, VoidCallback tap,
-      String tooltip) {
+  Widget _seg(
+    ThemeData theme,
+    IconData icon,
+    bool on,
+    VoidCallback tap,
+    String tooltip,
+  ) {
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
@@ -318,11 +364,13 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: Icon(icon,
-              size: 17,
-              color: on
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant),
+          child: Icon(
+            icon,
+            size: 17,
+            color: on
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
@@ -339,39 +387,43 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
     ];
     return SizedBox(
       height: 44,
-      child: ListView(scrollDirection: Axis.horizontal, children: [
-        const SizedBox(width: AppSpacing.md),
-        Padding(
-          padding: const EdgeInsets.only(right: 6, top: 8),
-          child: AnimatedAppIcon(
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          const SizedBox(width: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.only(right: 6, top: 8),
+            child: AnimatedAppIcon(
               type: AppIconType.filter,
               active: _statusFilter != null || _groupFilter != null,
               size: 18,
               color: _statusFilter != null || _groupFilter != null
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant),
-        ),
-        for (final (v, label) in opts)
-          Padding(
-            padding: const EdgeInsets.only(right: 6, top: 8),
-            child: AppChip(
-              label: label,
-              filled: _statusFilter == v,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _statusFilter = v);
-              },
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        if (_groupFilter != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: AppChip(
-              label: 'Group ✕',
-              onTap: () => setState(() => _groupFilter = null),
+          for (final (v, label) in opts)
+            Padding(
+              padding: const EdgeInsets.only(right: 6, top: 8),
+              child: AppChip(
+                label: label,
+                filled: _statusFilter == v,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _statusFilter = v);
+                },
+              ),
             ),
-          ),
-      ]),
+          if (_groupFilter != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: AppChip(
+                label: 'Group ✕',
+                onTap: () => setState(() => _groupFilter = null),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -391,9 +443,11 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isNotEmpty) {
       list = list
-          .where((t) =>
-              t.title.toLowerCase().contains(q) ||
-              t.description.toLowerCase().contains(q))
+          .where(
+            (t) =>
+                t.title.toLowerCase().contains(q) ||
+                t.description.toLowerCase().contains(q),
+          )
           .toList();
     }
     final view = ref.read(taskViewProvider);
@@ -414,12 +468,8 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
         child: Align(
           alignment: Alignment.topRight,
           child: Padding(
-            padding: const EdgeInsets.only(
-                top: 100, right: AppSpacing.md),
-            child: FadeTransition(
-              opacity: anim,
-              child: const _ViewMenuCard(),
-            ),
+            padding: const EdgeInsets.only(top: 100, right: AppSpacing.md),
+            child: FadeTransition(opacity: anim, child: const _ViewMenuCard()),
           ),
         ),
       ),
@@ -476,12 +526,20 @@ class _ViewMenuCardState extends ConsumerState<_ViewMenuCard> {
             duration: AppMotion.of(context, AppMotion.fast),
             child: switch (_stage) {
               _Stage.main => _mainStage(theme, view),
-              _Stage.groupBy =>
-                _pickStage(theme, 'Group by', _groupLabels, view.groupBy,
-                    (g) => set(view.copyWith(groupBy: g))),
-              _Stage.sortBy =>
-                _pickStage(theme, 'Sort by', _sortLabels, view.sortBy,
-                    (s) => set(view.copyWith(sortBy: s))),
+              _Stage.groupBy => _pickStage(
+                theme,
+                'Group by',
+                _groupLabels,
+                view.groupBy,
+                (g) => set(view.copyWith(groupBy: g)),
+              ),
+              _Stage.sortBy => _pickStage(
+                theme,
+                'Sort by',
+                _sortLabels,
+                view.sortBy,
+                (s) => set(view.copyWith(sortBy: s)),
+              ),
             },
           ),
         ),
@@ -490,67 +548,99 @@ class _ViewMenuCardState extends ConsumerState<_ViewMenuCard> {
   }
 
   Widget _mainStage(ThemeData theme, TaskViewOptions view) {
-    return Column(key: const ValueKey('main'), mainAxisSize: MainAxisSize.min,
-        children: [
-      _row(theme, 'Group by', _groupLabels[view.groupBy]!,
-          () => setState(() => _stage = _Stage.groupBy)),
-      Divider(height: 1, color: theme.colorScheme.outline),
-      _row(theme, 'Sort by', _sortLabels[view.sortBy]!,
-          () => setState(() => _stage = _Stage.sortBy)),
-      Divider(height: 1, color: theme.colorScheme.outline),
-      InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          ref
-              .read(taskViewProvider.notifier)
-              .set(view.copyWith(ascending: !view.ascending));
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          child: Row(children: [
-            Expanded(
-              child: Text('Direction', style: theme.textTheme.bodyMedium),
-            ),
-            Icon(
-              view.ascending
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded,
-              size: 16,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(view.ascending ? 'Ascending' : 'Descending',
-                style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
-          ]),
+    return Column(
+      key: const ValueKey('main'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _row(
+          theme,
+          'Group by',
+          _groupLabels[view.groupBy]!,
+          () => setState(() => _stage = _Stage.groupBy),
         ),
-      ),
-    ]);
+        Divider(height: 1, color: theme.colorScheme.outline),
+        _row(
+          theme,
+          'Sort by',
+          _sortLabels[view.sortBy]!,
+          () => setState(() => _stage = _Stage.sortBy),
+        ),
+        Divider(height: 1, color: theme.colorScheme.outline),
+        InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            ref
+                .read(taskViewProvider.notifier)
+                .set(view.copyWith(ascending: !view.ascending));
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Direction', style: theme.textTheme.bodyMedium),
+                ),
+                Icon(
+                  view.ascending
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  view.ascending ? 'Ascending' : 'Descending',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _row(ThemeData theme, String label, String value,
-      VoidCallback onTap) {
+  Widget _row(ThemeData theme, String label, String value, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-        child: Row(children: [
-          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          Text(value,
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          Icon(Icons.chevron_right,
-              size: 18, color: theme.colorScheme.onSurfaceVariant),
-        ]),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+            Text(
+              value,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   /// The checkmark list stage with a back affordance.
-  Widget _pickStage<T>(ThemeData theme, String title, Map<T, String> labels,
-      T current, ValueChanged<T> onPick) {
+  Widget _pickStage<T>(
+    ThemeData theme,
+    String title,
+    Map<T, String> labels,
+    T current,
+    ValueChanged<T> onPick,
+  ) {
     return Column(
       key: ValueKey(title),
       mainAxisSize: MainAxisSize.min,
@@ -559,13 +649,20 @@ class _ViewMenuCardState extends ConsumerState<_ViewMenuCard> {
           onTap: () => setState(() => _stage = _Stage.main),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
-            child: Row(children: [
-              Icon(Icons.arrow_back_rounded,
-                  size: 18, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: AppSpacing.xs),
-              Text(title, style: theme.textTheme.titleSmall),
-            ]),
+              horizontal: AppSpacing.xs,
+              vertical: AppSpacing.xs,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.arrow_back_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(title, style: theme.textTheme.titleSmall),
+              ],
+            ),
           ),
         ),
         Divider(height: 1, color: theme.colorScheme.outline),
@@ -578,15 +675,22 @@ class _ViewMenuCardState extends ConsumerState<_ViewMenuCard> {
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-              child: Row(children: [
-                Expanded(
-                    child:
-                        Text(e.value, style: theme.textTheme.bodyMedium)),
-                if (e.key == current)
-                  Icon(Icons.check_rounded,
-                      size: 18, color: theme.colorScheme.primary),
-              ]),
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(e.value, style: theme.textTheme.bodyMedium),
+                  ),
+                  if (e.key == current)
+                    Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                ],
+              ),
             ),
           ),
       ],
@@ -597,8 +701,11 @@ class _ViewMenuCardState extends ConsumerState<_ViewMenuCard> {
 /// Overlapped avatar cluster shown beside the title when the stories row
 /// collapses (ref: recording 2). Tapping opens the same group filter.
 class _AvatarCluster extends StatelessWidget {
-  const _AvatarCluster(
-      {required this.groups, required this.all, required this.onPick});
+  const _AvatarCluster({
+    required this.groups,
+    required this.all,
+    required this.onPick,
+  });
   final List<Group> groups;
   final List<Task> all;
   final ValueChanged<String?> onPick;
@@ -610,24 +717,36 @@ class _AvatarCluster extends StatelessWidget {
     final items = groups.take(4).toList();
     return SizedBox(
       height: size,
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        SizedBox(
-          width: size + (items.isEmpty ? 0 : (items.length) * (size - overlap)),
-          child: Stack(children: [
-            Positioned(
-              left: 0,
-              child: _mini(theme.colorScheme.primary, '≡', () => onPick(null)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width:
+                size + (items.isEmpty ? 0 : (items.length) * (size - overlap)),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  child: _mini(
+                    theme.colorScheme.primary,
+                    '≡',
+                    () => onPick(null),
+                  ),
+                ),
+                for (var i = 0; i < items.length; i++)
+                  Positioned(
+                    left: size - overlap + i * (size - overlap),
+                    child: _mini(
+                      items[i].color,
+                      items[i].name.isEmpty ? '?' : items[i].name[0],
+                      () => onPick(items[i].id),
+                    ),
+                  ),
+              ],
             ),
-            for (var i = 0; i < items.length; i++)
-              Positioned(
-                left: size - overlap + i * (size - overlap),
-                child: _mini(items[i].color,
-                    items[i].name.isEmpty ? '?' : items[i].name[0],
-                    () => onPick(items[i].id)),
-              ),
-          ]),
-        ),
-      ]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -643,9 +762,14 @@ class _AvatarCluster extends StatelessWidget {
           border: Border.all(color: color, width: 1.6),
         ),
         alignment: Alignment.center,
-        child: Text(letter,
-            style: TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+        child: Text(
+          letter,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
       ),
     );
   }
@@ -674,59 +798,73 @@ class _GroupAvatar extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(right: AppSpacing.sm),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Stack(clipBehavior: Clip.none, children: [
-            AnimatedContainer(
-              duration: AppMotion.of(context, AppMotion.base),
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.surface,
-                border: Border.all(
-                  color: selected
-                      ? color
-                      : color.withValues(alpha: 0.45),
-                  width: selected ? 2.4 : 1.6,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: AppMotion.of(context, AppMotion.base),
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.surface,
+                    border: Border.all(
+                      color: selected ? color : color.withValues(alpha: 0.45),
+                      width: selected ? 2.4 : 1.6,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    label.isEmpty ? '?' : label[0].toUpperCase(),
+                    style: theme.textTheme.titleMedium?.copyWith(color: color),
+                  ),
                 ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                label.isEmpty ? '?' : label[0].toUpperCase(),
-                style: theme.textTheme.titleMedium?.copyWith(color: color),
-              ),
-            ),
-            Positioned(
-              right: -2,
-              top: -2,
-              child: Container(
-                padding: const EdgeInsets.all(3),
-                constraints:
-                    const BoxConstraints(minWidth: 18, minHeight: 18),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: theme.colorScheme.surface, width: 1.5),
-                ),
-                child: Center(
-                  child: Text('$count',
-                      style: const TextStyle(
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.surface,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black)),
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 2),
-          Text(label,
+            const SizedBox(height: 2),
+            Text(
+              label,
               style: theme.textTheme.labelSmall?.copyWith(
-                  color: selected
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurfaceVariant),
-              overflow: TextOverflow.ellipsis),
-        ]),
+                color: selected
+                    ? theme.colorScheme.onSurface
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -750,7 +888,10 @@ class _StoriesHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final t = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
     // Opaque backdrop once collapsed so rows don't show through.
     return ColoredBox(
@@ -773,25 +914,30 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        AnimatedAppIcon(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedAppIcon(
             type: AppIconType.receipt,
             active: true,
             size: 72,
-            color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(height: AppSpacing.md),
-        Text(filtered ? 'Nothing in this filter' : 'Nothing to prove yet',
-            style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          filtered
-              ? 'Try clearing filters or search.'
-              : 'Add a task from Home — it only counts once evidence checks out.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-      ]),
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            filtered ? 'Nothing in this filter' : 'Nothing to prove yet',
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            filtered ? 'Try clearing filters or search.' : 'Add a task from Home — it only counts once evidence checks out.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

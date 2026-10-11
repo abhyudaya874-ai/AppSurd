@@ -68,20 +68,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: ConstrainedContent(
           child: ListView(
             padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, barGap),
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              barGap,
+            ),
             children: [
               // Header: mark + name + integrity chip.
-              Row(children: [
-                const AnimatedAppIcon(
-                    type: AppIconType.receipt, active: true, size: 22),
-                const SizedBox(width: AppSpacing.xs),
-                Text('Receipts',
+              Row(
+                children: [
+                  const AnimatedAppIcon(
+                    type: AppIconType.receipt,
+                    active: true,
+                    size: 22,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Receipts',
                     style: AppTypography.grotesk(theme.colorScheme.onSurface)
-                        .copyWith(
-                            fontSize: 18, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                const IntegrityChip(),
-              ]),
+                        .copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  const Spacer(),
+                  const IntegrityChip(),
+                ],
+              ),
               const SizedBox(height: AppSpacing.xxl),
 
               // Label + serif headline.
@@ -89,14 +99,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('HOME',
-                        style: AppTypography.sectionLabel(
-                            theme.colorScheme.primary)),
+                    Text(
+                      'HOME',
+                      style: AppTypography.sectionLabel(
+                        theme.colorScheme.primary,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('What will you prove today?',
-                        style: AppTypography.display(
-                            theme.colorScheme.onSurface,
-                            size: 32)),
+                    Text(
+                      'What will you prove today?',
+                      style: AppTypography.display(
+                        theme.colorScheme.onSurface,
+                        size: 32,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -117,14 +133,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         index: 2 + i,
                         stagger: const Duration(milliseconds: 60),
                         child: Padding(
-                          padding:
-                              const EdgeInsets.only(right: AppSpacing.xs),
+                          padding: const EdgeInsets.only(right: AppSpacing.xs),
                           child: AppChip(
                             label: _suggestions[i],
                             onTap: () {
                               _ctrl.text = _suggestions[i];
                               _ctrl.selection = TextSelection.collapsed(
-                                  offset: _ctrl.text.length);
+                                offset: _ctrl.text.length,
+                              );
                             },
                           ),
                         ),
@@ -157,73 +173,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         border: Border.all(color: theme.colorScheme.outline),
       ),
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
-      child: Column(children: [
-        // The Hero source — its text flies into Create Task's title field.
-        Hero(
-          tag: kComposerHeroTag,
-          flightShuttleBuilder: composerTextShuttle,
-          child: Material(
-            type: MaterialType.transparency,
-            child: TextField(
-              controller: _ctrl,
-              minLines: 1,
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => _openEditor(),
-              decoration: const InputDecoration(
-                hintText: 'Add a task…',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        children: [
+          // The Hero source — its text flies into Create Task's title field.
+          Hero(
+            tag: kComposerHeroTag,
+            flightShuttleBuilder: composerTextShuttle,
+            child: Material(
+              type: MaterialType.transparency,
+              child: TextField(
+                controller: _ctrl,
+                minLines: 1,
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                onSubmitted: (_) => _openEditor(),
+                decoration: const InputDecoration(
+                  hintText: 'Add a task…',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: theme.textTheme.bodyLarge?.copyWith(fontSize: 15),
               ),
-              style: theme.textTheme.bodyLarge
-                  ?.copyWith(fontSize: 15),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Row(children: [
-          AppChip(
-            label: group?.name ?? 'Inbox',
-            trailing: Icon(Icons.expand_more,
-                size: 14, color: theme.colorScheme.onSurfaceVariant),
-            onTap: () async {
-              final g = await pickGroupSheet(context, ref);
-              if (g != null) {
-                setState(() => _groupId = g.isEmpty ? null : g);
-              }
-            },
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          const Flexible(child: ModelPill()),
-          VoiceOrbButton(
-            intent: VoiceIntent.task,
-            onResult: (r) {
-              _ctrl.text = r.text;
-              _ctrl.selection =
-                  TextSelection.collapsed(offset: r.text.length);
-            },
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Pressable(
-            onTap: _openEditor,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.onSurface,
-                border: Border.all(color: tint.withValues(alpha: 0.6)),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              AppChip(
+                label: group?.name ?? 'Inbox',
+                trailing: Icon(
+                  Icons.expand_more,
+                  size: 14,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                onTap: () async {
+                  final g = await pickGroupSheet(context, ref);
+                  if (g != null) {
+                    setState(() => _groupId = g.isEmpty ? null : g);
+                  }
+                },
               ),
-              child: Icon(Icons.arrow_upward_rounded,
-                  color: theme.colorScheme.surface, size: 20),
-            ),
+              const SizedBox(width: AppSpacing.xs),
+              const Flexible(child: ModelPill()),
+              VoiceOrbButton(
+                intent: VoiceIntent.task,
+                onResult: (r) {
+                  _ctrl.text = r.text;
+                  _ctrl.selection = TextSelection.collapsed(
+                    offset: r.text.length,
+                  );
+                },
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Pressable(
+                onTap: _openEditor,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.onSurface,
+                    border: Border.all(color: tint.withValues(alpha: 0.6)),
+                  ),
+                  child: Icon(
+                    Icons.arrow_upward_rounded,
+                    color: theme.colorScheme.surface,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }

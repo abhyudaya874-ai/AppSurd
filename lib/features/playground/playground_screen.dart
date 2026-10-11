@@ -22,6 +22,8 @@ import '../research/research_pipeline.dart';
 import 'trace_mapper.dart';
 import '../research/research_trace_view.dart';
 import '../../core/theme/motion.dart';
+import '../arena/arena_info_screen.dart';
+import '../arena/arena_state.dart';
 
 /// The Ask tab — a research chat. Composer carries +/attachments, the
 /// "Search ▾" and "Agentic ▾" override chips, the model pill, and a send
@@ -36,18 +38,18 @@ class PlaygroundScreen extends ConsumerStatefulWidget {
 
 class _Msg {
   _Msg.user(this.text, {this.attachments = const []})
-      : isUser = true,
-        spec = null,
-        rerouted = null,
-        visionSwap = null,
-        trace = null,
-        sources = const [];
+    : isUser = true,
+      spec = null,
+      rerouted = null,
+      visionSwap = null,
+      trace = null,
+      sources = const [];
   _Msg.assistant()
-      : isUser = false,
-        text = '',
-        trace = null,
-        sources = const [],
-        attachments = const [];
+    : isUser = false,
+      text = '',
+      trace = null,
+      sources = const [],
+      attachments = const [];
 
   final bool isUser;
   String text;
@@ -101,19 +103,17 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
       customModelId: sel.customModelId,
     );
     if (plan.candidates.isEmpty) {
-      _append(_Msg.assistant()
-        ..text =
-            'No provider key configured — open Settings and add one.');
+      _append(
+        _Msg.assistant()
+          ..text = 'No provider key configured — open Settings and add one.',
+      );
       return;
     }
 
     // ---- Vision routing: images need a vision-capable model ----
     ModelSpec? visionSwap;
-    if (images.isNotEmpty &&
-        !plan.candidates.first.supportsVision) {
-      final v = plan.candidates
-          .where((c) => c.supportsVision)
-          .firstOrNull;
+    if (images.isNotEmpty && !plan.candidates.first.supportsVision) {
+      final v = plan.candidates.where((c) => c.supportsVision).firstOrNull;
       if (v != null) {
         visionSwap = plan.candidates.first;
         plan = RoutePlan(candidates: [v, ...plan.candidates]);
@@ -122,8 +122,9 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
 
     setState(() {
       _sending = true;
-      _messages.add(_Msg.user(text.isEmpty ? '(image)' : text,
-          attachments: images));
+      _messages.add(
+        _Msg.user(text.isEmpty ? '(image)' : text, attachments: images),
+      );
       _messages.add(_Msg.assistant());
     });
     _scrollToBottom();
@@ -154,7 +155,9 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
           applyTraceEvent(assistant.trace!, e);
           setState(() {});
         }
-      } catch (_) {/* search failure → answer without it */}
+      } catch (_) {
+        /* search failure → answer without it */
+      }
     }
     assistant.trace?.finishedAt = DateTime.now();
 
@@ -169,18 +172,23 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
     } else {
       history = [
         ChatMessage.text(
-            'system', 'You are the Receipts demo agent. Answer briefly.'),
+          'system',
+          'You are the Receipts demo agent. Answer briefly.',
+        ),
         for (final m in _messages.where((m) => m.isUser))
           m.attachments.isEmpty
               ? ChatMessage.text('user', m.text)
-              : ChatMessage(role: 'user', content: [
-                  {'type': 'text', 'text': m.text},
-                  for (final a in m.attachments)
-                    {
-                      'type': 'image_url',
-                      'image_url': {'url': a.dataUri},
-                    },
-                ]),
+              : ChatMessage(
+                  role: 'user',
+                  content: [
+                    {'type': 'text', 'text': m.text},
+                    for (final a in m.attachments)
+                      {
+                        'type': 'image_url',
+                        'image_url': {'url': a.dataUri},
+                      },
+                  ],
+                ),
       ];
     }
 
@@ -204,8 +212,11 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
         )) {
           gotToken = true;
           answered = true;
-          _updateLast(spec, i > 0 ? plan.candidates[0].provider : null,
-              visionSwap: visionSwap);
+          _updateLast(
+            spec,
+            i > 0 ? plan.candidates[0].provider : null,
+            visionSwap: visionSwap,
+          );
           if (chunk.reasoning.isNotEmpty) {
             _messages.last.reasoning += chunk.reasoning;
             _messages.last.thinkClock ??= Stopwatch()..start();
@@ -224,13 +235,18 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
       _messages.last.text = 'Every provider failed. Check keys/network.';
     }
     // Never let a citation survive that doesn't map to a retrieved source.
-    _messages.last.text =
-        ResearchPipeline.scrubAnswer(_messages.last.text, sources);
+    _messages.last.text = ResearchPipeline.scrubAnswer(
+      _messages.last.text,
+      sources,
+    );
     setState(() => _sending = false);
   }
 
-  void _updateLast(ModelSpec spec, AiProvider? rerouted,
-      {ModelSpec? visionSwap}) {
+  void _updateLast(
+    ModelSpec spec,
+    AiProvider? rerouted, {
+    ModelSpec? visionSwap,
+  }) {
     final m = _Msg.assistant()
       ..spec = spec
       ..rerouted = rerouted
@@ -257,120 +273,152 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Ask')),
-      body: Column(children: [
-        Expanded(
-          child: _messages.isEmpty
-              ? Center(
-                  child: Text(
-                    'Ask anything — search or the pill decides.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                )
-              : ListView.builder(
-                  controller: _scroll,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, i) =>
-                      _Bubble(msg: _messages[i]),
+      appBar: AppBar(
+        title: const Text('Ask'),
+        actions: [
+          // Arena lives behind Ask/Profile now — entry point only when a
+          // jury is configured.
+          if (ref.watch(arenaReadyProvider))
+            IconButton(
+              tooltip: 'Arena lineup',
+              icon: const Icon(Icons.groups_rounded, size: 20),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ArenaInfoScreen(),
                 ),
-        ),
-        const Divider(height: 1),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Column(children: [
-              AttachmentBar(attachments: _attachments),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 4),
-                    child: ModelPill(),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      decoration:
-                          const InputDecoration(hintText: 'Ask'),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Pressable(
-                      onTap: _send,
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: theme.colorScheme.primary,
-                        child: _sending
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2))
-                            : Icon(Icons.arrow_upward_rounded,
-                                color: theme.colorScheme.onPrimary),
+              ),
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _messages.isEmpty
+                ? Center(
+                    child: Text(
+                      'Ask anything — search or the pill decides.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  )
+                : ListView.builder(
+                    controller: _scroll,
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, i) => _Bubble(msg: _messages[i]),
+                  ),
+          ),
+          const Divider(height: 1),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Column(
+                children: [
+                  AttachmentBar(attachments: _attachments),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: ModelPill(),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          minLines: 1,
+                          maxLines: 4,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
+                          decoration: const InputDecoration(hintText: 'Ask'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Pressable(
+                          onTap: _send,
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: theme.colorScheme.primary,
+                            child: _sending
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.arrow_upward_rounded,
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Search / Agentic override chips.
+                  Row(
+                    children: [
+                      _ChipMenu<SearchOverride>(
+                        label: 'Search',
+                        value: _searchOv,
+                        items: const [
+                          (SearchOverride.auto, 'Auto'),
+                          (SearchOverride.tavily, 'Tavily'),
+                          (SearchOverride.exa, 'Exa'),
+                          (SearchOverride.off, 'Off'),
+                        ],
+                        onPick: (v) => setState(() => _searchOv = v),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      _ChipMenu<AgenticMode>(
+                        label: 'Agentic',
+                        value: _agentic,
+                        items: const [
+                          (AgenticMode.off, 'Off'),
+                          (AgenticMode.search, 'Search'),
+                          (AgenticMode.deep, 'Deep'),
+                        ],
+                        onPick: (v) => setState(() => _agentic = v),
+                      ),
+                      if (_attachments.isNotEmpty) ...[
+                        const SizedBox(width: AppSpacing.xs),
+                        Icon(
+                          Icons.visibility_outlined,
+                          size: 14,
+                          color: theme.colorScheme.primary,
+                        ),
+                        Text(
+                          ' vision',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
-              // Search / Agentic override chips.
-              Row(children: [
-                _ChipMenu<SearchOverride>(
-                  label: 'Search',
-                  value: _searchOv,
-                  items: const [
-                    (SearchOverride.auto, 'Auto'),
-                    (SearchOverride.tavily, 'Tavily'),
-                    (SearchOverride.exa, 'Exa'),
-                    (SearchOverride.off, 'Off'),
-                  ],
-                  onPick: (v) => setState(() => _searchOv = v),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                _ChipMenu<AgenticMode>(
-                  label: 'Agentic',
-                  value: _agentic,
-                  items: const [
-                    (AgenticMode.off, 'Off'),
-                    (AgenticMode.search, 'Search'),
-                    (AgenticMode.deep, 'Deep'),
-                  ],
-                  onPick: (v) => setState(() => _agentic = v),
-                ),
-                if (_attachments.isNotEmpty) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(Icons.visibility_outlined,
-                      size: 14, color: theme.colorScheme.primary),
-                  Text(' vision',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary)),
-                ],
-              ]),
-            ]),
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
 
 /// Small dropdown-style chip (Search ▾ / Agentic ▾).
 class _ChipMenu<T> extends StatelessWidget {
-  const _ChipMenu(
-      {required this.label,
-      required this.value,
-      required this.items,
-      required this.onPick});
+  const _ChipMenu({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onPick,
+  });
 
   final String label;
   final T value;
@@ -384,24 +432,26 @@ class _ChipMenu<T> extends StatelessWidget {
     return PopupMenuButton<T>(
       onSelected: onPick,
       itemBuilder: (_) => [
-        for (final (v, l) in items)
-          PopupMenuItem(value: v, child: Text(l)),
+        for (final (v, l) in items) PopupMenuItem(value: v, child: Text(l)),
       ],
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-              color: value != items.first.$1
-                  ? theme.colorScheme.primary.withValues(alpha: 0.6)
-                  : theme.colorScheme.outline),
+            color: value != items.first.$1
+                ? theme.colorScheme.primary.withValues(alpha: 0.6)
+                : theme.colorScheme.outline,
+          ),
         ),
-        child: Text('$label · $picked ▾',
-            style: theme.textTheme.labelSmall?.copyWith(
-                color: value != items.first.$1
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant)),
+        child: Text(
+          '$label · $picked ▾',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: value != items.first.$1
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }
@@ -423,125 +473,143 @@ class _BubbleState extends State<_Bubble> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tints =
-        theme.extension<ProviderTints>() ?? const ProviderTints();
+    final tints = theme.extension<ProviderTints>() ?? const ProviderTints();
     final msg = widget.msg;
     if (msg.isUser) {
       return Align(
         alignment: Alignment.centerRight,
         child: Container(
-          margin:
-              const EdgeInsets.only(bottom: AppSpacing.sm, left: 48),
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm, left: 48),
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-            if (msg.attachments.isNotEmpty)
-              Wrap(spacing: 6, runSpacing: 6, children: [
-                for (final a in msg.attachments)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(File(a.file.path),
-                        width: 110, height: 110, fit: BoxFit.cover),
-                  ),
-              ]),
-            if (msg.text != '(image)') Text(msg.text,
-                style: theme.textTheme.bodyMedium),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (msg.attachments.isNotEmpty)
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final a in msg.attachments)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(
+                          File(a.file.path),
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                  ],
+                ),
+              if (msg.text != '(image)')
+                Text(msg.text, style: theme.textTheme.bodyMedium),
+            ],
+          ),
         ),
       );
     }
-    final tint = msg.spec != null
-        ? tints.forId(msg.spec!.provider.id)
-        : null;
+    final tint = msg.spec != null ? tints.forId(msg.spec!.provider.id) : null;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin:
-            const EdgeInsets.only(bottom: AppSpacing.sm, right: 24),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm, right: 24),
         padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-          // Research trace above the answer.
-          if (msg.trace != null)
-            ResearchTraceView(
-                trace: msg.trace!, running: msg.text.isEmpty),
-          if (msg.spec != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.circle, size: 8, color: tint),
-                const SizedBox(width: 4),
-                Text(
-                  '${msg.spec!.provider.label} · ${msg.spec!.displayName}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant),
-                ),
-                if (msg.visionSwap != null)
-                  Text(
-                    ' · eye → ${msg.spec!.displayName}',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: tint),
-                  ),
-                if (msg.rerouted != null)
-                  Text(
-                    ' · rerouted from ${msg.rerouted!.label}',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: theme.colorScheme.tertiary),
-                  ),
-              ]),
-            ),
-          // Answer/Links tabs when there are sources.
-          if (msg.sources.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(children: [
-                for (final (i, l) in const [(0, 'Answer'), (1, 'Links')])
-                  GestureDetector(
-                    onTap: () => setState(() => _tab = i),
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 14),
-                      child: Column(children: [
-                        Text(l,
-                            style: theme.textTheme.labelMedium
-                                ?.copyWith(
-                                    color: _tab == i
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme
-                                            .onSurfaceVariant)),
-                        AnimatedContainer(
-                          duration: AppMotion.fast,
-                          height: 2,
-                          width: 18,
-                          color: _tab == i
-                              ? theme.colorScheme.primary
-                              : Colors.transparent,
-                        ),
-                      ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Research trace above the answer.
+            if (msg.trace != null)
+              ResearchTraceView(trace: msg.trace!, running: msg.text.isEmpty),
+            if (msg.spec != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.circle, size: 8, color: tint),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${msg.spec!.provider.label} · ${msg.spec!.displayName}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-              ]),
-            ),
-          if (_tab == 0) ...[
-            _MsgThinking(msg: msg),
-            Text(
-              msg.text.isEmpty ? '…' : msg.text,
-              style: AppTypography.display(
-                      theme.colorScheme.onSurface, size: 15)
-                  .copyWith(height: 1.45, fontWeight: FontWeight.w400),
-            ),
-          ] else
-            Column(children: [
-              for (final h in msg.sources) SourceRow(hit: h),
-            ]),
-        ]),
+                    if (msg.visionSwap != null)
+                      Text(
+                        ' · eye → ${msg.spec!.displayName}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: tint,
+                        ),
+                      ),
+                    if (msg.rerouted != null)
+                      Text(
+                        ' · rerouted from ${msg.rerouted!.label}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            // Answer/Links tabs when there are sources.
+            if (msg.sources.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    for (final (i, l) in const [(0, 'Answer'), (1, 'Links')])
+                      GestureDetector(
+                        onTap: () => setState(() => _tab = i),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 14),
+                          child: Column(
+                            children: [
+                              Text(
+                                l,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: _tab == i
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              AnimatedContainer(
+                                duration: AppMotion.fast,
+                                height: 2,
+                                width: 18,
+                                color: _tab == i
+                                    ? theme.colorScheme.primary
+                                    : Colors.transparent,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (_tab == 0) ...[
+              _MsgThinking(msg: msg),
+              Text(
+                msg.text.isEmpty ? '…' : msg.text,
+                style: AppTypography.display(
+                  theme.colorScheme.onSurface,
+                  size: 15,
+                ).copyWith(height: 1.45, fontWeight: FontWeight.w400),
+              ),
+            ] else
+              Column(
+                children: [for (final h in msg.sources) SourceRow(hit: h)],
+              ),
+          ],
+        ),
       ),
     );
   }

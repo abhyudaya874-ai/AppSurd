@@ -22,12 +22,14 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: AppMotion.hero * 3);
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppMotion.hero * 3,
+    );
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
-        Navigator.of(context).pushReplacement(
-          AppTransitions.fadeThrough(const AppShell()),
-        );
+        Navigator.of(context)
+            .pushReplacement(AppTransitions.fadeThrough(const AppShell()));
       }
     });
   }
@@ -88,8 +90,9 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               child: Text(
                 'prove it or it didn\'t happen',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],

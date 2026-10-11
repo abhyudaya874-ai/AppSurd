@@ -15,8 +15,11 @@ abstract final class AppMotion {
   static const Curve emphasized = Curves.easeInOutCubicEmphasized;
 
   /// Gentle bounce for snap-backs (slider thumb, swipe dismissal).
-  static const SpringDescription spring =
-      SpringDescription(mass: 1, stiffness: 320, damping: 26);
+  static const SpringDescription spring = SpringDescription(
+    mass: 1,
+    stiffness: 320,
+    damping: 26,
+  );
 
   /// Returns [duration] normally, or zero when the OS asks us to reduce motion
   /// (accessibility setting). All animated widgets should route through this.

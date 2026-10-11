@@ -55,98 +55,114 @@ class _ArenaPanelState extends ConsumerState<ArenaPanel> {
       theme.colorScheme.error,
     ];
 
-    return Column(children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, 0),
-        child: Row(children: [
-          Text('Jury lineup', style: theme.textTheme.titleSmall),
-          const Spacer(),
-          AnimatedDefaultTextStyle(
-            duration: AppMotion.fast,
-            style: theme.textTheme.labelSmall!.copyWith(
-              color: sel.arenaLineup.length >= 2
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.error,
-            ),
-            child: Text('${sel.arenaLineup.length}/4'),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.xs,
+            AppSpacing.lg,
+            0,
           ),
-        ]),
-      ),
-
-      // Multi-select, grouped by provider.
-      Expanded(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          children: [
-            for (final provider in AiProvider.values) ...[
-              Padding(
-                padding: const EdgeInsets.only(
-                    top: AppSpacing.sm, bottom: AppSpacing.xxs),
-                child: Text(
-                  provider.label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                      color: tints.forId(provider.id)),
-                ),
-              ),
-              for (final m
-                  in kModelCatalog.where((m) => m.provider == provider))
-                _ModelCheckRow(
-                  model: m,
-                  selected: sel.arenaLineup.contains(m.id),
-                  locked: !keys.containsKey(provider),
-                  disableDeselect: sel.arenaLineup.contains(m.id) &&
-                      sel.arenaLineup.length <= 2,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref
-                        .read(modelSelectionProvider.notifier)
-                        .toggleArenaModel(m.id);
-                  },
-                ),
-            ],
-          ],
-        ),
-      ),
-
-      // Strictness — same custom slider, different meaning.
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: Column(children: [
-          StrengthSlider(
-            value: shown.index.toDouble(),
-            detentColors: detents,
-            onChanged: (v) => setState(
-                () => _preview = Strictness.values[v.round()]),
-            onChangeEnd: (v) {
-              ref
-                  .read(modelSelectionProvider.notifier)
-                  .setStrictness(Strictness.values[v.round()]);
-              setState(() => _preview = null);
-            },
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
             children: [
-              for (final s in Strictness.values)
-                AnimatedDefaultTextStyle(
-                  duration: AppMotion.fast,
-                  style: (s == shown
-                          ? theme.textTheme.labelLarge
-                          : theme.textTheme.labelSmall)!
-                      .copyWith(
-                    color: s == shown
-                        ? detents[s.index]
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  child: Text(s.name),
+              Text('Jury lineup', style: theme.textTheme.titleSmall),
+              const Spacer(),
+              AnimatedDefaultTextStyle(
+                duration: AppMotion.fast,
+                style: theme.textTheme.labelSmall!.copyWith(
+                  color: sel.arenaLineup.length >= 2
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.error,
                 ),
+                child: Text('${sel.arenaLineup.length}/4'),
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-        ]),
-      ),
-    ]);
+        ),
+
+        // Multi-select, grouped by provider.
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            children: [
+              for (final provider in AiProvider.values) ...[
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.sm,
+                    bottom: AppSpacing.xxs,
+                  ),
+                  child: Text(
+                    provider.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: tints.forId(provider.id),
+                    ),
+                  ),
+                ),
+                for (final m in kModelCatalog.where(
+                  (m) => m.provider == provider,
+                ))
+                  _ModelCheckRow(
+                    model: m,
+                    selected: sel.arenaLineup.contains(m.id),
+                    locked: !keys.containsKey(provider),
+                    disableDeselect:
+                        sel.arenaLineup.contains(m.id) &&
+                        sel.arenaLineup.length <= 2,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ref
+                          .read(modelSelectionProvider.notifier)
+                          .toggleArenaModel(m.id);
+                    },
+                  ),
+              ],
+            ],
+          ),
+        ),
+
+        // Strictness — same custom slider, different meaning.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            children: [
+              StrengthSlider(
+                value: shown.index.toDouble(),
+                detentColors: detents,
+                onChanged: (v) =>
+                    setState(() => _preview = Strictness.values[v.round()]),
+                onChangeEnd: (v) {
+                  ref
+                      .read(modelSelectionProvider.notifier)
+                      .setStrictness(Strictness.values[v.round()]);
+                  setState(() => _preview = null);
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (final s in Strictness.values)
+                    AnimatedDefaultTextStyle(
+                      duration: AppMotion.fast,
+                      style:
+                          (s == shown
+                                  ? theme.textTheme.labelLarge
+                                  : theme.textTheme.labelSmall)!
+                              .copyWith(
+                                color: s == shown
+                                    ? detents[s.index]
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                      child: Text(s.name),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -170,9 +186,8 @@ class _ModelCheckRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tint =
-        (theme.extension<ProviderTints>() ?? const ProviderTints())
-            .forId(model.provider.id);
+    final tint = (theme.extension<ProviderTints>() ?? const ProviderTints())
+        .forId(model.provider.id);
     return Opacity(
       opacity: locked ? 0.4 : 1,
       child: InkWell(
@@ -180,67 +195,76 @@ class _ModelCheckRow extends StatelessWidget {
         onTap: locked ? null : onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: Row(children: [
-            AnimatedContainer(
-              duration: AppMotion.fast,
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected
-                    ? tint
-                    : tint.withValues(alpha: 0.12),
-                border: Border.all(color: tint, width: 1.4),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: AppMotion.fast,
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? tint : tint.withValues(alpha: 0.12),
+                  border: Border.all(color: tint, width: 1.4),
+                ),
+                child: selected
+                    ? const Icon(Icons.check, size: 13, color: Colors.white)
+                    : null,
               ),
-              child: selected
-                  ? const Icon(Icons.check, size: 13, color: Colors.white)
-                  : null,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(model.displayName,
-                      style: theme.textTheme.bodyMedium),
-                  Text(
-                    '${model.tier.label} · ${model.blurb}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (model.supportsVision)
-              Icon(Icons.visibility_outlined,
-                  size: 14, color: theme.colorScheme.onSurfaceVariant),
-            if (model.supportsReasoning)
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Icon(Icons.psychology_outlined,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant),
-              ),
-            if (locked)
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Icon(Icons.lock_outline,
-                    size: 13,
-                    color: theme.colorScheme.onSurfaceVariant),
-              ),
-            if (disableDeselect)
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Tooltip(
-                  message: 'Arena needs at least 2 judges',
-                  child: Icon(Icons.push_pin_outlined,
-                      size: 13,
-                      color: theme.colorScheme.tertiary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(model.displayName, style: theme.textTheme.bodyMedium),
+                    Text(
+                      '${model.tier.label} · ${model.blurb}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-          ]),
+              if (model.supportsVision)
+                Icon(
+                  Icons.visibility_outlined,
+                  size: 14,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              if (model.supportsReasoning)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.psychology_outlined,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              if (locked)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.lock_outline,
+                    size: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              if (disableDeselect)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Tooltip(
+                    message: 'Arena needs at least 2 judges',
+                    child: Icon(
+                      Icons.push_pin_outlined,
+                      size: 13,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

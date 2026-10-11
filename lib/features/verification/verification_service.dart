@@ -20,6 +20,7 @@ import 'verdict_model.dart';
 
 /// Pipeline progress for the verification screen's animated step list.
 enum VerifyStep { reading, fetching, crossChecking, writing }
+
 enum VerifyStepState { started, done }
 
 /// Everything the verification screen can receive, in order.
@@ -102,8 +103,6 @@ class VerifierService {
   VerifierService(this._ref);
   final Ref _ref;
 
-
-
   /// Runs the whole verification, yielding UI events as it goes.
   Stream<VerificationEvent> verify(Task task, EvidenceAttempt attempt) async* {
     final keys = await _ref.read(configuredKeysProvider.future);
@@ -166,8 +165,7 @@ class VerifierService {
         roast: 'That link doesn\'t even open. Bold strategy.',
         challenge: const ChallengeDef(
           title: 'Fetch redemption',
-          instructions:
-              'Re-submit a link that actually resolves this time.',
+          instructions: 'Re-submit a link that actually resolves this time.',
           seconds: 90,
           kind: 'reupload',
         ),
@@ -190,69 +188,74 @@ class VerifierService {
         usedBy = null;
         roastFallback = true;
       } else {
-      try {
-        final userContent = <Object>[
-          {
-            'type': 'text',
-            'text': verifierUser(
-              taskTitle: task.title,
-              taskProofHint: task.description,
-              evidenceType: attempt.type.name,
-              evidenceText: evidenceText,
-              sourceTexts: [
-                for (final c in checks) c.textExtract,
-                if (commit != null) commit.patch,
+        try {
+          final userContent = <Object>[
+            {
+              'type': 'text',
+              'text': verifierUser(
+                taskTitle: task.title,
+                taskProofHint: task.description,
+                evidenceType: attempt.type.name,
+                evidenceText: evidenceText,
+                sourceTexts: [
+                  for (final c in checks) c.textExtract,
+                  if (commit != null) commit.patch,
+                ],
+              ),
+            },
+            if (imageB64 != null)
+              {
+                'type': 'image_url',
+                'image_url': {'url': 'data:image/jpeg;base64,$imageB64'},
+              },
+          ];
+          final outcome = await const ModelRouter().execute<String>(
+            plan,
+            (client, spec) => client.complete(
+              model: spec.id,
+              jsonMode: true,
+              maxTokens: 900,
+              reasoningEffort: spec.supportsReasoning
+                  ? sel.reasoning.name
+                  : null,
+              messages: [
+                const ChatMessage(role: 'system', content: verifierSystem),
+                ChatMessage(
+                  role: 'user',
+                  content: imageB64 == null
+                      ? (userContent.first as Map)['text']
+                      : userContent,
+                ),
               ],
             ),
-          },
-          if (imageB64 != null)
-            {
-              'type': 'image_url',
-              'image_url': {'url': 'data:image/jpeg;base64,$imageB64'},
-            },
-        ];
-        final outcome = await const ModelRouter().execute<String>(
-          plan,
-          (client, spec) => client.complete(
-            model: spec.id,
-            jsonMode: true,
-            maxTokens: 900,
-            reasoningEffort:
-                spec.supportsReasoning ? sel.reasoning.name : null,
-            messages: [
-              const ChatMessage(role: 'system', content: verifierSystem),
-              ChatMessage(
-                  role: 'user',
-                  content: imageB64 == null ? (userContent.first as Map)['text'] : userContent),
-            ],
-          ),
-          keys,
-        );
-        usedBy = outcome.used;
-        reroutedFrom = outcome.reroutedFrom;
-        verdict = Verdict.parse(outcome.value);
-        // Non-pass always carries a roast + challenge — from the local bank
-        // when the model didn't provide one (keeps the loop unbreakable).
-        if (verdict.kind != VerdictKind.pass) {
-          verdict = verdict.copyWith(
-            roast: (verdict.roast?.isNotEmpty ?? false)
-                ? verdict.roast
-                : RoastBank.pick(),
-            challenge: verdict.challenge ??
-                ChallengeDef(
-                  title: 'Say it like you mean it',
-                  instructions:
-                      'Retype: I will submit real proof for "${task.title}".',
-                  seconds: 60,
-                  kind: 'retype',
-                ),
+            keys,
           );
+          usedBy = outcome.used;
+          reroutedFrom = outcome.reroutedFrom;
+          verdict = Verdict.parse(outcome.value);
+          // Non-pass always carries a roast + challenge — from the local bank
+          // when the model didn't provide one (keeps the loop unbreakable).
+          if (verdict.kind != VerdictKind.pass) {
+            verdict = verdict.copyWith(
+              roast: (verdict.roast?.isNotEmpty ?? false)
+                  ? verdict.roast
+                  : RoastBank.pick(),
+              challenge:
+                  verdict.challenge ??
+                  ChallengeDef(
+                    title: 'Say it like you mean it',
+                    instructions:
+                        'Retype: I will submit real proof for "${task.title}".',
+                    seconds: 60,
+                    kind: 'retype',
+                  ),
+            );
+          }
+        } on AiFailure catch (e) {
+          debugPrint('[verify] model failed: $e');
+          yield VerifyFailedEvent(e);
+          return;
         }
-      } on AiFailure catch (e) {
-        debugPrint('[verify] model failed: $e');
-        yield VerifyFailedEvent(e);
-        return;
-      }
       }
     }
 
@@ -267,7 +270,8 @@ class VerifierService {
       if (commit != null) (commit.message + commit.patch).toLowerCase(),
     ];
     sources = [
-      for (var i = 0; i < sources.length; i++) _reclassify(sources[i], i, verdict.claims, fetchedTexts),
+      for (var i = 0; i < sources.length; i++)
+        _reclassify(sources[i], i, verdict.claims, fetchedTexts),
     ];
     yield SourcesEvent(sources);
     yield const StepEvent(VerifyStep.writing, VerifyStepState.done);
@@ -284,7 +288,10 @@ class VerifierService {
   /// The fetches genuinely happened — this just scores them honestly and is
   /// always labelled "[demo verdict]" so nobody mistakes it for a model call.
   Verdict _localVerdict(
-      EvidenceAttempt attempt, List<LinkCheck> checks, CommitInfo? commit) {
+    EvidenceAttempt attempt,
+    List<LinkCheck> checks,
+    CommitInfo? commit,
+  ) {
     switch (attempt.type) {
       case EvidenceType.url:
         final c = checks.first;
@@ -303,8 +310,9 @@ class VerifierService {
           );
         }
         return _weakVerdict(
-            '[demo verdict] The link opened but showed very little content.',
-            checks);
+          '[demo verdict] The link opened but showed very little content.',
+          checks,
+        );
       case EvidenceType.commit:
         if (commit?.ok == true) {
           return Verdict(
@@ -318,40 +326,49 @@ class VerifierService {
             claims: const [],
           );
         }
-        return _weakVerdict('[demo verdict] Commit could not be fetched.', null);
+        return _weakVerdict(
+          '[demo verdict] Commit could not be fetched.',
+          null,
+        );
       case EvidenceType.screenshot:
         return _weakVerdict(
-            '[demo verdict] Screenshots need a vision model — add an API key to judge this properly.',
-            null);
+          '[demo verdict] Screenshots need a vision model — add an API key to judge this properly.',
+          null,
+        );
       case EvidenceType.text:
         return _weakVerdict(
-            '[demo verdict] Text evidence needs the model — this is a plausibility stub.',
-            null);
+          '[demo verdict] Text evidence needs the model — this is a plausibility stub.',
+          null,
+        );
     }
   }
 
   Verdict _weakVerdict(String summary, List<LinkCheck>? checks) => Verdict(
-        kind: VerdictKind.partial,
-        confidence: 0.4,
-        summary: summary,
-        checks: checks
-                ?.map((c) =>
-                    VerdictCheck(label: 'Link returned 2xx', ok: c.ok))
-                .toList() ??
-            const [],
-        claims: const [],
-        roast: RoastBank.pick(),
-        challenge: const ChallengeDef(
-          title: 'Say it like you mean it',
-          instructions: 'Retype: I will bring real evidence next time.',
-          seconds: 60,
-          kind: 'retype',
-        ),
-      );
+    kind: VerdictKind.partial,
+    confidence: 0.4,
+    summary: summary,
+    checks:
+        checks
+            ?.map((c) => VerdictCheck(label: 'Link returned 2xx', ok: c.ok))
+            .toList() ??
+        const [],
+    claims: const [],
+    roast: RoastBank.pick(),
+    challenge: const ChallengeDef(
+      title: 'Say it like you mean it',
+      instructions: 'Retype: I will bring real evidence next time.',
+      seconds: 60,
+      kind: 'retype',
+    ),
+  );
 
   /// Verified = fetched 2xx AND the text actually backs at least one claim.
-  SourceInfo _reclassify(SourceInfo s, int index, List<VerdictClaim> claims,
-      List<String> fetchedTexts) {
+  SourceInfo _reclassify(
+    SourceInfo s,
+    int index,
+    List<VerdictClaim> claims,
+    List<String> fetchedTexts,
+  ) {
     if (s.status == SourceStatus.dead) return s;
     if (index >= fetchedTexts.length) return s;
     final text = fetchedTexts[index];
@@ -367,9 +384,11 @@ class VerifierService {
       return hits / words.length >= 0.5;
     });
     return s.copyWith(
-        status: supports ? SourceStatus.verified : SourceStatus.reachable);
+      status: supports ? SourceStatus.verified : SourceStatus.reachable,
+    );
   }
 }
 
-final verifierServiceProvider =
-    Provider<VerifierService>((ref) => VerifierService(ref));
+final verifierServiceProvider = Provider<VerifierService>(
+  (ref) => VerifierService(ref),
+);

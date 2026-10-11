@@ -30,8 +30,8 @@ abstract final class BrandResolver {
 
   /// Provider brand (serving platform).
   static String forProvider(AiProvider p) => switch (p) {
-        AiProvider.groq => 'groq',
-        AiProvider.nvidia => 'nvidia',
-        AiProvider.openrouter => 'openrouter',
-      };
+    AiProvider.groq => 'groq',
+    AiProvider.nvidia => 'nvidia',
+    AiProvider.openrouter => 'openrouter',
+  };
 }

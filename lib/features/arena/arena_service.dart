@@ -51,8 +51,7 @@ class ArenaService {
     // dissenter, still running through the real UI + real aggregation.
     // Labelled "[Demo data]" on every judge summary.
     final demo = _ref.read(demoModeProvider);
-    final anyKeyForLineup =
-        lineup.any((m) => keys.containsKey(m.provider));
+    final anyKeyForLineup = lineup.any((m) => keys.containsKey(m.provider));
     if (demo && !anyKeyForLineup) {
       yield* _canned(lineup);
       return;
@@ -67,8 +66,9 @@ class ArenaService {
         .where((m) => prep.needsVision && !m.supportsVision)
         .toList();
     for (final m in blind) {
-      yield JudgeDone(JudgeResult(
-          model: m, latencyMs: 0, error: "Can't see images"));
+      yield JudgeDone(
+        JudgeResult(model: m, latencyMs: 0, error: "Can't see images"),
+      );
     }
 
     if (prep.fetchFailed) {
@@ -83,17 +83,19 @@ class ArenaService {
         claims: const [],
         roast: 'That link doesn\'t even open. Bold strategy.',
       );
-      yield ArenaDone(ArenaOutcome(
-        results: [
-          for (final m in lineup)
-            JudgeResult(model: m, latencyMs: 0, verdict: fail),
-        ],
-        consensus: VerdictKind.fail,
-        agreement: 1,
-        dissenters: const [],
-        strictest: null,
-        consensusVerdict: fail,
-      ));
+      yield ArenaDone(
+        ArenaOutcome(
+          results: [
+            for (final m in lineup)
+              JudgeResult(model: m, latencyMs: 0, verdict: fail),
+          ],
+          consensus: VerdictKind.fail,
+          agreement: 1,
+          dissenters: const [],
+          strictest: null,
+          consensusVerdict: fail,
+        ),
+      );
       return;
     }
 
@@ -103,8 +105,15 @@ class ArenaService {
     final futures = <String, Future<JudgeResult>>{};
     for (var i = 0; i < capped.length; i++) {
       final m = capped[i];
-      futures[m.id] = _staggeredJudge(i, task, attempt, prep, m,
-          keys[m.provider], strictness);
+      futures[m.id] = _staggeredJudge(
+        i,
+        task,
+        attempt,
+        prep,
+        m,
+        keys[m.provider],
+        strictness,
+      );
     }
     final judges2 = capped;
     final results = <JudgeResult>[];
@@ -123,7 +132,13 @@ class ArenaService {
       }
       for (final m in judges2) {
         final r = await _judge(
-            task, attempt, prep, m, keys[m.provider], strictness);
+          task,
+          attempt,
+          prep,
+          m,
+          keys[m.provider],
+          strictness,
+        );
         results.add(r);
         yield JudgeDone(r);
       }
@@ -158,8 +173,7 @@ class ArenaService {
     Strictness strictness,
   ) async {
     if (key == null) {
-      return JudgeResult(
-          model: model, latencyMs: 0, error: 'No API key');
+      return JudgeResult(model: model, latencyMs: 0, error: 'No API key');
     }
     final sw = Stopwatch()..start();
     try {
@@ -176,27 +190,30 @@ class ArenaService {
         evidenceText: prep.evidenceText,
         sourceTexts: evidenceSourceTexts(prep),
       );
-      final raw = await client.complete(
-        model: model.id,
-        jsonMode: true,
-        maxTokens: 600,
-        messages: [
-          const ChatMessage(role: 'system', content: verifierSystem),
-          ChatMessage(
-              role: 'user',
-              content: prep.imageB64 == null
-                  ? userText
-                  : [
-                      {'type': 'text', 'text': userText},
-                      {
-                        'type': 'image_url',
-                        'image_url': {
-                          'url': 'data:image/jpeg;base64,${prep.imageB64}'
+      final raw = await client
+          .complete(
+            model: model.id,
+            jsonMode: true,
+            maxTokens: 600,
+            messages: [
+              const ChatMessage(role: 'system', content: verifierSystem),
+              ChatMessage(
+                role: 'user',
+                content: prep.imageB64 == null
+                    ? userText
+                    : [
+                        {'type': 'text', 'text': userText},
+                        {
+                          'type': 'image_url',
+                          'image_url': {
+                            'url': 'data:image/jpeg;base64,${prep.imageB64}',
+                          },
                         },
-                      },
-                    ]),
-        ],
-      ).timeout(const Duration(seconds: 30));
+                      ],
+              ),
+            ],
+          )
+          .timeout(const Duration(seconds: 30));
       return JudgeResult(
         model: model,
         latencyMs: sw.elapsedMilliseconds,
@@ -204,9 +221,10 @@ class ArenaService {
       );
     } catch (e) {
       return JudgeResult(
-          model: model,
-          latencyMs: sw.elapsedMilliseconds,
-          error: e.runtimeType.toString().replaceAll('Exception', ''));
+        model: model,
+        latencyMs: sw.elapsedMilliseconds,
+        error: e.runtimeType.toString().replaceAll('Exception', ''),
+      );
     }
   }
 
@@ -224,12 +242,13 @@ class ArenaService {
         claims: [],
       );
       return ArenaOutcome(
-          results: results,
-          consensus: VerdictKind.fail,
-          agreement: 0,
-          dissenters: const [],
-          strictest: null,
-          consensusVerdict: fail);
+        results: results,
+        consensus: VerdictKind.fail,
+        agreement: 0,
+        dissenters: const [],
+        strictest: null,
+        consensusVerdict: fail,
+      );
     }
 
     // Confidence-weighted vote: kind → sum of confidences voting for it.
@@ -251,20 +270,19 @@ class ArenaService {
 
     // Strictness floor: consensus "pass" needs average confidence ≥ threshold.
     if (winner == VerdictKind.pass) {
-      final passers =
-          finished.where((r) => r.verdict!.kind == VerdictKind.pass);
-      final avg = passers.fold<double>(
-              0, (s, r) => s + r.verdict!.confidence) /
+      final passers = finished.where(
+        (r) => r.verdict!.kind == VerdictKind.pass,
+      );
+      final avg =
+          passers.fold<double>(0, (s, r) => s + r.verdict!.confidence) /
           passers.length;
       if (avg < strictness.passThreshold) winner = VerdictKind.partial;
     }
 
     // After a strictness-floor downgrade, no judge may have actually voted
     // for the winner kind — treat the pass-voters as the consensus group.
-    var inConsensus =
-        finished.where((r) => r.verdict!.kind == winner).toList();
-    final effectiveWinner =
-        inConsensus.isEmpty ? VerdictKind.pass : winner;
+    var inConsensus = finished.where((r) => r.verdict!.kind == winner).toList();
+    final effectiveWinner = inConsensus.isEmpty ? VerdictKind.pass : winner;
     if (inConsensus.isEmpty) {
       inConsensus = finished
           .where((r) => r.verdict!.kind == VerdictKind.pass)
@@ -291,8 +309,7 @@ class ArenaService {
     // the strictest judge's roast/challenge overlaid for non-passes. When the
     // winner kind was code-downgraded, override the kind on that verdict.
     var consensusVerdict = inConsensus
-        .reduce((a, b) =>
-            a.verdict!.confidence > b.verdict!.confidence ? a : b)
+        .reduce((a, b) => a.verdict!.confidence > b.verdict!.confidence ? a : b)
         .verdict!;
     if (effectiveWinner != winner) {
       consensusVerdict = consensusVerdict.copyWith(kind: winner);
@@ -300,8 +317,7 @@ class ArenaService {
     if (winner != VerdictKind.pass && strictest?.verdict != null) {
       consensusVerdict = consensusVerdict.copyWith(
         roast: strictest!.verdict!.roast ?? consensusVerdict.roast,
-        challenge:
-            strictest.verdict!.challenge ?? consensusVerdict.challenge,
+        challenge: strictest.verdict!.challenge ?? consensusVerdict.challenge,
       );
     }
     return ArenaOutcome(
@@ -315,14 +331,12 @@ class ArenaService {
   }
 }
 
-final arenaServiceProvider =
-    Provider<ArenaService>((ref) => ArenaService(ref));
+final arenaServiceProvider = Provider<ArenaService>((ref) => ArenaService(ref));
 
 extension ArenaServiceTesting on ArenaService {
   /// Test seam for the aggregation — exercised directly so the vote math,
   /// tie rules and strictness floor get real coverage without network.
-  ArenaOutcome testAggregateForTest(
-          List<JudgeResult> results, Strictness s) =>
+  ArenaOutcome testAggregateForTest(List<JudgeResult> results, Strictness s) =>
       _aggregate(results, s);
 }
 
@@ -357,7 +371,11 @@ extension _CannedArena on ArenaService {
             ? 'This evidence is giving "I swear I did it" energy.'
             : null,
       );
-      final r = JudgeResult(model: lineup[i], latencyMs: 650 + i * 240, verdict: v);
+      final r = JudgeResult(
+        model: lineup[i],
+        latencyMs: 650 + i * 240,
+        verdict: v,
+      );
       results.add(r);
       yield JudgeDone(r);
     }

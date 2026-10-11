@@ -7,27 +7,118 @@ import 'package:receipts/core/ai/strength_estimator.dart';
 void main() {
   group('FreeGuard', () {
     test('accepts zero-priced OpenRouter :free model', () {
-      expect(FreeGuard.evaluate(id: 'meta-llama/llama-3.3-70b:free', provider: AiProvider.openrouter, pricingIsZero: true, onNimAllowlist: false, isChatCapable: true), isTrue);
+      expect(
+        FreeGuard.evaluate(
+          id: 'meta-llama/llama-3.3-70b:free',
+          provider: AiProvider.openrouter,
+          pricingIsZero: true,
+          onNimAllowlist: false,
+          isChatCapable: true,
+        ),
+        isTrue,
+      );
     });
     test('rejects paid OpenRouter model (pricing > 0, no :free)', () {
-      expect(FreeGuard.evaluate(id: 'openai/gpt-4o', provider: AiProvider.openrouter, pricingIsZero: false, onNimAllowlist: false, isChatCapable: true), isFalse);
-      expect(FreeGuard.evaluate(id: 'openai/gpt-4o', provider: AiProvider.openrouter, pricingIsZero: false, onNimAllowlist: false, isChatCapable: true), isFalse);
+      expect(
+        FreeGuard.evaluate(
+          id: 'openai/gpt-4o',
+          provider: AiProvider.openrouter,
+          pricingIsZero: false,
+          onNimAllowlist: false,
+          isChatCapable: true,
+        ),
+        isFalse,
+      );
+      expect(
+        FreeGuard.evaluate(
+          id: 'openai/gpt-4o',
+          provider: AiProvider.openrouter,
+          pricingIsZero: false,
+          onNimAllowlist: false,
+          isChatCapable: true,
+        ),
+        isFalse,
+      );
     });
     test('rejects router/meta ids that could proxy to paid', () {
-      expect(FreeGuard.evaluate(id: 'openrouter/auto', provider: AiProvider.openrouter, pricingIsZero: true, onNimAllowlist: false, isChatCapable: true), isFalse);
+      expect(
+        FreeGuard.evaluate(
+          id: 'openrouter/auto',
+          provider: AiProvider.openrouter,
+          pricingIsZero: true,
+          onNimAllowlist: false,
+          isChatCapable: true,
+        ),
+        isFalse,
+      );
     });
     test('NVIDIA needs allowlist + chat', () {
-      expect(FreeGuard.evaluate(id: 'meta/llama-3.3-70b-instruct', provider: AiProvider.nvidia, pricingIsZero: false, onNimAllowlist: true, isChatCapable: true), isTrue);
-      expect(FreeGuard.evaluate(id: 'unlisted/model', provider: AiProvider.nvidia, pricingIsZero: false, onNimAllowlist: false, isChatCapable: true), isFalse);
+      expect(
+        FreeGuard.evaluate(
+          id: 'meta/llama-3.3-70b-instruct',
+          provider: AiProvider.nvidia,
+          pricingIsZero: false,
+          onNimAllowlist: true,
+          isChatCapable: true,
+        ),
+        isTrue,
+      );
+      expect(
+        FreeGuard.evaluate(
+          id: 'unlisted/model',
+          provider: AiProvider.nvidia,
+          pricingIsZero: false,
+          onNimAllowlist: false,
+          isChatCapable: true,
+        ),
+        isFalse,
+      );
     });
     test('Groq rejects speech/guard models', () {
-      expect(FreeGuard.evaluate(id: 'whisper-large-v3', provider: AiProvider.groq, pricingIsZero: false, onNimAllowlist: false, isChatCapable: false), isFalse);
-      expect(FreeGuard.evaluate(id: 'llama-3.3-70b-versatile', provider: AiProvider.groq, pricingIsZero: false, onNimAllowlist: false, isChatCapable: true), isTrue);
+      expect(
+        FreeGuard.evaluate(
+          id: 'whisper-large-v3',
+          provider: AiProvider.groq,
+          pricingIsZero: false,
+          onNimAllowlist: false,
+          isChatCapable: false,
+        ),
+        isFalse,
+      );
+      expect(
+        FreeGuard.evaluate(
+          id: 'llama-3.3-70b-versatile',
+          provider: AiProvider.groq,
+          pricingIsZero: false,
+          onNimAllowlist: false,
+          isChatCapable: true,
+        ),
+        isTrue,
+      );
     });
     test('assertFree throws on a paid model — the call is blocked', () {
-      const paid = ModelSpec(id: 'openai/gpt-4o', provider: AiProvider.openrouter, displayName: 'GPT-4o', tier: Tier.smart, strength: 0.9, isFree: false, blurb: '');
-      expect(() => FreeGuard.assertFree(paid), throwsA(isA<FreeGuardFailure>()));
-      const free = ModelSpec(id: 'x/y:free', provider: AiProvider.openrouter, displayName: 'y', tier: Tier.swift, strength: 0.1, isFree: true, blurb: '');
+      const paid = ModelSpec(
+        id: 'openai/gpt-4o',
+        provider: AiProvider.openrouter,
+        displayName: 'GPT-4o',
+        tier: Tier.smart,
+        strength: 0.9,
+        isFree: false,
+        blurb: '',
+      );
+      expect(
+        () => FreeGuard.assertFree(paid),
+        throwsA(isA<FreeGuardFailure>()),
+      );
+      const free = ModelSpec(
+        id: 'x/y:free',
+        provider: AiProvider.openrouter,
+        displayName: 'y',
+        tier: Tier.swift,
+        strength: 0.1,
+        isFree: true,
+        blurb: '',
+      );
       expect(() => FreeGuard.assertFree(free), returnsNormally);
     });
   });
@@ -52,16 +143,29 @@ void main() {
         'someone/unknown-model': null,
       };
       for (final e in cases.entries) {
-        expect(BrandResolver.fromModel(e.key, AiProvider.openrouter), e.value, reason: e.key);
+        expect(
+          BrandResolver.fromModel(e.key, AiProvider.openrouter),
+          e.value,
+          reason: e.key,
+        );
       }
     });
   });
 
   group('StrengthEstimator', () {
     test('orders param counts; reasoning > plain; mini < mid', () {
-      expect(StrengthEstimator.raw('x-120b'), greaterThan(StrengthEstimator.raw('x-8b')));
-      expect(StrengthEstimator.raw('x-8b', reasoning: true), greaterThan(StrengthEstimator.raw('x-8b')));
-      expect(StrengthEstimator.raw('x-70b-mini'), lessThan(StrengthEstimator.raw('x-70b')));
+      expect(
+        StrengthEstimator.raw('x-120b'),
+        greaterThan(StrengthEstimator.raw('x-8b')),
+      );
+      expect(
+        StrengthEstimator.raw('x-8b', reasoning: true),
+        greaterThan(StrengthEstimator.raw('x-8b')),
+      );
+      expect(
+        StrengthEstimator.raw('x-70b-mini'),
+        lessThan(StrengthEstimator.raw('x-70b')),
+      );
     });
   });
 }

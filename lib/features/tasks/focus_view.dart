@@ -94,7 +94,9 @@ class _FocusCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: theme.colorScheme.outline),
@@ -102,71 +104,93 @@ class _FocusCard extends ConsumerWidget {
       color: theme.colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: group?.color ?? theme.colorScheme.onSurfaceVariant,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(group?.name ?? 'Inbox',
-                style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
-            const Spacer(),
-            if (t.dueAt != null)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs, vertical: 4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: theme.colorScheme.outline),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: group?.color ?? theme.colorScheme.onSurfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-                child: Text('due ${dueBucket(t.dueAt, DateTime.now())}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary)),
-              ),
-          ]),
-          const Spacer(),
-          Text(t.title,
-              style: theme.textTheme.headlineMedium, maxLines: 3,
-              overflow: TextOverflow.ellipsis),
-          const SizedBox(height: AppSpacing.xs),
-          if (t.description.isNotEmpty)
-            Text('Proof: ${t.description}',
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  group?.name ?? 'Inbox',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const Spacer(),
+                if (t.dueAt != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: theme.colorScheme.outline),
+                    ),
+                    child: Text(
+                      'due ${dueBucket(t.dueAt, DateTime.now())}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              t.title,
+              style: theme.textTheme.headlineMedium,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (t.description.isNotEmpty)
+              Text(
+                'Proof: ${t.description}',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            '${t.attempts.length} attempt${t.attempts.length == 1 ? '' : 's'}'
-            ' · $statusLabel',
-            style:
-                theme.textTheme.labelMedium?.copyWith(color: statusColor),
-          ),
-          const Spacer(),
-          Row(children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => EvidenceSheet.show(context, t),
-                icon: const Icon(Icons.verified_outlined, size: 18),
-                label: const Text('Prove it'),
+                overflow: TextOverflow.ellipsis,
               ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '${t.attempts.length} attempt${t.attempts.length == 1 ? '' : 's'}'
+              ' · $statusLabel',
+              style: theme.textTheme.labelMedium?.copyWith(color: statusColor),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                      builder: (_) => TaskDetailScreen(taskId: t.id))),
-              child: const Text('Details'),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => EvidenceSheet.show(context, t),
+                    icon: const Icon(Icons.verified_outlined, size: 18),
+                    label: const Text('Prove it'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => TaskDetailScreen(taskId: t.id),
+                    ),
+                  ),
+                  child: const Text('Details'),
+                ),
+              ],
             ),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../core/ai/model_router.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../arena/arena_panel.dart';
+import '../settings/settings_screen.dart';
 import 'custom_panel.dart';
 import 'model_selection.dart';
 import 'resolved_model.dart';
@@ -47,8 +48,8 @@ class _PickerCardState extends ConsumerState<PickerCard> {
     // primary for the shown (possibly previewed) tier.
     final shownModel = selection.customModelId != null
         ? kModelCatalog
-            .where((m) => m.id == selection.customModelId)
-            .firstOrNull
+              .where((m) => m.id == selection.customModelId)
+              .firstOrNull
         : (_preview == null ? resolved : _primaryFor(shownTier));
 
     return Column(
@@ -57,7 +58,11 @@ class _PickerCardState extends ConsumerState<PickerCard> {
         // ---- Header: model name + cross-fading blurb ----
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xs),
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.xs,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -71,14 +76,28 @@ class _PickerCardState extends ConsumerState<PickerCard> {
                         shownModel?.displayName ?? 'No model available',
                         style: theme.textTheme.titleLarge,
                       ),
-                      Text(
-                        shownModel == null
-                            ? 'Add a provider key in Settings'
-                            : '${shownModel.provider.label} · ${shownModel.blurb}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      if (shownModel == null)
+                        InkWell(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          ),
+                          child: Text(
+                            'Add a key in Settings →',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          '${shownModel.provider.label} · ${shownModel.blurb}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -112,8 +131,8 @@ class _PickerCardState extends ConsumerState<PickerCard> {
                     onBack: () => setState(() => _customOpen = false),
                   )
                 : selection.arenaMode
-                    ? const ArenaPanel(key: ValueKey('arena'))
-                    : _SliderBody(
+                ? const ArenaPanel(key: ValueKey('arena'))
+                : _SliderBody(
                     key: const ValueKey('slider'),
                     selection: selection,
                     shownTier: shownTier,
@@ -175,14 +194,15 @@ class _SliderBody extends StatelessWidget {
               for (final t in Tier.values)
                 AnimatedDefaultTextStyle(
                   duration: AppMotion.fast,
-                  style: (t == shownTier
-                          ? theme.textTheme.labelLarge
-                          : theme.textTheme.labelSmall)!
-                      .copyWith(
-                    color: t == shownTier
-                        ? Color(tints[t.index])
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style:
+                      (t == shownTier
+                              ? theme.textTheme.labelLarge
+                              : theme.textTheme.labelSmall)!
+                          .copyWith(
+                            color: t == shownTier
+                                ? Color(tints[t.index])
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
                   child: Text(t.label),
                 ),
             ],
@@ -199,8 +219,11 @@ class _SliderBody extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.tune_rounded,
-                    size: 18, color: theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Text('Custom', style: theme.textTheme.titleSmall),
                 if (selection.customModelId != null) ...[
@@ -213,8 +236,10 @@ class _SliderBody extends StatelessWidget {
                   ),
                 ],
                 const Spacer(),
-                Icon(Icons.chevron_right_rounded,
-                    color: theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:hive_ce/hive_ce.dart';
+
 import '../../core/ai/api_key_store.dart';
 import '../../core/ai/model_catalog.dart';
 import '../../core/ai/model_router.dart';
@@ -64,13 +65,15 @@ class _ModelListPanelState extends ConsumerState<ModelListPanel> {
     return live.when(
       loading: () => Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(children: [
-          for (var i = 0; i < 6; i++)
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.sm),
-              child: ShimmerBox(height: 44, radius: 12),
-            ),
-        ]),
+        child: Column(
+          children: [
+            for (var i = 0; i < 6; i++)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                child: ShimmerBox(height: 44, radius: 12),
+              ),
+          ],
+        ),
       ),
       error: (e, _) => ListTile(
         title: const Text('Could not load the live list'),
@@ -81,125 +84,171 @@ class _ModelListPanelState extends ConsumerState<ModelListPanel> {
         ),
       ),
       data: (catalog) {
-        var models = catalog.where((m) =>
-            alive[m.provider] == null || alive[m.provider]!.contains(m.id));
+        var models = catalog.where(
+          (m) => alive[m.provider] == null || alive[m.provider]!.contains(m.id),
+        );
         if (_q.isNotEmpty) {
           final q = _q.toLowerCase();
-          models = models.where((m) =>
-              m.displayName.toLowerCase().contains(q) ||
-              (m.brand ?? '').contains(q) ||
-              m.id.toLowerCase().contains(q));
+          models = models.where(
+            (m) =>
+                m.displayName.toLowerCase().contains(q) ||
+                (m.brand ?? '').contains(q) ||
+                m.id.toLowerCase().contains(q),
+          );
         }
         final list = models.toList();
         final recents = [
-          for (final id in recentIds)
-            ...list.where((m) => m.id == id),
+          for (final id in recentIds) ...list.where((m) => m.id == id),
         ];
         // Recommended: best-strength model per tier across free set.
         final recommended = [
           for (final tier in Tier.values)
             if (list.where((m) => m.tier == tier).isNotEmpty)
-              list.where((m) => m.tier == tier)
+              list
+                  .where((m) => m.tier == tier)
                   .reduce((a, b) => a.strength >= b.strength ? a : b),
         ];
         // All-models per provider, long tail hidden behind "See more…".
         final byProvider = {
           for (final p in AiProvider.values)
-            p: list.where((m) => m.provider == p).toList()
+            p: list.where((m) => m.provider == p).toList(),
         };
 
-        return Column(children: [
-          // Compact search field.
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search models',
-                prefixIcon: Icon(Icons.search, size: 16),
-                isDense: true,
+        return Column(
+          children: [
+            // Compact search field.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
               ),
-              onChanged: (v) => setState(() => _q = v),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Search models',
+                  prefixIcon: Icon(Icons.search, size: 16),
+                  isDense: true,
+                ),
+                onChanged: (v) => setState(() => _q = v),
+              ),
             ),
-          ),
-          Flexible(
-            child: RepaintBoundary(
-              child: ListView(shrinkWrap: true, children: [
-                if (recents.isNotEmpty && _q.isEmpty) ...[
-                  _head('Recently Used', theme),
-                  for (final m in recents)
-                    _Row(m: m, selectedId: selection.customModelId,
-                        hasKey: keys.containsKey(m.provider)),
-                ],
-                if (recommended.isNotEmpty && _q.isEmpty) ...[
-                  _head('Recommended', theme),
-                  for (final m in recommended)
-                    _Row(m: m, selectedId: selection.customModelId,
-                        hasKey: keys.containsKey(m.provider)),
-                ],
-                for (final p in AiProvider.values)
-                  if ((byProvider[p] ?? []).isNotEmpty) ...[
-                    _head(p.label, theme, provider: p,
-                        locked: !keys.containsKey(p)),
-                    for (final m in _seeMore || _q.isNotEmpty
-                        ? byProvider[p]!
-                        : byProvider[p]!.take(4).toList())
-                      _Row(m: m, selectedId: selection.customModelId,
-                          hasKey: keys.containsKey(p)),
-                  ],
-                if (!_seeMore && _q.isEmpty)
-                  InkWell(
-                    onTap: () => setState(() => _seeMore = true),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
-                      child: Center(
-                        child: Text('See more…',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
+            Flexible(
+              child: RepaintBoundary(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    if (recents.isNotEmpty && _q.isEmpty) ...[
+                      _head('Recently Used', theme),
+                      for (final m in recents)
+                        _Row(
+                          m: m,
+                          selectedId: selection.customModelId,
+                          hasKey: keys.containsKey(m.provider),
+                        ),
+                    ],
+                    if (recommended.isNotEmpty && _q.isEmpty) ...[
+                      _head('Recommended', theme),
+                      for (final m in recommended)
+                        _Row(
+                          m: m,
+                          selectedId: selection.customModelId,
+                          hasKey: keys.containsKey(m.provider),
+                        ),
+                    ],
+                    for (final p in AiProvider.values)
+                      if ((byProvider[p] ?? []).isNotEmpty) ...[
+                        _head(
+                          p.label,
+                          theme,
+                          provider: p,
+                          locked: !keys.containsKey(p),
+                        ),
+                        for (final m
+                            in _seeMore || _q.isNotEmpty
+                                ? byProvider[p]!
+                                : byProvider[p]!.take(4).toList())
+                          _Row(
+                            m: m,
+                            selectedId: selection.customModelId,
+                            hasKey: keys.containsKey(p),
+                          ),
+                      ],
+                    if (!_seeMore && _q.isEmpty)
+                      InkWell(
+                        onTap: () => setState(() => _seeMore = true),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: Center(
+                            child: Text(
+                              'See more…',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-              ]),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ]);
+          ],
+        );
       },
     );
   }
 
-  Widget _head(String text, ThemeData theme,
-      {AiProvider? provider, bool locked = false}) {
+  Widget _head(
+    String text,
+    ThemeData theme, {
+    AiProvider? provider,
+    bool locked = false,
+  }) {
     return InkWell(
       onTap: locked
-          ? () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const SettingsScreen()))
+          ? () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            )
           : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md, AppSpacing.sm, AppSpacing.md, 2),
-        child: Row(children: [
-          if (provider != null) ...[
-            BrandIcon(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          2,
+        ),
+        child: Row(
+          children: [
+            if (provider != null) ...[
+              BrandIcon(
                 model: ModelSpec(
-                    id: provider.id,
-                    provider: provider,
-                    displayName: provider.label,
-                    tier: Tier.swift,
-                    strength: 0,
-                    brand: null,
-                    blurb: ''),
+                  id: provider.id,
+                  provider: provider,
+                  displayName: provider.label,
+                  tier: Tier.swift,
+                  strength: 0,
+                  brand: null,
+                  blurb: '',
+                ),
                 size: 14,
-                showBadge: false),
-            const SizedBox(width: 6),
-          ],
-          Text(text,
+                showBadge: false,
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              text,
               style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant)),
-          const Spacer(),
-          if (locked)
-            Icon(Icons.lock_outline,
-                size: 13, color: theme.colorScheme.onSurfaceVariant),
-        ]),
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            if (locked)
+              Icon(
+                Icons.lock_outline,
+                size: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -226,55 +275,71 @@ class _Row extends ConsumerWidget {
                 ref.read(modelSelectionProvider.notifier).setCustomModel(m.id);
                 ref.read(_recentProvider.notifier).push(m.id);
               }
-            : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => const SettingsScreen())),
+            : () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+              ),
         child: AnimatedContainer(
           duration: AppMotion.fast,
           margin: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: 1),
+            horizontal: AppSpacing.sm,
+            vertical: 1,
+          ),
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
           decoration: BoxDecoration(
             color: selected
                 ? theme.colorScheme.primary.withValues(alpha: 0.12)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Row(children: [
-            BrandIcon(model: m, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            children: [
+              BrandIcon(model: m, size: 22),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                Text(m.displayName,
-                    style: theme.textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Row(children: [
-                  if (m.supportsReasoning) _tag(theme, 'Reasoning'),
-                  if (m.supportsVision) _tag(theme, 'Vision'),
-                  if (m.contextK >= 128) _tag(theme, 'Long ctx'),
-                ]),
-              ]),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            if (selected)
-              DrawnCheck(size: 14, color: theme.colorScheme.primary)
-            else
-              _StrengthBar(strength: m.strength),
-          ]),
+                    Text(
+                      m.displayName,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      children: [
+                        if (m.supportsReasoning) _tag(theme, 'Reasoning'),
+                        if (m.supportsVision) _tag(theme, 'Vision'),
+                        if (m.contextK >= 128) _tag(theme, 'Long ctx'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              if (selected)
+                DrawnCheck(size: 14, color: theme.colorScheme.primary)
+              else
+                _StrengthBar(strength: m.strength),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _tag(ThemeData theme, String label) => Padding(
-        padding: const EdgeInsets.only(right: 4),
-        child: Text(label,
-            style: theme.textTheme.labelSmall?.copyWith(
-                fontSize: 9,
-                color: theme.colorScheme.onSurfaceVariant)),
-      );
+    padding: const EdgeInsets.only(right: 4),
+    child: Text(
+      label,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontSize: 9,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    ),
+  );
 }
 
 /// ~70×6 gradient track + a white dot at the model's normalized strength.
@@ -283,10 +348,8 @@ class _StrengthBar extends StatelessWidget {
   final double strength;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(
-        size: const Size(70, 6),
-        painter: _BarPainter(strength),
-      );
+  Widget build(BuildContext context) =>
+      CustomPaint(size: const Size(70, 6), painter: _BarPainter(strength));
 }
 
 class _BarPainter extends CustomPainter {
@@ -296,19 +359,23 @@ class _BarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final r = RRect.fromRectAndRadius(
-        Offset.zero & size, Radius.circular(size.height / 2));
+      Offset.zero & size,
+      Radius.circular(size.height / 2),
+    );
     canvas.drawRRect(r, Paint()..color = const Color(0xFF232830));
     // green → amber → orange → violet gradient at the fill end
     final fill = Rect.fromLTWH(0, 0, size.width * strength, size.height);
     canvas.drawRRect(
       RRect.fromRectAndRadius(fill, Radius.circular(size.height / 2)),
       Paint()
-        ..shader = const LinearGradient(colors: [
-          Color(0xFF4ADE80),
-          Color(0xFFFBBF24),
-          Color(0xFFFF8A5C),
-          Color(0xFFB794F6),
-        ]).createShader(Offset.zero & size),
+        ..shader = const LinearGradient(
+          colors: [
+            Color(0xFF4ADE80),
+            Color(0xFFFBBF24),
+            Color(0xFFFF8A5C),
+            Color(0xFFB794F6),
+          ],
+        ).createShader(Offset.zero & size),
     );
     canvas.drawCircle(
       Offset(size.width * strength.clamp(0.02, 0.98), size.height / 2),

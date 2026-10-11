@@ -53,79 +53,99 @@ class _ResearchTraceViewState extends State<ResearchTraceView> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: theme.colorScheme.outline),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header — live timer while running.
-        InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _open = !_open);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Row(children: [
-              widget.running
-                  ? SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: accent))
-                  : AnimatedAppIcon(
-                      type: AppIconType.verified,
-                      active: true,
-                      size: 14,
-                      color: accent),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                widget.running
-                    ? 'Researching ${secs.toStringAsFixed(0)}s'
-                    : 'Researched ${secs.toStringAsFixed(0)}s',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: accent),
-              ),
-              const Spacer(),
-              AnimatedAppIcon(
-                  type: AppIconType.chevron,
-                  active: _open,
-                  size: 14,
-                  color: theme.colorScheme.onSurfaceVariant),
-            ]),
-          ),
-        ),
-        AnimatedSize(
-          duration: AppMotion.base,
-          curve: AppMotion.standard,
-          child: _open
-              ? Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.sm),
-                  child: Column(children: [
-                    for (var i = 0; i < _visibleEvents.length; i++)
-                      FadeSlideIn(
-                        index: i,
-                        stagger: const Duration(milliseconds: 30),
-                        child: _TraceRow(event: _visibleEvents[i]),
-                      ),
-                    if (!_showAll && _hiddenCount > 0)
-                      InkWell(
-                        onTap: () => setState(() => _showAll = true),
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(top: AppSpacing.xxs),
-                          child: Row(children: [
-                            Icon(Icons.add,
-                                size: 14, color: accent),
-                            Text(' +$_hiddenCount more',
-                                style: theme.textTheme.labelSmall
-                                    ?.copyWith(color: accent)),
-                          ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header — live timer while running.
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _open = !_open);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Row(
+                children: [
+                  widget.running
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: accent,
+                          ),
+                        )
+                      : AnimatedAppIcon(
+                          type: AppIconType.verified,
+                          active: true,
+                          size: 14,
+                          color: accent,
                         ),
-                      ),
-                  ]),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ]),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    widget.running
+                        ? 'Researching ${secs.toStringAsFixed(0)}s'
+                        : 'Researched ${secs.toStringAsFixed(0)}s',
+                    style: theme.textTheme.labelMedium?.copyWith(color: accent),
+                  ),
+                  const Spacer(),
+                  AnimatedAppIcon(
+                    type: AppIconType.chevron,
+                    active: _open,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: AppMotion.base,
+            curve: AppMotion.standard,
+            child: _open
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      0,
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                    ),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < _visibleEvents.length; i++)
+                          FadeSlideIn(
+                            index: i,
+                            stagger: const Duration(milliseconds: 30),
+                            child: _TraceRow(event: _visibleEvents[i]),
+                          ),
+                        if (!_showAll && _hiddenCount > 0)
+                          InkWell(
+                            onTap: () => setState(() => _showAll = true),
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                top: AppSpacing.xxs,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.add, size: 14, color: accent),
+                                  Text(
+                                    ' +$_hiddenCount more',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: accent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -149,33 +169,43 @@ class _TraceRow extends StatelessWidget {
     if (e is TraceStep) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(children: [
-          Icon(_stepIcon(e.kind),
-              size: 14, color: theme.colorScheme.primary),
-          const SizedBox(width: AppSpacing.xs),
-          Text(e.label, style: theme.textTheme.labelMedium),
-        ]),
+        child: Row(
+          children: [
+            Icon(_stepIcon(e.kind), size: 14, color: theme.colorScheme.primary),
+            const SizedBox(width: AppSpacing.xs),
+            Text(e.label, style: theme.textTheme.labelMedium),
+          ],
+        ),
       );
     }
     if (e is TraceQuery) {
       return Padding(
-        padding:
-            const EdgeInsets.only(left: AppSpacing.md, top: 2, bottom: 2),
-        child: Row(children: [
-          Icon(Icons.search,
-              size: 12, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(e.query.q,
+        padding: const EdgeInsets.only(left: AppSpacing.md, top: 2, bottom: 2),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search,
+              size: 12,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                e.query.q,
                 style: theme.textTheme.bodySmall,
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-          ),
-          if (e.provider != null)
-            Text(' ${e.provider}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (e.provider != null)
+              Text(
+                ' ${e.provider}',
                 style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.tertiary)),
-        ]),
+                  color: theme.colorScheme.tertiary,
+                ),
+              ),
+          ],
+        ),
       );
     }
     if (e is TraceSource) {
@@ -185,12 +215,12 @@ class _TraceRow extends StatelessWidget {
   }
 
   IconData _stepIcon(String kind) => switch (kind) {
-        'plan' => Icons.route_outlined,
-        'search' => Icons.search,
-        'read' => Icons.article_outlined,
-        'write' => Icons.edit_outlined,
-        _ => Icons.circle_outlined,
-      };
+    'plan' => Icons.route_outlined,
+    'search' => Icons.search,
+    'read' => Icons.article_outlined,
+    'write' => Icons.edit_outlined,
+    _ => Icons.circle_outlined,
+  };
 }
 
 /// Favicon + "host › path" + title + status chip; tap opens detail sheet.
@@ -205,53 +235,62 @@ class SourceRow extends StatelessWidget {
       HitStatus.verified => ('Verified', theme.colorScheme.primary),
       HitStatus.reachable => ('Reachable', theme.colorScheme.tertiary),
       HitStatus.dead => ('Dead', theme.colorScheme.error),
-      HitStatus.unverified => (hit.provider,
-          theme.colorScheme.onSurfaceVariant),
+      HitStatus.unverified => (
+        hit.provider,
+        theme.colorScheme.onSurfaceVariant,
+      ),
     };
     return InkWell(
       onTap: () => SourceSheet.show(context, hit),
       child: Padding(
-        padding: const EdgeInsets.only(
-            left: AppSpacing.md, top: 3, bottom: 3),
-        child: Row(children: [
-          // Favicon with monogram fallback.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.network(
-              hit.favicon,
-              width: 14,
-              height: 14,
-              errorBuilder: (_, _, _) => Container(
+        padding: const EdgeInsets.only(left: AppSpacing.md, top: 3, bottom: 3),
+        child: Row(
+          children: [
+            // Favicon with monogram fallback.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.network(
+                hit.favicon,
                 width: 14,
                 height: 14,
-                color: theme.colorScheme.surfaceContainerHighest,
-                alignment: Alignment.center,
-                child: Text(
+                errorBuilder: (_, _, _) => Container(
+                  width: 14,
+                  height: 14,
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  alignment: Alignment.center,
+                  child: Text(
                     hit.host.isNotEmpty ? hit.host[0].toUpperCase() : '?',
-                    style: const TextStyle(fontSize: 8)),
+                    style: const TextStyle(fontSize: 8),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              '${hit.breadcrumb} · ${hit.title}',
-              style: theme.textTheme.bodySmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${hit.breadcrumb} · ${hit.title}',
+                style: theme.textTheme.bodySmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: chip.$2.withValues(alpha: 0.5)),
-            ),
-            child: Text(chip.$1,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: chip.$2.withValues(alpha: 0.5)),
+              ),
+              child: Text(
+                chip.$1,
                 style: TextStyle(
-                    fontSize: 9, color: chip.$2, letterSpacing: 0.4)),
-          ),
-        ]),
+                  fontSize: 9,
+                  color: chip.$2,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -276,50 +315,63 @@ class SourceSheet extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        child: Column(mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(hit.title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(hit.url,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(hit.title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              hit.url,
               style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary),
+                color: theme.colorScheme.primary,
+              ),
               maxLines: 2,
-              overflow: TextOverflow.ellipsis),
-          if (hit.snippet.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(hit.snippet,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (hit.snippet.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                hit.snippet,
                 style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 maxLines: 4,
-                overflow: TextOverflow.ellipsis),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: () => launchUrl(
+                    Uri.parse(hit.url),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Open'),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: hit.url));
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copy'),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    // Share plugin not added — copy is the portable path.
+                    Clipboard.setData(ClipboardData(text: hit.url));
+                  },
+                  icon: const Icon(Icons.ios_share, size: 16),
+                  label: const Text('Share'),
+                ),
+              ],
+            ),
           ],
-          const SizedBox(height: AppSpacing.md),
-          Row(children: [
-            FilledButton.tonalIcon(
-              onPressed: () => launchUrl(Uri.parse(hit.url),
-                  mode: LaunchMode.externalApplication),
-              icon: const Icon(Icons.open_in_new, size: 16),
-              label: const Text('Open'),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: hit.url));
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy'),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                // Share plugin not added — copy is the portable path.
-                Clipboard.setData(ClipboardData(text: hit.url));
-              },
-              icon: const Icon(Icons.ios_share, size: 16),
-              label: const Text('Share'),
-            ),
-          ]),
-        ]),
+        ),
       ),
     );
   }
@@ -354,48 +406,55 @@ class _ThinkingBlockState extends State<ThinkingBlock> {
       return const SizedBox.shrink();
     }
     final secs = widget.msg.thinkClock?.elapsed.inMilliseconds ?? 0;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      InkWell(
-        onTap: thinking ? null : () => setState(() => _open = !_open),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(children: [
-            Icon(
-                thinking
-                    ? Icons.psychology_outlined
-                    : Icons.psychology,
-                size: 14,
-                color: theme.colorScheme.tertiary),
-            const SizedBox(width: 5),
-            Text(
-              thinking
-                  ? 'Thinking… ${(secs / 1000).toStringAsFixed(0)}s'
-                  : 'Thought for ${(secs / 1000).toStringAsFixed(0)}s ›',
-              style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.tertiary),
-            ),
-          ]),
-        ),
-      ),
-      AnimatedSize(
-        duration: AppMotion.fast,
-        child: _open || thinking
-            ? Container(
-                height: 64,
-                padding: const EdgeInsets.only(bottom: 4),
-                child: SingleChildScrollView(
-                  reverse: true,
-                  child: Text(
-                    widget.msg.reasoning,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.75)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: thinking ? null : () => setState(() => _open = !_open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Icon(
+                  thinking ? Icons.psychology_outlined : Icons.psychology,
+                  size: 14,
+                  color: theme.colorScheme.tertiary,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  thinking
+                      ? 'Thinking… ${(secs / 1000).toStringAsFixed(0)}s'
+                      : 'Thought for ${(secs / 1000).toStringAsFixed(0)}s ›',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.tertiary,
                   ),
                 ),
-              )
-            : const SizedBox.shrink(),
-      ),
-    ]);
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: AppMotion.fast,
+          child: _open || thinking
+              ? Container(
+                  height: 64,
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: SingleChildScrollView(
+                    reverse: true,
+                    child: Text(
+                      widget.msg.reasoning,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.75,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
   }
 }

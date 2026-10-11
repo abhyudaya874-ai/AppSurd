@@ -13,10 +13,12 @@ final arenaLineupProvider = Provider<List<ModelSpec>>((ref) {
   final alive = ref.watch(aliveModelsProvider).value;
   return [
     for (final id in sel.arenaLineup)
-      ...kModelCatalog.where((m) =>
-          m.id == id &&
-          keys.containsKey(m.provider) &&
-          (alive?[m.provider]?.contains(m.id) ?? true)),
+      ...kModelCatalog.where(
+        (m) =>
+            m.id == id &&
+            keys.containsKey(m.provider) &&
+            (alive?[m.provider]?.contains(m.id) ?? true),
+      ),
   ];
 });
 
@@ -30,7 +32,7 @@ final arenaReadyProvider = Provider<bool>((ref) {
 
 /// Default jury: one model per provider, best coverage of tiers.
 List<String> defaultLineup() => [
-      for (final p in AiProvider.values)
-        if (kModelCatalog.where((m) => m.provider == p).isNotEmpty)
-          kModelCatalog.firstWhere((m) => m.provider == p).id,
-    ];
+  for (final p in AiProvider.values)
+    if (kModelCatalog.where((m) => m.provider == p).isNotEmpty)
+      kModelCatalog.firstWhere((m) => m.provider == p).id,
+];

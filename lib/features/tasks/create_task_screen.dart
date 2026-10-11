@@ -15,8 +15,10 @@ import 'tasks_provider.dart';
 
 /// Pushes Create Task with the composer→title shared-element flight. The
 /// page fades/slides up slowly (hero-slow) while the Hero carries the text.
-PageRouteBuilder<bool> createTaskRoute(String initialTitle,
-    {String? initialGroupId}) {
+PageRouteBuilder<bool> createTaskRoute(
+  String initialTitle, {
+  String? initialGroupId,
+}) {
   return PageRouteBuilder<bool>(
     transitionDuration: AppMotion.slow,
     reverseTransitionDuration: AppMotion.slow,
@@ -25,14 +27,17 @@ PageRouteBuilder<bool> createTaskRoute(String initialTitle,
       initialGroupId: initialGroupId,
     ),
     transitionsBuilder: (context, animation, secondary, child) {
-      final curved =
-          CurvedAnimation(parent: animation, curve: AppMotion.emphasized);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppMotion.emphasized,
+      );
       return FadeTransition(
         opacity: curved,
         child: SlideTransition(
-          position:
-              Tween(begin: const Offset(0, 0.05), end: Offset.zero)
-                  .animate(curved),
+          position: Tween(
+            begin: const Offset(0, 0.05),
+            end: Offset.zero,
+          ).animate(curved),
           child: child,
         ),
       );
@@ -113,8 +118,15 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       lastDate: now.add(const Duration(days: 365 * 2)),
     );
     if (d == null) return;
-    setState(() => _dueAt = DateTime(
-        d.year, d.month, d.day, _dueAt?.hour ?? 18, _dueAt?.minute ?? 0));
+    setState(
+      () => _dueAt = DateTime(
+        d.year,
+        d.month,
+        d.day,
+        _dueAt?.hour ?? 18,
+        _dueAt?.minute ?? 0,
+      ),
+    );
   }
 
   Future<void> _pickTime() async {
@@ -124,8 +136,10 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     );
     if (t == null) return;
     final base = _dueAt ?? DateTime.now();
-    setState(() =>
-        _dueAt = DateTime(base.year, base.month, base.day, t.hour, t.minute));
+    setState(
+      () =>
+          _dueAt = DateTime(base.year, base.month, base.day, t.hour, t.minute),
+    );
   }
 
   String get _dueLabel {
@@ -137,8 +151,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     final dayLabel = day == today
         ? 'Today'
         : day == today.add(const Duration(days: 1))
-            ? 'Tomorrow'
-            : '${d.day}/${d.month}/${d.year}';
+        ? 'Tomorrow'
+        : '${d.day}/${d.month}/${d.year}';
     return '$dayLabel · ${d.hour.toString().padLeft(2, '0')}:'
         '${d.minute.toString().padLeft(2, '0')}';
   }
@@ -148,7 +162,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     if (title.isEmpty || _saving) return;
     setState(() => _saving = true);
     HapticFeedback.selectionClick();
-    final task = await ref.read(tasksProvider.notifier).addTask(
+    final task = await ref
+        .read(tasksProvider.notifier)
+        .addTask(
           title: title,
           description: _proof.text.trim(),
           groupId: _groupId,
@@ -165,32 +181,38 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final group =
-        ref.watch(groupsProvider).where((g) => g.id == _groupId).firstOrNull;
+    final group = ref
+        .watch(groupsProvider)
+        .where((g) => g.id == _groupId)
+        .firstOrNull;
 
     return Scaffold(
       body: SafeArea(
         child: ConstrainedContent(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xl),
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             children: [
-              Row(children: [
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  tooltip: 'Back without saving',
-                  onPressed: () => Navigator.of(context).pop(false),
-                ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _save,
-                  child: const Text('Save'),
-                ),
-              ]),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Back without saving',
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                  const Spacer(),
+                  FilledButton(onPressed: _save, child: const Text('Save')),
+                ],
+              ),
               const SizedBox(height: AppSpacing.md),
-              Text('NEW TASK',
-                  style:
-                      AppTypography.sectionLabel(theme.colorScheme.primary)),
+              Text(
+                'NEW TASK',
+                style: AppTypography.sectionLabel(theme.colorScheme.primary),
+              ),
               const SizedBox(height: AppSpacing.xs),
               // The Hero target: text flies in here at 28sp.
               Hero(
@@ -204,7 +226,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
                     style: theme.textTheme.headlineLarge?.copyWith(
-                        fontSize: 28, height: 1.2),
+                      fontSize: 28,
+                      height: 1.2,
+                    ),
                     decoration: const InputDecoration(
                       hintText: 'Task title',
                       border: InputBorder.none,
@@ -225,7 +249,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 decoration: InputDecoration(
                   hintText: 'What counts as proof?',
                   hintStyle: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant),
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -235,80 +260,101 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: AppSpacing.lg),
-              Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs,
-                  children: [
-                AppChip(
-                  label: group?.name ?? 'Inbox',
-                  trailing: Icon(Icons.expand_more,
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  AppChip(
+                    label: group?.name ?? 'Inbox',
+                    trailing: Icon(
+                      Icons.expand_more,
                       size: 14,
-                      color: theme.colorScheme.onSurfaceVariant),
-                  onTap: () async {
-                    final g = await pickGroupSheet(context, ref);
-                    if (g != null) {
-                      setState(() => _groupId = g.isEmpty ? null : g);
-                    }
-                  },
-                ),
-                AppChip(
-                  label: _dueLabel,
-                  filled: _dueAt != null,
-                  leading: Icon(Icons.event_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    onTap: () async {
+                      final g = await pickGroupSheet(context, ref);
+                      if (g != null) {
+                        setState(() => _groupId = g.isEmpty ? null : g);
+                      }
+                    },
+                  ),
+                  AppChip(
+                    label: _dueLabel,
+                    filled: _dueAt != null,
+                    leading: Icon(
+                      Icons.event_rounded,
                       size: 14,
                       color: _dueAt != null
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant),
-                  trailing: _dueAt != null
-                      ? GestureDetector(
-                          onTap: () => setState(() => _dueAt = null),
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Icon(Icons.close,
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                    trailing: _dueAt != null
+                        ? GestureDetector(
+                            onTap: () => setState(() => _dueAt = null),
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.close,
                                 size: 14,
-                                color:
-                                    theme.colorScheme.onSurfaceVariant),
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            Icons.expand_more,
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        )
-                      : Icon(Icons.expand_more,
-                          size: 14,
-                          color: theme.colorScheme.onSurfaceVariant),
-                  onTap: _pickDate,
-                ),
-                if (_dueAt != null)
-                  AppChip(
-                    label: 'Set time',
-                    onTap: _pickTime,
+                    onTap: _pickDate,
                   ),
-              ]),
-              const SizedBox(height: AppSpacing.lg),
-              Text('Priority',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: AppSpacing.xs),
-              Row(children: [
-                for (var i = 0; i < _priorities.length; i++) ...[
-                  AppChip(
-                    label: _priorities[i],
-                    filled: _priority == i,
-                    onTap: () => setState(() => _priority = i),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
+                  if (_dueAt != null)
+                    AppChip(label: 'Set time', onTap: _pickTime),
                 ],
-              ]),
+              ),
               const SizedBox(height: AppSpacing.lg),
-              Text('Estimated duration',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
+              Text(
+                'Priority',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xs),
-              Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs,
-                  children: [
-                for (final m in _durations)
-                  AppChip(
-                    label: m >= 60 ? '${m ~/ 60}h${m % 60 > 0 ? ' ${m % 60}m' : ''}' : '${m}m',
-                    filled: _durationMin == m,
-                    onTap: () => setState(() =>
-                        _durationMin = _durationMin == m ? null : m),
-                  ),
-              ]),
+              Row(
+                children: [
+                  for (var i = 0; i < _priorities.length; i++) ...[
+                    AppChip(
+                      label: _priorities[i],
+                      filled: _priority == i,
+                      onTap: () => setState(() => _priority = i),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Estimated duration',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  for (final m in _durations)
+                    AppChip(
+                      label: m >= 60
+                          ? '${m ~/ 60}h${m % 60 > 0 ? ' ${m % 60}m' : ''}'
+                          : '${m}m',
+                      filled: _durationMin == m,
+                      onTap: () => setState(
+                        () => _durationMin = _durationMin == m ? null : m,
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: AppSpacing.xxl),
               SizedBox(
                 width: double.infinity,

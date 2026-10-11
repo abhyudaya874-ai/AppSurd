@@ -30,19 +30,22 @@ class TaskViewOptions {
   final TaskSortBy sortBy;
   final bool ascending;
 
-  TaskViewOptions copyWith(
-          {TaskGroupBy? groupBy, TaskSortBy? sortBy, bool? ascending}) =>
-      TaskViewOptions(
-        groupBy: groupBy ?? this.groupBy,
-        sortBy: sortBy ?? this.sortBy,
-        ascending: ascending ?? this.ascending,
-      );
+  TaskViewOptions copyWith({
+    TaskGroupBy? groupBy,
+    TaskSortBy? sortBy,
+    bool? ascending,
+  }) => TaskViewOptions(
+    groupBy: groupBy ?? this.groupBy,
+    sortBy: sortBy ?? this.sortBy,
+    ascending: ascending ?? this.ascending,
+  );
 }
 
 /// Persisted view options (receipts_settings box). Pure fns below stay
 /// UI-free so they're unit-testable.
-final taskViewProvider =
-    NotifierProvider<TaskViewNotifier, TaskViewOptions>(TaskViewNotifier.new);
+final taskViewProvider = NotifierProvider<TaskViewNotifier, TaskViewOptions>(
+  TaskViewNotifier.new,
+);
 
 class TaskViewNotifier extends Notifier<TaskViewOptions> {
   static const _boxName = 'receipts_settings';
@@ -60,11 +63,13 @@ class TaskViewNotifier extends Notifier<TaskViewOptions> {
     if (raw is Map) {
       state = TaskViewOptions(
         groupBy: TaskGroupBy.values.firstWhere(
-            (g) => g.name == raw['groupBy'],
-            orElse: () => TaskGroupBy.none),
+          (g) => g.name == raw['groupBy'],
+          orElse: () => TaskGroupBy.none,
+        ),
         sortBy: TaskSortBy.values.firstWhere(
-            (s) => s.name == raw['sortBy'],
-            orElse: () => TaskSortBy.activity),
+          (s) => s.name == raw['sortBy'],
+          orElse: () => TaskSortBy.activity,
+        ),
         ascending: raw['ascending'] as bool? ?? false,
       );
     }
@@ -83,21 +88,19 @@ class TaskViewNotifier extends Notifier<TaskViewOptions> {
 
 /// A task's most recent timestamp — last attempt's submission, else created.
 /// Feeds the "Last activity" sort.
-DateTime lastActivity(Task t) => t.attempts.isEmpty
-    ? t.createdAt
-    : t.attempts.last.submittedAt;
+DateTime lastActivity(Task t) =>
+    t.attempts.isEmpty ? t.createdAt : t.attempts.last.submittedAt;
 
 /// Sorts a copy of [tasks] per [sortBy]; [ascending] flips the comparison.
 List<Task> sortTasks(List<Task> tasks, TaskSortBy sortBy, bool ascending) {
   final list = [...tasks];
   int cmp(Task a, Task b) => switch (sortBy) {
-        TaskSortBy.created => a.createdAt.compareTo(b.createdAt),
-        TaskSortBy.due => _cmpNullable(a.dueAt, b.dueAt),
-        TaskSortBy.title =>
-          a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        TaskSortBy.activity => lastActivity(a).compareTo(lastActivity(b)),
-        TaskSortBy.priority => a.priority.compareTo(b.priority),
-      };
+    TaskSortBy.created => a.createdAt.compareTo(b.createdAt),
+    TaskSortBy.due => _cmpNullable(a.dueAt, b.dueAt),
+    TaskSortBy.title => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+    TaskSortBy.activity => lastActivity(a).compareTo(lastActivity(b)),
+    TaskSortBy.priority => a.priority.compareTo(b.priority),
+  };
   list.sort((a, b) => ascending ? cmp(a, b) : -cmp(a, b));
   return list;
 }
@@ -126,7 +129,11 @@ String dueBucket(DateTime? dueAt, DateTime now) {
 /// fixed and human-meaningful (status lifecycle, due chronology, priority
 /// high→low). Group buckets follow the user's group list order then Inbox.
 List<TaskSection> groupTasks(
-    List<Task> tasks, List<Group> groups, TaskGroupBy groupBy, DateTime now) {
+  List<Task> tasks,
+  List<Group> groups,
+  TaskGroupBy groupBy,
+  DateTime now,
+) {
   switch (groupBy) {
     case TaskGroupBy.none:
       return [TaskSection('', tasks)];
@@ -148,9 +155,11 @@ List<TaskSection> groupTasks(
         final inGroup = tasks.where((t) => t.groupId == g.id).toList();
         if (inGroup.isNotEmpty) sections.add(TaskSection(g.name, inGroup));
       }
-      final inbox = tasks.where((t) =>
-          t.groupId == null ||
-          !groups.any((g) => g.id == t.groupId)).toList();
+      final inbox = tasks
+          .where(
+            (t) => t.groupId == null || !groups.any((g) => g.id == t.groupId),
+          )
+          .toList();
       if (inbox.isNotEmpty) sections.add(TaskSection('Inbox', inbox));
       return sections;
     case TaskGroupBy.due:
@@ -158,16 +167,17 @@ List<TaskSection> groupTasks(
       return [
         for (final b in order)
           if (tasks.any((t) => dueBucket(t.dueAt, now) == b))
-            TaskSection(b,
-                tasks.where((t) => dueBucket(t.dueAt, now) == b).toList()),
+            TaskSection(
+              b,
+              tasks.where((t) => dueBucket(t.dueAt, now) == b).toList(),
+            ),
       ];
     case TaskGroupBy.priority:
       const order = [(2, 'High'), (1, 'Medium'), (0, 'No priority')];
       return [
         for (final (p, label) in order)
           if (tasks.any((t) => t.priority == p))
-            TaskSection(
-                label, tasks.where((t) => t.priority == p).toList()),
+            TaskSection(label, tasks.where((t) => t.priority == p).toList()),
       ];
   }
 }

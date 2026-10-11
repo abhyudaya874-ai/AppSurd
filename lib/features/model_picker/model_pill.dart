@@ -95,8 +95,9 @@ class ModelPillState extends ConsumerState<ModelPill>
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.7),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.7,
+                ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: theme.colorScheme.outline.withValues(alpha: 0.6),
@@ -110,11 +111,7 @@ class ModelPillState extends ConsumerState<ModelPill>
                     _AvatarStack(models: lineupSpecs, tints: tints)
                   else ...[
                     model == null
-                        ? _ProviderGlyph(
-                            tint: tint,
-                            letter: '?',
-                            locked: true,
-                          )
+                        ? _ProviderGlyph(tint: tint, letter: '?', locked: true)
                         : _DotMatrixGlyph(
                             tierIndex: selection.preset.index,
                             tint: tint,
@@ -122,42 +119,46 @@ class ModelPillState extends ConsumerState<ModelPill>
                   ],
                   const SizedBox(width: AppSpacing.xs),
                   Flexible(
-                  child: AnimatedSwitcher(
-                    duration: AppMotion.fast,
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.3),
-                          end: Offset.zero,
-                        ).animate(anim),
-                        child: child,
+                    child: AnimatedSwitcher(
+                      duration: AppMotion.fast,
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.3),
+                            end: Offset.zero,
+                          ).animate(anim),
+                          child: child,
+                        ),
+                      ),
+                      child: Text.rich(
+                        key: ValueKey(
+                          arena
+                              ? 'arena-${selection.arenaLineup.length}'
+                              : '${model?.id}-${selection.preset.name}',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: arena
+                                  ? 'Arena · ${lineupSpecs.length} models'
+                                  : (model?.displayName ?? 'No model'),
+                              style: theme.textTheme.labelLarge,
+                            ),
+                            TextSpan(
+                              text: arena
+                                  ? '  ${selection.strictness.name}'
+                                  : '  ${selection.preset.label}',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Text.rich(
-                      key: ValueKey(arena
-                          ? 'arena-${selection.arenaLineup.length}'
-                          : '${model?.id}-${selection.preset.name}'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      TextSpan(children: [
-                        TextSpan(
-                          text: arena
-                              ? 'Arena · ${lineupSpecs.length} models'
-                              : (model?.displayName ?? 'No model'),
-                          style: theme.textTheme.labelLarge,
-                        ),
-                        TextSpan(
-                          text: arena
-                              ? '  ${selection.strictness.name}'
-                              : '  ${selection.preset.label}',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ]),
-                    ),
-                  ),
                   ),
                   const SizedBox(width: AppSpacing.xxs),
                   Icon(
@@ -215,15 +216,12 @@ class _ProviderGlyph extends StatelessWidget {
           ? Icon(Icons.lock_outline, size: 11, color: tint)
           : Text(
               letter,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: tint,
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(context).textTheme.labelSmall
+                  ?.copyWith(color: tint, fontWeight: FontWeight.w700),
             ),
     );
   }
 }
-
 
 /// 3×3 dot-matrix glyph — more dots lit = stronger tier (Swift 2, Balanced 4,
 /// Smart 6, Deep 9). Dots light up one by one with a short stagger.
@@ -278,29 +276,35 @@ class _AvatarStack extends StatelessWidget {
     return SizedBox(
       width: size + (n > 0 ? (n - 1) * (size - overlap) : 0),
       height: size,
-      child: Stack(children: [
-        for (var i = 0; i < n; i++)
-          Positioned(
-            left: i * (size - overlap),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.surface,
-                border: Border.all(
-                    color: tints.forId(models[i].provider.id), width: 1.2),
+      child: Stack(
+        children: [
+          for (var i = 0; i < n; i++)
+            Positioned(
+              left: i * (size - overlap),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border.all(
+                    color: tints.forId(models[i].provider.id),
+                    width: 1.2,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                padding: const EdgeInsets.all(3),
+                child: BrandIcon(model: models[i], size: 14, showBadge: false),
               ),
-              clipBehavior: Clip.antiAlias,
-              padding: const EdgeInsets.all(3),
-              child: BrandIcon(model: models[i], size: 14, showBadge: false),
             ),
-          ),
-        if (n == 0)
-          Icon(Icons.groups_outlined,
+          if (n == 0)
+            Icon(
+              Icons.groups_outlined,
               size: size,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-      ]),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+        ],
+      ),
     );
   }
 }

@@ -12,19 +12,23 @@ class Group {
   final String name;
   final Color color;
 
-  Map<String, dynamic> toJson() =>
-      {'id': id, 'name': name, 'color': color.toARGB32()};
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'color': color.toARGB32(),
+  };
 
   factory Group.fromJson(Map<String, dynamic> json) => Group(
-        id: json['id'] as String,
-        name: json['name'] as String? ?? '',
-        color: Color((json['color'] as num?)?.toInt() ?? 0xFF8B9097),
-      );
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '',
+    color: Color((json['color'] as num?)?.toInt() ?? 0xFF8B9097),
+  );
 }
 
 /// Persisted list of groups (seeded once with three defaults).
 final groupsProvider = NotifierProvider<GroupsNotifier, List<Group>>(
-    GroupsNotifier.new);
+  GroupsNotifier.new,
+);
 
 class GroupsNotifier extends Notifier<List<Group>> {
   static const _boxName = 'receipts_settings';

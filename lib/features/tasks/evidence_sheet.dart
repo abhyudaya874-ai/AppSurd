@@ -68,8 +68,7 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
             : null;
       case EvidenceType.commit:
         final u = _commitCtrl.text.trim();
-        if (!RegExp(r'github\.com/[^/]+/[^/]+/(commit|pull)/')
-            .hasMatch(u)) {
+        if (!RegExp(r'github\.com/[^/]+/[^/]+/(commit|pull)/').hasMatch(u)) {
           return 'Paste a GitHub commit or PR URL';
         }
         return null;
@@ -94,28 +93,30 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
       payload: payload,
       submittedAt: DateTime.now(),
     );
-    await ref
-        .read(tasksProvider.notifier)
-        .addAttempt(widget.task.id, attempt);
+    await ref.read(tasksProvider.notifier).addAttempt(widget.task.id, attempt);
     if (!mounted) return;
     Navigator.of(context).pop();
     // Arena mode with a valid lineup goes to the jury; else single verifier.
     final arenaOn = ref.read(arenaReadyProvider);
     if (arenaOn) {
       final sel = ref.read(modelSelectionProvider);
-      await Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ArenaScreen(
-          taskId: widget.task.id,
-          attemptId: attempt.id,
-          lineup: ref.read(arenaLineupProvider),
-          strictness: sel.strictness,
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ArenaScreen(
+            taskId: widget.task.id,
+            attemptId: attempt.id,
+            lineup: ref.read(arenaLineupProvider),
+            strictness: sel.strictness,
+          ),
         ),
-      ));
+      );
     } else {
-      await Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => VerificationScreen(
-            taskId: widget.task.id, attemptId: attempt.id),
-      ));
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              VerificationScreen(taskId: widget.task.id, attemptId: attempt.id),
+        ),
+      );
     }
   }
 
@@ -137,8 +138,9 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
           const SizedBox(height: AppSpacing.xs),
           Text(
             '"${widget.task.title}" — show, don\'t tell.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -157,23 +159,34 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
             child: AnimatedSwitcher(
               duration: AppMotion.fast,
               child: switch (_type) {
-                EvidenceType.url => _UrlInput(key: const ValueKey('u'), ctrl: _urlCtrl),
+                EvidenceType.url => _UrlInput(
+                  key: const ValueKey('u'),
+                  ctrl: _urlCtrl,
+                ),
                 EvidenceType.screenshot => _ShotInput(
-                    key: const ValueKey('s'),
-                    attachments: _attachments),
-                EvidenceType.text =>
-                  _TextInput(key: const ValueKey('t'), ctrl: _textCtrl),
-                EvidenceType.commit =>
-                  _CommitInput(key: const ValueKey('c'), ctrl: _commitCtrl),
+                  key: const ValueKey('s'),
+                  attachments: _attachments,
+                ),
+                EvidenceType.text => _TextInput(
+                  key: const ValueKey('t'),
+                  ctrl: _textCtrl,
+                ),
+                EvidenceType.commit => _CommitInput(
+                  key: const ValueKey('c'),
+                  ctrl: _commitCtrl,
+                ),
               },
             ),
           ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: Text(_error!,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.error)),
+              child: Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
             ),
           const SizedBox(height: AppSpacing.md),
           Pressable(
@@ -215,56 +228,65 @@ class _SegmentedControl extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final w = constraints.maxWidth / types.length;
-          return Stack(children: [
-            AnimatedAlign(
-              duration: AppMotion.base,
-              curve: AppMotion.standard,
-              alignment:
-                  Alignment(-1 + 2 * type.index / (types.length - 1), 0),
-              child: Container(
-                width: w,
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(9),
-                  border: Border.all(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+          return Stack(
+            children: [
+              AnimatedAlign(
+                duration: AppMotion.base,
+                curve: AppMotion.standard,
+                alignment: Alignment(
+                  -1 + 2 * type.index / (types.length - 1),
+                  0,
                 ),
-              ),
-            ),
-            Row(children: [
-              for (final t in types)
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => onChanged(t),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(_icons[t],
-                            size: 17,
-                            color: t == type
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant),
-                        Text(
-                          switch (t) {
-                            EvidenceType.url => 'URL',
-                            EvidenceType.screenshot => 'Shot',
-                            EvidenceType.text => 'Text',
-                            EvidenceType.commit => 'Commit',
-                          },
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: t == type
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                child: Container(
+                  width: w,
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
-            ]),
-          ]);
+              ),
+              Row(
+                children: [
+                  for (final t in types)
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => onChanged(t),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _icons[t],
+                              size: 17,
+                              color: t == type
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            Text(
+                              switch (t) {
+                                EvidenceType.url => 'URL',
+                                EvidenceType.screenshot => 'Shot',
+                                EvidenceType.text => 'Text',
+                                EvidenceType.commit => 'Commit',
+                              },
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: t == type
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
         },
       ),
     );
@@ -276,13 +298,13 @@ class _UrlInput extends StatelessWidget {
   final TextEditingController ctrl;
   @override
   Widget build(BuildContext context) => TextField(
-        controller: ctrl,
-        keyboardType: TextInputType.url,
-        decoration: const InputDecoration(
-          hintText: 'https://… (the thing you shipped)',
-          prefixIcon: Icon(Icons.link),
-        ),
-      );
+    controller: ctrl,
+    keyboardType: TextInputType.url,
+    decoration: const InputDecoration(
+      hintText: 'https://… (the thing you shipped)',
+      prefixIcon: Icon(Icons.link),
+    ),
+  );
 }
 
 /// Up to 4 screenshots — shared AttachmentBar (thumbnails + × + preview).
@@ -290,8 +312,7 @@ class _ShotInput extends StatelessWidget {
   const _ShotInput({super.key, required this.attachments});
   final List<Attachment> attachments;
   @override
-  Widget build(BuildContext context) =>
-      AttachmentBar(attachments: attachments);
+  Widget build(BuildContext context) => AttachmentBar(attachments: attachments);
 }
 
 class _TextInput extends StatelessWidget {
@@ -299,33 +320,35 @@ class _TextInput extends StatelessWidget {
   final TextEditingController ctrl;
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: ctrl,
-            minLines: 4,
-            maxLines: 6,
-            maxLength: 1200,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'Explain what you did, with specifics…',
-            ),
-          ),
-          // Speak your proof — the orb transcribes into this field.
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () async {
-                final r = await VoiceOrbButton.show(context,
-                    intent: VoiceIntent.proof);
-                if (r != null) ctrl.text = r.text;
-              },
-              icon: const Icon(Icons.mic_none_rounded, size: 16),
-              label: const Text('Speak it'),
-            ),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      TextField(
+        controller: ctrl,
+        minLines: 4,
+        maxLines: 6,
+        maxLength: 1200,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(
+          hintText: 'Explain what you did, with specifics…',
+        ),
+      ),
+      // Speak your proof — the orb transcribes into this field.
+      Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
+          onPressed: () async {
+            final r = await VoiceOrbButton.show(
+              context,
+              intent: VoiceIntent.proof,
+            );
+            if (r != null) ctrl.text = r.text;
+          },
+          icon: const Icon(Icons.mic_none_rounded, size: 16),
+          label: const Text('Speak it'),
+        ),
+      ),
+    ],
+  );
 }
 
 class _CommitInput extends StatelessWidget {
@@ -333,11 +356,11 @@ class _CommitInput extends StatelessWidget {
   final TextEditingController ctrl;
   @override
   Widget build(BuildContext context) => TextField(
-        controller: ctrl,
-        keyboardType: TextInputType.url,
-        decoration: const InputDecoration(
-          hintText: 'github.com/owner/repo/commit/sha',
-          prefixIcon: Icon(Icons.commit),
-        ),
-      );
+    controller: ctrl,
+    keyboardType: TextInputType.url,
+    decoration: const InputDecoration(
+      hintText: 'github.com/owner/repo/commit/sha',
+      prefixIcon: Icon(Icons.commit),
+    ),
+  );
 }

@@ -20,8 +20,8 @@ class TimeRange {
 
   Map<String, dynamic> toJson() => {'s': startMin, 'e': endMin};
 
-  factory TimeRange.fromJson(Map<String, dynamic> json) => TimeRange(
-      (json['s'] as num).toInt(), (json['e'] as num).toInt());
+  factory TimeRange.fromJson(Map<String, dynamic> json) =>
+      TimeRange((json['s'] as num).toInt(), (json['e'] as num).toInt());
 }
 
 /// Which weekdays (1=Mon … 7=Sun) are "on" and their working windows.
@@ -42,21 +42,22 @@ class WorkingHours {
   bool covers(int weekday, int minute) =>
       rangesFor(weekday).any((r) => r.contains(minute));
 
-  WorkingHours copy() =>
-      WorkingHours({for (final e in days.entries) e.key: [...e.value]});
+  WorkingHours copy() => WorkingHours({
+    for (final e in days.entries) e.key: [...e.value],
+  });
 
   Map<String, dynamic> toJson() => {
-        for (final e in days.entries)
-          '${e.key}': [for (final r in e.value) r.toJson()],
-      };
+    for (final e in days.entries)
+      '${e.key}': [for (final r in e.value) r.toJson()],
+  };
 
   factory WorkingHours.fromJson(Map<String, dynamic> json) => WorkingHours({
-        for (final e in json.entries)
-          int.parse(e.key): [
-            for (final r in (e.value as List))
-              TimeRange.fromJson(Map<String, dynamic>.from(r as Map)),
-          ],
-      });
+    for (final e in json.entries)
+      int.parse(e.key): [
+        for (final r in (e.value as List))
+          TimeRange.fromJson(Map<String, dynamic>.from(r as Map)),
+      ],
+  });
 }
 
 /// Validation for the editor: every range must be end>start and ranges must
@@ -79,7 +80,8 @@ String? validateRanges(List<TimeRange> ranges) {
 /// auto-scheduler has somewhere to put tasks before the user customises it.
 final workingHoursProvider =
     NotifierProvider<WorkingHoursNotifier, WorkingHours>(
-        WorkingHoursNotifier.new);
+      WorkingHoursNotifier.new,
+    );
 
 class WorkingHoursNotifier extends Notifier<WorkingHours> {
   static const _boxName = 'receipts_settings';

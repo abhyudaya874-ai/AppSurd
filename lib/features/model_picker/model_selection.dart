@@ -43,8 +43,9 @@ class ModelSelection {
   }) {
     return ModelSelection(
       preset: preset ?? this.preset,
-      customModelId:
-          customModelId != null ? customModelId() : this.customModelId,
+      customModelId: customModelId != null
+          ? customModelId()
+          : this.customModelId,
       reasoning: reasoning ?? this.reasoning,
       speed: speed ?? this.speed,
       arenaMode: arenaMode ?? this.arenaMode,
@@ -54,34 +55,33 @@ class ModelSelection {
   }
 
   Map<String, dynamic> toJson() => {
-        'preset': preset.index,
-        'customModelId': customModelId,
-        'reasoning': reasoning.index,
-        'speed': speed.index,
-        'arenaMode': arenaMode,
-        'arenaLineup': arenaLineup,
-        'strictness': strictness.index,
-      };
+    'preset': preset.index,
+    'customModelId': customModelId,
+    'reasoning': reasoning.index,
+    'speed': speed.index,
+    'arenaMode': arenaMode,
+    'arenaLineup': arenaLineup,
+    'strictness': strictness.index,
+  };
 
   factory ModelSelection.fromJson(Map<String, dynamic> json) => ModelSelection(
-        preset: Tier.values[(json['preset'] as num?)?.toInt() ?? 1],
-        customModelId: json['customModelId'] as String?,
-        reasoning:
-            ReasoningLevel.values[(json['reasoning'] as num?)?.toInt() ?? 1],
-        speed: SpeedPref.values[(json['speed'] as num?)?.toInt() ?? 0],
-        arenaMode: json['arenaMode'] as bool? ?? false,
-        arenaLineup: [
-          for (final id in (json['arenaLineup'] as List? ?? const [])) '$id',
-        ],
-        strictness:
-            Strictness.values[(json['strictness'] as num?)?.toInt() ?? 1],
-      );
+    preset: Tier.values[(json['preset'] as num?)?.toInt() ?? 1],
+    customModelId: json['customModelId'] as String?,
+    reasoning: ReasoningLevel.values[(json['reasoning'] as num?)?.toInt() ?? 1],
+    speed: SpeedPref.values[(json['speed'] as num?)?.toInt() ?? 0],
+    arenaMode: json['arenaMode'] as bool? ?? false,
+    arenaLineup: [
+      for (final id in (json['arenaLineup'] as List? ?? const [])) '$id',
+    ],
+    strictness: Strictness.values[(json['strictness'] as num?)?.toInt() ?? 1],
+  );
 }
 
 /// Riverpod source of truth for the pill's state.
 final modelSelectionProvider =
     NotifierProvider<ModelSelectionNotifier, ModelSelection>(
-        ModelSelectionNotifier.new);
+      ModelSelectionNotifier.new,
+    );
 
 /// Persists the selection into the `settings` Hive box on every change.
 class ModelSelectionNotifier extends Notifier<ModelSelection> {

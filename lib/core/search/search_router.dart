@@ -16,7 +16,8 @@ enum AgenticMode { off, search, deep }
 /// empty.
 final searchKeysProvider =
     AsyncNotifierProvider<SearchKeysNotifier, Map<String, String>>(
-        SearchKeysNotifier.new);
+      SearchKeysNotifier.new,
+    );
 
 class SearchKeysNotifier extends AsyncNotifier<Map<String, String>> {
   static const _store = FlutterSecureStorage();
@@ -24,9 +25,11 @@ class SearchKeysNotifier extends AsyncNotifier<Map<String, String>> {
   @override
   Future<Map<String, String>> build() async {
     return {
-      'tavily': await _store.read(key: 'tavily_api_key') ??
+      'tavily':
+          await _store.read(key: 'tavily_api_key') ??
           const String.fromEnvironment('TAVILY_API_KEY'),
-      'exa': await _store.read(key: 'exa_api_key') ??
+      'exa':
+          await _store.read(key: 'exa_api_key') ??
           const String.fromEnvironment('EXA_API_KEY'),
     }..removeWhere((_, v) => v.isEmpty);
   }
@@ -57,8 +60,10 @@ class SearchRouter {
   final Map<String, String> _keys;
 
   /// Run [query] honoring the user's override; returns (hits, providerLabel).
-  Future<(List<SearchHit>, String?)> run(SearchQuery query,
-      {SearchOverride override_ = SearchOverride.auto}) async {
+  Future<(List<SearchHit>, String?)> run(
+    SearchQuery query, {
+    SearchOverride override_ = SearchOverride.auto,
+  }) async {
     if (override_ == SearchOverride.off) return (<SearchHit>[], null);
 
     final tavKey = _keys['tavily'];
@@ -68,8 +73,7 @@ class SearchRouter {
     final wantTavily = switch (query.intent) {
       SearchIntent.news ||
       SearchIntent.factcheck ||
-      SearchIntent.extract =>
-        true,
+      SearchIntent.extract => true,
       _ => false,
     };
 
@@ -86,7 +90,9 @@ class SearchRouter {
       if (tavKey != null) {
         try {
           return (await _tavily(tavKey, query), 'Tavily');
-        } catch (_) {/* fall through */}
+        } catch (_) {
+          /* fall through */
+        }
       }
       if (exaKey != null) return (await _exa(exaKey, query), 'Exa');
       return (<SearchHit>[], null);
@@ -94,19 +100,22 @@ class SearchRouter {
       if (exaKey != null) {
         try {
           return (await _exa(exaKey, query), 'Exa');
-        } catch (_) {/* fall through */}
+        } catch (_) {
+          /* fall through */
+        }
       }
-      if (tavKey != null) return (await _tavily(tavKey, query), 'Tavily' as String?);
+      if (tavKey != null)
+        return (await _tavily(tavKey, query), 'Tavily' as String?);
       return (<SearchHit>[], null);
     }
   }
 
-  Future<List<SearchHit>> _tavily(String key, SearchQuery q) =>
-      TavilyClient(apiKey: key).search(q.q,
-          topic: q.intent == SearchIntent.news ? 'news' : 'general');
+  Future<List<SearchHit>> _tavily(String key, SearchQuery q) => TavilyClient(
+    apiKey: key,
+  ).search(q.q, topic: q.intent == SearchIntent.news ? 'news' : 'general');
 
   Future<List<SearchHit>> _exa(String key, SearchQuery q) =>
       q.intent == SearchIntent.similar
-          ? ExaClient(apiKey: key).similar(q.q)
-          : ExaClient(apiKey: key).search(q.q);
+      ? ExaClient(apiKey: key).similar(q.q)
+      : ExaClient(apiKey: key).search(q.q);
 }

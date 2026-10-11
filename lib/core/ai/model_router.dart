@@ -18,10 +18,7 @@ enum SpeedPref { normal, fast }
 /// The plan the router produces: an ordered candidate list plus flags the UI
 /// surfaces as small chips ("switched for vision", "rerouted via X").
 class RoutePlan {
-  const RoutePlan({
-    required this.candidates,
-    this.visionSwappedTo,
-  });
+  const RoutePlan({required this.candidates, this.visionSwappedTo});
 
   /// Ordered models to try — index 0 is the primary pick.
   final List<ModelSpec> candidates;
@@ -35,7 +32,11 @@ class RoutePlan {
 /// Result of executing a plan: which model actually answered and whether the
 /// call had to fall back off the primary provider.
 class RouteOutcome<T> {
-  const RouteOutcome({required this.used, required this.value, this.reroutedFrom});
+  const RouteOutcome({
+    required this.used,
+    required this.value,
+    this.reroutedFrom,
+  });
 
   final ModelSpec used;
   final T value;
@@ -67,10 +68,11 @@ class ModelRouter {
     Map<AiProvider, Set<String>?> aliveIds,
     SpeedPref speed,
   ) {
-    final pool = _alive(aliveIds)
-        .where((m) => m.tier == tier && keys.containsKey(m.provider))
-        .toList()
-      ..sort((a, b) => b.strength.compareTo(a.strength));
+    final pool =
+        _alive(aliveIds)
+            .where((m) => m.tier == tier && keys.containsKey(m.provider))
+            .toList()
+          ..sort((a, b) => b.strength.compareTo(a.strength));
     if (speed == SpeedPref.fast) {
       pool.sort((a, b) {
         if (a.provider == b.provider) return 0;
@@ -98,8 +100,12 @@ class ModelRouter {
       if (custom != null && keys.containsKey(custom.provider)) {
         candidates.add(custom);
         candidates.addAll(
-          _tierCandidates(custom.tier, keys, aliveIds, speed)
-              .where((m) => m != custom),
+          _tierCandidates(
+            custom.tier,
+            keys,
+            aliveIds,
+            speed,
+          ).where((m) => m != custom),
         );
       }
     } else {
@@ -108,20 +114,36 @@ class ModelRouter {
 
     // Lower tiers, then higher tiers — "drop a tier" on failure.
     final tiers = Tier.values;
-    final start = candidates.isNotEmpty ? candidates.first.tier.index : tier.index;
+    final start = candidates.isNotEmpty
+        ? candidates.first.tier.index
+        : tier.index;
     for (var i = start - 1; i >= 0; i--) {
-      candidates.addAll(_tierCandidates(tiers[i], keys, aliveIds, speed)
-          .where((m) => !candidates.contains(m)));
+      candidates.addAll(
+        _tierCandidates(
+          tiers[i],
+          keys,
+          aliveIds,
+          speed,
+        ).where((m) => !candidates.contains(m)),
+      );
     }
     for (var i = start + 1; i < tiers.length; i++) {
-      candidates.addAll(_tierCandidates(tiers[i], keys, aliveIds, speed)
-          .where((m) => !candidates.contains(m)));
+      candidates.addAll(
+        _tierCandidates(
+          tiers[i],
+          keys,
+          aliveIds,
+          speed,
+        ).where((m) => !candidates.contains(m)),
+      );
     }
 
     // Vision swap: image evidence on a blind model jumps to the nearest
     // vision-capable candidate instead of failing.
     ModelSpec? visionSwap;
-    if (needsVision && candidates.isNotEmpty && !candidates.first.supportsVision) {
+    if (needsVision &&
+        candidates.isNotEmpty &&
+        !candidates.first.supportsVision) {
       final idx = candidates.indexWhere((m) => m.supportsVision);
       if (idx >= 0) {
         visionSwap = candidates.removeAt(idx);
@@ -158,7 +180,9 @@ class ModelRouter {
       try {
         RequestCounterStats.bump(spec.provider.id);
         final value = await RateLimiter.run(
-            spec.provider.id, () => call(client, spec));
+          spec.provider.id,
+          () => call(client, spec),
+        );
         debugPrint('[router] ${spec.provider.id}/${spec.id} answered');
         return RouteOutcome(
           used: spec,
@@ -166,7 +190,9 @@ class ModelRouter {
           reroutedFrom: i == 0 ? null : plan.candidates.first.provider,
         );
       } on AiFailure catch (e) {
-        debugPrint('[router] ${spec.id} failed (${e.runtimeType}), falling back');
+        debugPrint(
+          '[router] ${spec.id} failed (${e.runtimeType}), falling back',
+        );
         lastError = e;
         // 429 → record backoff for the next call, keep falling through.
         if (e is RateLimitFailure) {
@@ -183,8 +209,9 @@ class ModelRouter {
 
 /// Riverpod glue: which catalog entries are confirmed alive per provider.
 /// Fetched once per app run; Settings "Refresh models" invalidates it.
-final aliveModelsProvider =
-    FutureProvider<Map<AiProvider, Set<String>?>>((ref) async {
+final aliveModelsProvider = FutureProvider<Map<AiProvider, Set<String>?>>((
+  ref,
+) async {
   final keys = await ref.watch(configuredKeysProvider.future);
   final out = <AiProvider, Set<String>?>{};
   for (final entry in keys.entries) {

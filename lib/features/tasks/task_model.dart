@@ -31,22 +31,24 @@ class EvidenceAttempt {
   final Map<String, dynamic>? verdictJson;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type.name,
-        'payload': payload,
-        'submittedAt': submittedAt.toIso8601String(),
-        'verdictJson': verdictJson,
-      };
+    'id': id,
+    'type': type.name,
+    'payload': payload,
+    'submittedAt': submittedAt.toIso8601String(),
+    'verdictJson': verdictJson,
+  };
 
   factory EvidenceAttempt.fromJson(Map<String, dynamic> json) =>
       EvidenceAttempt(
         id: json['id'] as String,
-        type: EvidenceType.values
-            .firstWhere((t) => t.name == json['type'], orElse: () => EvidenceType.text),
+        type: EvidenceType.values.firstWhere(
+          (t) => t.name == json['type'],
+          orElse: () => EvidenceType.text,
+        ),
         payload: json['payload'] as String? ?? '',
         submittedAt:
             DateTime.tryParse(json['submittedAt'] as String? ?? '') ??
-                DateTime.now(),
+            DateTime.now(),
         verdictJson: (json['verdictJson'] as Map?)?.cast<String, dynamic>(),
       );
 }
@@ -103,10 +105,9 @@ class Task {
 
   /// When the task was verified — the last attempt's submission time. Null
   /// until the task reaches `done`; feeds the contribution heatmap.
-  DateTime? get completedAt =>
-      status == TaskStatus.done && attempts.isNotEmpty
-          ? attempts.last.submittedAt
-          : null;
+  DateTime? get completedAt => status == TaskStatus.done && attempts.isNotEmpty
+      ? attempts.last.submittedAt
+      : null;
 
   Task copyWith({
     String? title,
@@ -137,8 +138,7 @@ class Task {
       groupId: clearGroupId ? null : (groupId ?? this.groupId),
       dueAt: clearDueAt ? null : (dueAt ?? this.dueAt),
       priority: priority ?? this.priority,
-      durationMin:
-          clearDurationMin ? null : (durationMin ?? this.durationMin),
+      durationMin: clearDurationMin ? null : (durationMin ?? this.durationMin),
       scheduledStart: clearScheduledStart
           ? null
           : (scheduledStart ?? this.scheduledStart),
@@ -146,40 +146,41 @@ class Task {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'createdAt': createdAt.toIso8601String(),
-        'status': status.name,
-        'attempts': [for (final a in attempts) a.toJson()],
-        'integrityDelta': integrityDelta,
-        'isDemo': isDemo,
-        'groupId': groupId,
-        'dueAt': dueAt?.toIso8601String(),
-        'priority': priority,
-        'durationMin': durationMin,
-        'scheduledStart': scheduledStart?.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'description': description,
+    'createdAt': createdAt.toIso8601String(),
+    'status': status.name,
+    'attempts': [for (final a in attempts) a.toJson()],
+    'integrityDelta': integrityDelta,
+    'isDemo': isDemo,
+    'groupId': groupId,
+    'dueAt': dueAt?.toIso8601String(),
+    'priority': priority,
+    'durationMin': durationMin,
+    'scheduledStart': scheduledStart?.toIso8601String(),
+  };
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
-        id: json['id'] as String,
-        title: json['title'] as String? ?? '',
-        description: json['description'] as String? ?? '',
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-            DateTime.now(),
-        status: TaskStatus.values
-            .firstWhere((s) => s.name == json['status'], orElse: () => TaskStatus.open),
-        attempts: [
-          for (final a in (json['attempts'] as List? ?? const []))
-            EvidenceAttempt.fromJson(Map<String, dynamic>.from(a as Map)),
-        ],
-        integrityDelta: (json['integrityDelta'] as num?)?.toInt() ?? 0,
-        isDemo: json['isDemo'] as bool? ?? false,
-        groupId: json['groupId'] as String?,
-        dueAt: DateTime.tryParse(json['dueAt'] as String? ?? ''),
-        priority: (json['priority'] as num?)?.toInt() ?? 0,
-        durationMin: (json['durationMin'] as num?)?.toInt(),
-        scheduledStart:
-            DateTime.tryParse(json['scheduledStart'] as String? ?? ''),
-      );
+    id: json['id'] as String,
+    title: json['title'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    createdAt:
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+    status: TaskStatus.values.firstWhere(
+      (s) => s.name == json['status'],
+      orElse: () => TaskStatus.open,
+    ),
+    attempts: [
+      for (final a in (json['attempts'] as List? ?? const []))
+        EvidenceAttempt.fromJson(Map<String, dynamic>.from(a as Map)),
+    ],
+    integrityDelta: (json['integrityDelta'] as num?)?.toInt() ?? 0,
+    isDemo: json['isDemo'] as bool? ?? false,
+    groupId: json['groupId'] as String?,
+    dueAt: DateTime.tryParse(json['dueAt'] as String? ?? ''),
+    priority: (json['priority'] as num?)?.toInt() ?? 0,
+    durationMin: (json['durationMin'] as num?)?.toInt(),
+    scheduledStart: DateTime.tryParse(json['scheduledStart'] as String? ?? ''),
+  );
 }

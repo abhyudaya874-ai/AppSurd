@@ -83,8 +83,7 @@ class _AnimatedAppIconState extends State<AnimatedAppIcon>
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        widget.color ?? Theme.of(context).colorScheme.onSurface;
+    final color = widget.color ?? Theme.of(context).colorScheme.onSurface;
     final icon = RepaintBoundary(
       child: SizedBox.square(
         dimension: widget.size,
@@ -92,10 +91,11 @@ class _AnimatedAppIconState extends State<AnimatedAppIcon>
           animation: _c,
           builder: (context, _) => CustomPaint(
             painter: _IconPainter(
-                type: widget.type,
-                t: Curves.easeOutCubic.transform(_c.value),
-                color: color,
-                active: widget.active),
+              type: widget.type,
+              t: Curves.easeOutCubic.transform(_c.value),
+              color: color,
+              active: widget.active,
+            ),
           ),
         ),
       ),
@@ -144,8 +144,7 @@ class _IconPainter extends CustomPainter {
 
   /// Draws [path] partially — fraction of its length = [frac] — the classic
   /// draw-on effect via PathMetrics.
-  void _drawOn(Canvas canvas, Path path, double frac,
-      {Paint? paint}) {
+  void _drawOn(Canvas canvas, Path path, double frac, {Paint? paint}) {
     final p = paint ?? _stroke;
     for (final m in path.computeMetrics()) {
       canvas.drawPath(m.extractPath(0, m.length * frac.clamp(0.0, 1.0)), p);
@@ -172,8 +171,11 @@ class _IconPainter extends CustomPainter {
             ..moveTo(6, y)
             ..lineTo(19, y);
           _drawOn(canvas, row, _seg(i, 3));
-          canvas.drawCircle(Offset(3.5, y), 1.1,
-              _fill..color = color.withValues(alpha: _seg(i, 3)));
+          canvas.drawCircle(
+            Offset(3.5, y),
+            1.1,
+            _fill..color = color.withValues(alpha: _seg(i, 3)),
+          );
         }
         // Tick on the last row when active.
         if (t > 0.6) {
@@ -181,22 +183,26 @@ class _IconPainter extends CustomPainter {
             ..moveTo(16, 19)
             ..lineTo(18.4, 21.4)
             ..lineTo(22, 17);
-          _drawOn(canvas, tick, (t - 0.6) / 0.4,
-              paint: _stroke..color = color);
+          _drawOn(canvas, tick, (t - 0.6) / 0.4, paint: _stroke..color = color);
         }
       case AppIconType.ask:
         final bubble = Path()
-          ..addRRect(RRect.fromRectAndRadius(
-              const Rect.fromLTWH(3, 4, 18, 13), const Radius.circular(5)))
+          ..addRRect(
+            RRect.fromRectAndRadius(
+              const Rect.fromLTWH(3, 4, 18, 13),
+              const Radius.circular(5),
+            ),
+          )
           ..moveTo(8, 17)
           ..lineTo(8, 21)
           ..lineTo(12.5, 17);
         _drawOn(canvas, bubble, t.clamp(0, 1));
         for (var i = 0; i < 3; i++) {
           canvas.drawCircle(
-              Offset(8.5 + i * 3.5, 10.5), 1.2,
-              _fill
-                ..color = color.withValues(alpha: _seg(i, 3, lead: 0.3)));
+            Offset(8.5 + i * 3.5, 10.5),
+            1.2,
+            _fill..color = color.withValues(alpha: _seg(i, 3, lead: 0.3)),
+          );
         }
       case AppIconType.arena:
         // Two rings that slide apart when active (versus feel).
@@ -224,40 +230,64 @@ class _IconPainter extends CustomPainter {
         canvas.translate(12, 12);
         canvas.rotate(t * pi / 4);
         canvas.translate(-12, -12);
-        _drawOn(canvas, Path()
-          ..moveTo(12, 5)
-          ..lineTo(12, 19), 1);
-        _drawOn(canvas, Path()
-          ..moveTo(5, 12)
-          ..lineTo(19, 12), 1);
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(12, 5)
+            ..lineTo(12, 19),
+          1,
+        );
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(5, 12)
+            ..lineTo(19, 12),
+          1,
+        );
         canvas.restore();
       case AppIconType.orb:
         // Mic capsule + expanding sound arcs.
         canvas.drawRRect(
-            RRect.fromRectAndRadius(
-                const Rect.fromLTWH(9, 4, 6, 10), const Radius.circular(3)),
-            _stroke);
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(9, 4, 6, 10),
+            const Radius.circular(3),
+          ),
+          _stroke,
+        );
         _drawOn(
-            canvas,
-            Path()
-              ..moveTo(6.5, 12)
-              ..arcToPoint(const Offset(17.5, 12),
-                  radius: const Radius.circular(6)),
-            1);
-        _drawOn(canvas, Path()
-          ..moveTo(12, 18)
-          ..lineTo(12, 21), 1);
+          canvas,
+          Path()
+            ..moveTo(6.5, 12)
+            ..arcToPoint(
+              const Offset(17.5, 12),
+              radius: const Radius.circular(6),
+            ),
+          1,
+        );
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(12, 18)
+            ..lineTo(12, 21),
+          1,
+        );
         for (var i = 0; i < 2; i++) {
           final r = 9 + i * 3 + t * 2;
           final f = (t * (i + 1) / 2).clamp(0.0, 0.8);
           canvas.drawArc(
-              Rect.fromCircle(center: const Offset(12, 12), radius: r),
-              -pi * 0.3, -pi * 0.4, false,
-              _stroke..color = color.withValues(alpha: f));
+            Rect.fromCircle(center: const Offset(12, 12), radius: r),
+            -pi * 0.3,
+            -pi * 0.4,
+            false,
+            _stroke..color = color.withValues(alpha: f),
+          );
           canvas.drawArc(
-              Rect.fromCircle(center: const Offset(12, 12), radius: r),
-              pi * 0.8, pi * 0.4, false,
-              _stroke..color = color.withValues(alpha: f));
+            Rect.fromCircle(center: const Offset(12, 12), radius: r),
+            pi * 0.8,
+            pi * 0.4,
+            false,
+            _stroke..color = color.withValues(alpha: f),
+          );
         }
       case AppIconType.trash:
         final wob = sin(t * pi) * 0.15;
@@ -265,12 +295,20 @@ class _IconPainter extends CustomPainter {
         canvas.translate(12, 5);
         canvas.rotate(-wob * 4);
         canvas.translate(-12, -5);
-        _drawOn(canvas, Path()
-          ..moveTo(8 - t * 2, 5 - t * 1.5)
-          ..lineTo(16 + t * 2, 5 - t * 1.5), 1); // lid lifts
-        _drawOn(canvas, Path()
-          ..moveTo(10.5, 4)
-          ..lineTo(13.5, 4), 1);
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(8 - t * 2, 5 - t * 1.5)
+            ..lineTo(16 + t * 2, 5 - t * 1.5),
+          1,
+        ); // lid lifts
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(10.5, 4)
+            ..lineTo(13.5, 4),
+          1,
+        );
         canvas.restore();
         final body = Path()
           ..moveTo(6, 7)
@@ -279,26 +317,37 @@ class _IconPainter extends CustomPainter {
           ..lineTo(18, 7)
           ..close();
         _drawOn(canvas, body, 1);
-        _drawOn(canvas, Path()
-          ..moveTo(10, 10)
-          ..lineTo(10, 18), 1);
-        _drawOn(canvas, Path()
-          ..moveTo(14, 10)
-          ..lineTo(14, 18), 1);
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(10, 10)
+            ..lineTo(10, 18),
+          1,
+        );
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(14, 10)
+            ..lineTo(14, 18),
+          1,
+        );
       case AppIconType.filter:
         for (var i = 0; i < 3; i++) {
           final y = 6.0 + i * 6;
-          _drawOn(canvas, Path()
-            ..moveTo(4, y)
-            ..lineTo(20, y), 1);
+          _drawOn(
+            canvas,
+            Path()
+              ..moveTo(4, y)
+              ..lineTo(20, y),
+            1,
+          );
           // Knobs slide to new positions when active.
           final kx = lerpDouble2(7 + i * 4, 16 - i * 4, t);
           canvas.drawCircle(Offset(kx, y), 2.2, _fill);
         }
       case AppIconType.verified:
         final ring = Path()
-          ..addOval(Rect.fromCircle(
-              center: const Offset(12, 12), radius: 8.5));
+          ..addOval(Rect.fromCircle(center: const Offset(12, 12), radius: 8.5));
         _drawOn(canvas, ring, (t * 1.6).clamp(0, 1));
         final tick = Path()
           ..moveTo(8, 12.5)
@@ -310,10 +359,14 @@ class _IconPainter extends CustomPainter {
         canvas.translate(12, 12);
         canvas.rotate(t * pi);
         canvas.translate(-12, -12);
-        _drawOn(canvas, Path()
-          ..moveTo(7, 10)
-          ..lineTo(12, 15)
-          ..lineTo(17, 10), 1);
+        _drawOn(
+          canvas,
+          Path()
+            ..moveTo(7, 10)
+            ..lineTo(12, 15)
+            ..lineTo(17, 10),
+          1,
+        );
         canvas.restore();
       case AppIconType.shield:
         final shield = Path()
@@ -342,11 +395,12 @@ class _IconPainter extends CustomPainter {
           final y = 9.0 + i * 4;
           if (5 + 15 * unroll > y) {
             _drawOn(
-                canvas,
-                Path()
-                  ..moveTo(8.5, y)
-                  ..lineTo(8.5 + 7 * _seg(i, 3), y),
-                _seg(i, 3));
+              canvas,
+              Path()
+                ..moveTo(8.5, y)
+                ..lineTo(8.5 + 7 * _seg(i, 3), y),
+              _seg(i, 3),
+            );
           }
         }
     }

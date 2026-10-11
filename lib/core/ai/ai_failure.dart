@@ -27,5 +27,7 @@ final class NetworkFailure extends AiFailure {
 
 /// HTTP 5xx or a response that isn't shaped like a chat completion.
 final class BadResponseFailure extends AiFailure {
-  const BadResponseFailure([super.message = 'Provider returned a bad response.']);
+  const BadResponseFailure([
+    super.message = 'Provider returned a bad response.',
+  ]);
 }

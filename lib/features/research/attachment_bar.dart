@@ -41,11 +41,12 @@ class _AttachmentBarState extends State<AttachmentBar> {
     if (img == null) return;
     final bytes = await File(img.path).readAsBytes();
     setState(() {
-      widget.attachments.add(Attachment(
-        file: img,
-        dataUri:
-            'data:image/jpeg;base64,${base64Encode(bytes)}',
-      ));
+      widget.attachments.add(
+        Attachment(
+          file: img,
+          dataUri: 'data:image/jpeg;base64,${base64Encode(bytes)}',
+        ),
+      );
     });
   }
 
@@ -54,61 +55,70 @@ class _AttachmentBarState extends State<AttachmentBar> {
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(
-            leading: const Icon(Icons.photo_library_outlined),
-            title: const Text('Photo library'),
-            onTap: () {
-              Navigator.pop(context);
-              _pick(ImageSource.gallery);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_camera_outlined),
-            title: const Text('Camera'),
-            onTap: () {
-              Navigator.pop(context);
-              _pick(ImageSource.camera);
-            },
-          ),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Photo library'),
+              onTap: () {
+                Navigator.pop(context);
+                _pick(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pick(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      AnimatedSize(
-        duration: AppMotion.base,
-        curve: AppMotion.standard,
-        child: widget.attachments.isEmpty
-            ? const SizedBox.shrink()
-            : SizedBox(
-                height: 72,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  children: [
-                    for (final a in widget.attachments)
-                      _Thumb(
-                        attachment: a,
-                        onRemove: () =>
-                            setState(() => widget.attachments.remove(a)),
-                      ),
-                  ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedSize(
+          duration: AppMotion.base,
+          curve: AppMotion.standard,
+          child: widget.attachments.isEmpty
+              ? const SizedBox.shrink()
+              : SizedBox(
+                  height: 72,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    children: [
+                      for (final a in widget.attachments)
+                        _Thumb(
+                          attachment: a,
+                          onRemove: () =>
+                              setState(() => widget.attachments.remove(a)),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-      ),
-      // "+" attach button
-      IconButton(
-        visualDensity: VisualDensity.compact,
-        tooltip: 'Attach image',
-        onPressed: _openMenu,
-        icon: Icon(Icons.add_photo_alternate_outlined,
-            size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-      ),
-    ]);
+        ),
+        // "+" attach button
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          tooltip: 'Attach image',
+          onPressed: _openMenu,
+          icon: Icon(
+            Icons.add_photo_alternate_outlined,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -122,44 +132,50 @@ class _Thumb extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.xs),
-      child: Stack(children: [
-        Pressable(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => _Preview(attachment: attachment),
-          )),
-          child: Hero(
-            tag: attachment.dataUri.hashCode,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.file(
-                File(attachment.file.path),
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover,
+      child: Stack(
+        children: [
+          Pressable(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => _Preview(attachment: attachment),
+              ),
+            ),
+            child: Hero(
+              tag: attachment.dataUri.hashCode,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.file(
+                  File(attachment.file.path),
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
-        ),
-        // Circular × badge at top-right.
-        Positioned(
-          top: -2,
-          right: -2,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.error,
-                border: Border.all(
-                    color: theme.colorScheme.surface, width: 1.5),
+          // Circular × badge at top-right.
+          Positioned(
+            top: -2,
+            right: -2,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.error,
+                  border: Border.all(
+                    color: theme.colorScheme.surface,
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(Icons.close, size: 12, color: Colors.white),
               ),
-              child: const Icon(Icons.close, size: 12, color: Colors.white),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

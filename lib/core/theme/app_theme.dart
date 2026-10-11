@@ -10,26 +10,26 @@ import 'typography.dart';
 /// widgets never branch on brightness — they just read colorScheme roles.
 abstract final class AppTheme {
   static ThemeData get dark => _build(
-        brightness: Brightness.dark,
-        bg: AppColors.darkBg,
-        surface: AppColors.darkSurface,
-        surfaceHigh: AppColors.darkSurfaceHigh,
-        border: AppColors.darkBorder,
-        ink: AppColors.darkInk,
-        inkMuted: AppColors.darkInkMuted,
-        accent: AppColors.accent,
-      );
+    brightness: Brightness.dark,
+    bg: AppColors.darkBg,
+    surface: AppColors.darkSurface,
+    surfaceHigh: AppColors.darkSurfaceHigh,
+    border: AppColors.darkBorder,
+    ink: AppColors.darkInk,
+    inkMuted: AppColors.darkInkMuted,
+    accent: AppColors.accent,
+  );
 
   static ThemeData get light => _build(
-        brightness: Brightness.light,
-        bg: AppColors.lightBg,
-        surface: AppColors.lightSurface,
-        surfaceHigh: AppColors.lightSurfaceHigh,
-        border: AppColors.lightBorder,
-        ink: AppColors.lightInk,
-        inkMuted: AppColors.lightInkMuted,
-        accent: AppColors.accentDeep,
-      );
+    brightness: Brightness.light,
+    bg: AppColors.lightBg,
+    surface: AppColors.lightSurface,
+    surfaceHigh: AppColors.lightSurfaceHigh,
+    border: AppColors.lightBorder,
+    ink: AppColors.lightInk,
+    inkMuted: AppColors.lightInkMuted,
+    accent: AppColors.accentDeep,
+  );
 
   static ThemeData _build({
     required Brightness brightness,
@@ -44,7 +44,9 @@ abstract final class AppTheme {
     final scheme = ColorScheme(
       brightness: brightness,
       primary: accent,
-      onPrimary: brightness == Brightness.dark ? AppColors.darkBg : Colors.white,
+      onPrimary: brightness == Brightness.dark
+          ? AppColors.darkBg
+          : Colors.white,
       primaryContainer: accent.withValues(alpha: 0.16),
       onPrimaryContainer: accent,
       secondary: inkMuted,
@@ -79,14 +81,16 @@ abstract final class AppTheme {
       splashFactory: InkSparkle.splashFactory,
       // Telegram/Perplexity-style pushes: page slides over, previous page
       // parallaxes left and dims; edge-swipe back works on every platform.
-      pageTransitionsTheme: const PageTransitionsTheme(builders: {
-        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.fuchsia: CupertinoPageTransitionsBuilder(),
-      }),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       extensions: const [MotionTokens(), ProviderTints()],
       appBarTheme: AppBarTheme(
         backgroundColor: bg,

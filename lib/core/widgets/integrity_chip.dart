@@ -15,10 +15,11 @@ class IntegrityChip extends ConsumerWidget {
     final theme = Theme.of(context);
     return Chip(
       avatar: AnimatedAppIcon(
-          type: AppIconType.shield,
-          active: score > 50,
-          size: 16,
-          color: theme.colorScheme.primary),
+        type: AppIconType.shield,
+        active: score > 50,
+        size: 16,
+        color: theme.colorScheme.primary,
+      ),
       label: Text('$score', style: theme.textTheme.labelLarge),
       backgroundColor: theme.colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(

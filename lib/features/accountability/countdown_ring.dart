@@ -25,12 +25,13 @@ class _CountdownRingState extends State<CountdownRing>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: widget.totalSeconds),
-    )..addStatusListener((s) {
-        if (s == AnimationStatus.dismissed) widget.onFinished();
-      });
+    _controller =
+        AnimationController(
+          vsync: this,
+          duration: Duration(seconds: widget.totalSeconds),
+        )..addStatusListener((s) {
+          if (s == AnimationStatus.dismissed) widget.onFinished();
+        });
   }
 
   @override
@@ -90,8 +91,11 @@ class _CountdownRingState extends State<CountdownRing>
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter(
-      {required this.progress, required this.color, required this.track});
+  const _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.track,
+  });
   final double progress;
   final Color color;
   final Color track;

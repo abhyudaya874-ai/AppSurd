@@ -16,8 +16,7 @@ class SystemTranscriber implements Transcriber {
   bool _ready = false;
 
   @override
-  EngineInfo get info =>
-      const EngineInfo('system', 'System recognizer', false);
+  EngineInfo get info => const EngineInfo('system', 'System recognizer', false);
 
   @override
   Future<bool> get available async =>
@@ -29,8 +28,11 @@ class SystemTranscriber implements Transcriber {
   @override
   Future<void> start() async {
     if (!await available) {
-      _events.add(const TranscriptError(
-          BadResponseFailure('System recognizer unavailable')));
+      _events.add(
+        const TranscriptError(
+          BadResponseFailure('System recognizer unavailable'),
+        ),
+      );
       return;
     }
     await _stt.listen(

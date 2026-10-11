@@ -34,8 +34,7 @@ class TaskCard extends StatelessWidget {
     final (label, color) = switch (task.status) {
       TaskStatus.open => ('needs proof', theme.colorScheme.onSurfaceVariant),
       TaskStatus.verifying => ('verifying', theme.colorScheme.primary),
-      TaskStatus.locked =>
-        ('challenge pending', theme.colorScheme.tertiary),
+      TaskStatus.locked => ('challenge pending', theme.colorScheme.tertiary),
       TaskStatus.done => ('verified', theme.colorScheme.primary),
     };
     return Pressable(
@@ -47,72 +46,85 @@ class TaskCard extends StatelessWidget {
           border: Border.all(color: theme.colorScheme.outline),
         ),
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm + 4),
-        child: Row(children: [
-          _StatusRing(status: task.status, color: color),
-          const SizedBox(width: AppSpacing.sm + 4),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Expanded(
-                    child: Hero(
-                      tag: 'task-title-${task.id}',
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: Text(
-                          task.title,
-                          style: theme.textTheme.titleMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + 4,
+        ),
+        child: Row(
+          children: [
+            _StatusRing(status: task.status, color: color),
+            const SizedBox(width: AppSpacing.sm + 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Hero(
+                          tag: 'task-title-${task.id}',
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: Text(
+                              task.title,
+                              style: theme.textTheme.titleMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      if (task.isDemo)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Text(
+                            'demo',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.tertiary,
+                            ),
+                          ),
+                        ),
+                      if (accountabilityPending)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Tooltip(
+                            message:
+                                'Unresolved accountability on another task',
+                            child: Icon(
+                              Icons.flag_outlined,
+                              size: 14,
+                              color: theme.colorScheme.tertiary,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  if (task.isDemo)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text('demo',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.tertiary)),
+                  const SizedBox(height: 2),
+                  // Meta line: group · attempts · status
+                  Text(
+                    '${groupName != null ? '$groupName · ' : ''}'
+                    '${task.attempts.length} attempt'
+                    '${task.attempts.length == 1 ? '' : 's'} · $label',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  if (accountabilityPending)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Tooltip(
-                        message:
-                            'Unresolved accountability on another task',
-                        child: Icon(Icons.flag_outlined,
-                            size: 14,
-                            color: theme.colorScheme.tertiary),
-                      ),
-                    ),
-                ]),
-                const SizedBox(height: 2),
-                // Meta line: group · attempts · status
-                Text(
-                  '${groupName != null ? '$groupName · ' : ''}'
-                  '${task.attempts.length} attempt'
-                  '${task.attempts.length == 1 ? '' : 's'} · $label',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Transform.rotate(
-            angle: -1.5708, // down-chevron → right-pointing ›
-            child: AnimatedAppIcon(
+            const SizedBox(width: AppSpacing.xs),
+            Transform.rotate(
+              angle: -1.5708, // down-chevron → right-pointing ›
+              child: AnimatedAppIcon(
                 type: AppIconType.chevron,
                 active: false,
                 size: 16,
-                color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ]),
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -137,7 +149,9 @@ class _StatusRingState extends State<_StatusRing>
   void initState() {
     super.initState();
     _spin = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200));
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
     if (widget.status == TaskStatus.verifying) _spin.repeat();
   }
 
@@ -176,8 +190,11 @@ class _StatusRingState extends State<_StatusRing>
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter(
-      {required this.status, required this.color, required this.spin});
+  const _RingPainter({
+    required this.status,
+    required this.color,
+    required this.spin,
+  });
   final TaskStatus status;
   final Color color;
   final double spin;
@@ -216,36 +233,47 @@ class _RingPainter extends CustomPainter {
         );
       case TaskStatus.locked:
         canvas.drawCircle(
-            c,
-            r,
-            Paint()
-              ..color = color
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 2.2);
+          c,
+          r,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.2,
+        );
         // Tiny lock glyph.
         final lock = Path()
-          ..addRRect(RRect.fromRectAndRadius(
+          ..addRRect(
+            RRect.fromRectAndRadius(
               Rect.fromCenter(
-                  center: Offset(c.dx, c.dy + 1.5), width: 9, height: 7),
-              const Radius.circular(1.5)))
+                center: Offset(c.dx, c.dy + 1.5),
+                width: 9,
+                height: 7,
+              ),
+              const Radius.circular(1.5),
+            ),
+          )
           ..moveTo(c.dx - 3, c.dy - 1.5)
-          ..arcToPoint(Offset(c.dx + 3, c.dy - 1.5),
-              radius: const Radius.circular(3));
+          ..arcToPoint(
+            Offset(c.dx + 3, c.dy - 1.5),
+            radius: const Radius.circular(3),
+          );
         canvas.drawPath(
-            lock,
-            Paint()
-              ..color = color
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 1.6
-              ..strokeCap = StrokeCap.round);
+          lock,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.6
+            ..strokeCap = StrokeCap.round,
+        );
       case TaskStatus.open:
         canvas.drawCircle(
-            c,
-            r,
-            Paint()
-              ..color = color
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 1.6);
+          c,
+          r,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.6,
+        );
     }
   }
 

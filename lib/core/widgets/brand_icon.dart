@@ -26,49 +26,59 @@ class BrandIcon extends StatelessWidget {
     final providerBrand = BrandResolver.forProvider(model.provider);
     return SizedBox.square(
       dimension: size,
-      child: Stack(children: [
-        Positioned.fill(
-          child: brand == null
-              ? _Monogram(
-                  letter: model.displayName.isNotEmpty
-                      ? model.displayName[0].toUpperCase()
-                      : '?',
-                  tint: theme.colorScheme.onSurfaceVariant)
-              : SvgPicture.asset(
-                  'assets/logos/$brand.svg',
-                  // Official-color brands render as-is; monochrome marks get
-                  // tinted to the theme's primary text color.
-                  colorFilter: _colored(brand)
-                      ? null
-                      : ColorFilter.mode(
-                          theme.colorScheme.onSurface, BlendMode.srcIn),
-                  placeholderBuilder: (_) => _Monogram(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: brand == null
+                ? _Monogram(
+                    letter: model.displayName.isNotEmpty
+                        ? model.displayName[0].toUpperCase()
+                        : '?',
+                    tint: theme.colorScheme.onSurfaceVariant,
+                  )
+                : SvgPicture.asset(
+                    'assets/logos/$brand.svg',
+                    // Official-color brands render as-is; monochrome marks get
+                    // tinted to the theme's primary text color.
+                    colorFilter: _colored(brand)
+                        ? null
+                        : ColorFilter.mode(
+                            theme.colorScheme.onSurface,
+                            BlendMode.srcIn,
+                          ),
+                    placeholderBuilder: (_) => _Monogram(
                       letter: model.displayName[0].toUpperCase(),
-                      tint: theme.colorScheme.onSurfaceVariant),
+                      tint: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+          ),
+          if (showBadge)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: size * 0.45,
+                height: size * 0.45,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.surface,
+                  border: Border.all(
+                    color: theme.colorScheme.outline,
+                    width: 0.5,
+                  ),
                 ),
-        ),
-        if (showBadge)
-          Positioned(
-            right: -2,
-            bottom: -2,
-            child: Container(
-              width: size * 0.45,
-              height: size * 0.45,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.surface,
-                border: Border.all(
-                    color: theme.colorScheme.outline, width: 0.5),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: SvgPicture.asset(
-                'assets/logos/$providerBrand.svg',
-                colorFilter: ColorFilter.mode(
-                    theme.colorScheme.onSurface, BlendMode.srcIn),
+                clipBehavior: Clip.antiAlias,
+                child: SvgPicture.asset(
+                  'assets/logos/$providerBrand.svg',
+                  colorFilter: ColorFilter.mode(
+                    theme.colorScheme.onSurface,
+                    BlendMode.srcIn,
+                  ),
+                ),
               ),
             ),
-          ),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -90,11 +100,14 @@ class _Monogram extends StatelessWidget {
         color: tint.withValues(alpha: 0.15),
       ),
       alignment: Alignment.center,
-      child: Text(letter,
-          style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: tint)),
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: tint,
+        ),
+      ),
     );
   }
 }

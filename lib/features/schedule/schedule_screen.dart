@@ -57,7 +57,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   void initState() {
     super.initState();
     _days = PageController(
-        viewportFraction: 1 / _visibleDays, initialPage: _dayRange);
+      viewportFraction: 1 / _visibleDays,
+      initialPage: _dayRange,
+    );
     // Land roughly on "now" so the current hour is visible on open.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_v.hasClients) return;
@@ -78,8 +80,11 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   /// Page index → calendar date (page `_dayRange` is today).
   DateTime _dateFor(int page) {
     final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day)
-        .add(Duration(days: page - _dayRange));
+    return DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(Duration(days: page - _dayRange));
   }
 
   Future<void> _autoScheduleAll() async {
@@ -88,21 +93,29 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final hours = ref.read(workingHoursProvider);
     final placements = autoSchedule(tasks: tasks, hours: hours);
     if (placements.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Nothing free to schedule — open tasks all placed.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nothing free to schedule — open tasks all placed.'),
+        ),
+      );
       return;
     }
     final n = ref.read(tasksProvider.notifier);
     for (final p in placements) {
       final t = tasks.firstWhere((t) => t.id == p.taskId);
       await n.updateTask(
-          t.copyWith(scheduledStart: p.start, durationMin: p.durationMin));
+        t.copyWith(scheduledStart: p.start, durationMin: p.durationMin),
+      );
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Scheduled ${placements.length} task'
-              '${placements.length == 1 ? '' : 's'} into working hours.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Scheduled ${placements.length} task'
+            '${placements.length == 1 ? '' : 's'} into working hours.',
+          ),
+        ),
+      );
     }
   }
 
@@ -111,9 +124,20 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final date = _dateFor(dayIndex);
     final snapped = (topMin / 15).round() * 15;
     final start = DateTime(
-        date.year, date.month, date.day, snapped ~/ 60, snapped % 60);
-    await ref.read(tasksProvider.notifier).updateTask(task.copyWith(
-        scheduledStart: start, durationMin: task.durationMin ?? 30));
+      date.year,
+      date.month,
+      date.day,
+      snapped ~/ 60,
+      snapped % 60,
+    );
+    await ref
+        .read(tasksProvider.notifier)
+        .updateTask(
+          task.copyWith(
+            scheduledStart: start,
+            durationMin: task.durationMin ?? 30,
+          ),
+        );
     HapticFeedback.selectionClick();
   }
 
@@ -124,22 +148,21 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final box = _gridKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !_v.hasClients) return;
     final local = box.globalToLocal(global);
-    final topMin = (((local.dy + _v.offset) / _hourH * 60) - _grabMin)
-        .clamp(0.0, 24 * 60 - 15.0);
+    final topMin = (((local.dy + _v.offset) / _hourH * 60) - _grabMin).clamp(
+      0.0,
+      24 * 60 - 15.0,
+    );
     final colW = box.size.width / _visibleDays;
     final pageF = _days.page ?? _dayRange.toDouble();
-    final dayIndex =
-        (local.dx / colW + pageF).floor().clamp(0, 2 * _dayRange);
-    _drag.value =
-        (taskId: taskId, dayIndex: dayIndex, topMin: topMin.round());
+    final dayIndex = (local.dx / colW + pageF).floor().clamp(0, 2 * _dayRange);
+    _drag.value = (taskId: taskId, dayIndex: dayIndex, topMin: topMin.round());
 
     final screenH = MediaQuery.of(context).size.height;
     if (global.dy < 170 || global.dy > screenH - 240) {
       final dir = global.dy < 170 ? -10.0 : 10.0;
       _autoScroll ??= Timer.periodic(const Duration(milliseconds: 16), (_) {
         if (_v.hasClients) {
-          _v.jumpTo(
-              (_v.offset + dir).clamp(0.0, _v.position.maxScrollExtent));
+          _v.jumpTo((_v.offset + dir).clamp(0.0, _v.position.maxScrollExtent));
         }
       });
     } else {
@@ -185,9 +208,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-            'New task · ${date.day}/${date.month} '
-            '${(min ~/ 60).toString().padLeft(2, '0')}:'
-            '${(min % 60).toString().padLeft(2, '0')}'),
+          'New task · ${date.day}/${date.month} '
+          '${(min ~/ 60).toString().padLeft(2, '0')}:'
+          '${(min % 60).toString().padLeft(2, '0')}',
+        ),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -197,20 +221,30 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('Add')),
+            onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+            child: const Text('Add'),
+          ),
         ],
       ),
     );
     if (title == null || title.isEmpty) return;
-    await ref.read(tasksProvider.notifier).addTask(
-        title: title,
-        scheduledStart:
-            DateTime(date.year, date.month, date.day, min ~/ 60, min % 60),
-        durationMin: 30);
+    await ref
+        .read(tasksProvider.notifier)
+        .addTask(
+          title: title,
+          scheduledStart: DateTime(
+            date.year,
+            date.month,
+            date.day,
+            min ~/ 60,
+            min % 60,
+          ),
+          durationMin: 30,
+        );
     HapticFeedback.selectionClick();
   }
 
@@ -230,7 +264,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
     // Bucket tasks into page columns; open/locked unscheduled go to the tray.
     final scheduled = <int, List<Task>>{
-      for (var i = 0; i <= 2 * _dayRange; i++) i: []
+      for (var i = 0; i <= 2 * _dayRange; i++) i: [],
     };
     final unscheduled = <Task>[];
     for (final t in tasks) {
@@ -239,61 +273,80 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         if (t.status != TaskStatus.done) unscheduled.add(t);
         continue;
       }
-      final idx = _dayRange +
-          DateTime(s.year, s.month, s.day).difference(_dateFor(_dayRange)).inDays;
+      final idx =
+          _dayRange +
+          DateTime(
+            s.year,
+            s.month,
+            s.day,
+          ).difference(_dateFor(_dayRange)).inDays;
       if (idx >= 0 && idx <= 2 * _dayRange) scheduled[idx]!.add(t);
     }
 
     return Scaffold(
       body: SafeArea(
         child: ConstrainedContent(
-          child: Column(children: [
-            // ---- Header ----
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, AppSpacing.sm, AppSpacing.xs, 0),
-              child: Row(children: [
-                Text('Schedule',
-                    style: AppTypography.grotesk(theme.colorScheme.onSurface)
-                        .copyWith(
-                            fontSize: 24, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _autoScheduleAll,
-                  icon: const Icon(Icons.auto_fix_high_rounded, size: 16),
-                  label: const Text('Auto'),
+          child: Column(
+            children: [
+              // ---- Header ----
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.xs,
+                  0,
                 ),
-                IconButton(
-                  tooltip: 'Working hours',
-                  icon: const Icon(Icons.schedule_rounded, size: 20),
-                  onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                          builder: (_) => const WorkingHoursEditor())),
-                ),
-              ]),
-            ),
-
-            // ---- Day header strip (synced to the page offset) ----
-            AnimatedBuilder(
-              animation: _days,
-              builder: (context, _) {
-                final p = _days.hasClients
-                    ? (_days.page ?? _dayRange.toDouble())
-                    : _dayRange.toDouble();
-                return Row(children: [
-                  const SizedBox(width: _gutterW),
-                  for (var i = 0; i < _visibleDays; i++)
-                    Expanded(child: _DayHeaderCell(date: _dateFor(p.floor() + i))),
-                ]);
-              },
-            ),
-            const SizedBox(height: 4),
-
-            // ---- Grid: gutter + paged day columns + now line ----
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _v,
                 child: Row(
+                  children: [
+                    Text(
+                      'Schedule',
+                      style: AppTypography.grotesk(theme.colorScheme.onSurface)
+                          .copyWith(fontSize: 24, fontWeight: FontWeight.w700),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _autoScheduleAll,
+                      icon: const Icon(Icons.auto_fix_high_rounded, size: 16),
+                      label: const Text('Auto'),
+                    ),
+                    IconButton(
+                      tooltip: 'Working hours',
+                      icon: const Icon(Icons.schedule_rounded, size: 20),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const WorkingHoursEditor(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ---- Day header strip (synced to the page offset) ----
+              AnimatedBuilder(
+                animation: _days,
+                builder: (context, _) {
+                  final p = _days.hasClients
+                      ? (_days.page ?? _dayRange.toDouble())
+                      : _dayRange.toDouble();
+                  return Row(
+                    children: [
+                      const SizedBox(width: _gutterW),
+                      for (var i = 0; i < _visibleDays; i++)
+                        Expanded(
+                          child: _DayHeaderCell(date: _dateFor(p.floor() + i)),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+
+              // ---- Grid: gutter + paged day columns + now line ----
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _v,
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _TimeGutter(),
@@ -302,59 +355,64 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           child: SizedBox(
                             key: _gridKey,
                             height: 24 * _hourH,
-                            child: Stack(children: [
-                              PageView.builder(
-                                controller: _days,
-                                itemCount: 2 * _dayRange + 1,
-                                itemBuilder: (context, i) => _DayColumn(
-                                  date: _dateFor(i),
-                                  dayIndex: i,
-                                  tasks: scheduled[i] ?? const [],
-                                  hours: hours,
-                                  drag: _drag,
-                                  resize: _resize,
-                                  onQuickCreate: _quickCreate,
-                                  onPlace: _place,
-                                  onDragStart: _blockDragStart,
-                                  onDragMove: _onDragMove,
-                                  onDragEnd: _onDragEnd,
-                                  onResizeTick: (id, dy) {
-                                    // Accumulate finger travel → snapped
-                                    // duration preview.
-                                    _resizeDelta += dy / _hourH * 60;
-                                    final task = (ref
-                                                .read(tasksProvider)
-                                                .value ??
-                                            const <Task>[])
-                                        .firstWhere((t) => t.id == id,
-                                            orElse: () => _missingTask);
-                                    if (task.id.isEmpty) return;
-                                    final base = task.durationMin ?? 30;
-                                    final next = ((base + _resizeDelta) / 15)
-                                            .round() *
-                                        15;
-                                    _resize.value = (
-                                      taskId: id,
-                                      durMin: next < 15 ? 15 : next
-                                    );
-                                  },
-                                  onResizeStart: () => _resizeDelta = 0,
-                                  onResizeEnd: _onResizeEnd,
+                            child: Stack(
+                              children: [
+                                PageView.builder(
+                                  controller: _days,
+                                  itemCount: 2 * _dayRange + 1,
+                                  itemBuilder: (context, i) => _DayColumn(
+                                    date: _dateFor(i),
+                                    dayIndex: i,
+                                    tasks: scheduled[i] ?? const [],
+                                    hours: hours,
+                                    drag: _drag,
+                                    resize: _resize,
+                                    onQuickCreate: _quickCreate,
+                                    onPlace: _place,
+                                    onDragStart: _blockDragStart,
+                                    onDragMove: _onDragMove,
+                                    onDragEnd: _onDragEnd,
+                                    onResizeTick: (id, dy) {
+                                      // Accumulate finger travel → snapped
+                                      // duration preview.
+                                      _resizeDelta += dy / _hourH * 60;
+                                      final task =
+                                          (ref.read(tasksProvider).value ??
+                                                  const <Task>[])
+                                              .firstWhere(
+                                                (t) => t.id == id,
+                                                orElse: () => _missingTask,
+                                              );
+                                      if (task.id.isEmpty) return;
+                                      final base = task.durationMin ?? 30;
+                                      final next =
+                                          ((base + _resizeDelta) / 15).round() *
+                                          15;
+                                      _resize.value = (
+                                        taskId: id,
+                                        durMin: next < 15 ? 15 : next,
+                                      );
+                                    },
+                                    onResizeStart: () => _resizeDelta = 0,
+                                    onResizeEnd: _onResizeEnd,
+                                  ),
                                 ),
-                              ),
-                              const IgnorePointer(child: _NowLine()),
-                            ]),
+                                const _NowLine(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ]),
+                    ],
+                  ),
+                ),
               ),
-            ),
 
-            // ---- Unscheduled tray ----
-            if (unscheduled.isNotEmpty)
-              _UnscheduledTray(tasks: unscheduled, bottomPad: barPad),
-          ]),
+              // ---- Unscheduled tray ----
+              if (unscheduled.isNotEmpty)
+                _UnscheduledTray(tasks: unscheduled, bottomPad: barPad),
+            ],
+          ),
         ),
       ),
     );
@@ -362,16 +420,42 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 }
 
 /// Sentinel for a lookup miss (never rendered).
-final _missingTask =
-    Task(id: '', title: '', description: '', createdAt: DateTime(0));
+final _missingTask = Task(
+  id: '',
+  title: '',
+  description: '',
+  createdAt: DateTime(0),
+);
 
 /// Left gutter with hour labels (12 AM … 11 PM), aligned to grid lines.
 class _TimeGutter extends StatelessWidget {
   const _TimeGutter();
 
   static const _labels = [
-    '12 AM', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11',
-    '12 PM', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11',
+    '12 AM',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+    '11',
+    '12 PM',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+    '11',
   ];
 
   @override
@@ -380,18 +464,23 @@ class _TimeGutter extends StatelessWidget {
     return SizedBox(
       width: _gutterW,
       height: 24 * _hourH,
-      child: Column(children: [
-        for (var h = 0; h < 24; h++)
-          SizedBox(
-            height: _hourH,
-            child: Align(
-              alignment: const Alignment(0, -0.95),
-              child: Text(_labels[h],
+      child: Column(
+        children: [
+          for (var h = 0; h < 24; h++)
+            SizedBox(
+              height: _hourH,
+              child: Align(
+                alignment: const Alignment(0, -0.95),
+                child: Text(
+                  _labels[h],
                   style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
-          ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -407,29 +496,36 @@ class _DayHeaderCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final now = DateTime.now();
-    final isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Text(_wd[date.weekday - 1],
-          style: theme.textTheme.labelSmall
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      const SizedBox(height: 2),
-      Container(
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isToday ? theme.colorScheme.primary : Colors.transparent,
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          _wd[date.weekday - 1],
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
-        alignment: Alignment.center,
-        child: Text('${date.day}',
+        const SizedBox(height: 2),
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isToday ? theme.colorScheme.primary : Colors.transparent,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '${date.day}',
             style: theme.textTheme.labelMedium?.copyWith(
               color: isToday ? Colors.black : theme.colorScheme.onSurface,
               fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-            )),
-      ),
-    ]);
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -447,24 +543,29 @@ class _NowLine extends StatelessWidget {
       top: top - 8,
       left: 0,
       right: 0,
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          decoration: BoxDecoration(
-            color: red,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            '${now.hour.toString().padLeft(2, '0')}:'
-            '${now.minute.toString().padLeft(2, '0')}',
-            style: theme.textTheme.labelSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 9),
-          ),
+      child: IgnorePointer(
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: red,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${now.hour.toString().padLeft(2, '0')}:'
+                '${now.minute.toString().padLeft(2, '0')}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 9,
+                ),
+              ),
+            ),
+            Expanded(child: Container(height: 1.4, color: red)),
+          ],
         ),
-        Expanded(child: Container(height: 1.4, color: red)),
-      ]),
+      ),
     );
   }
 }
@@ -499,8 +600,7 @@ class _DayColumn extends ConsumerWidget {
   final ValueNotifier<ResizePreview?> resize;
   final void Function(int dayIndex, int min) onQuickCreate;
   final void Function(Task task, int dayIndex, int topMin) onPlace;
-  final void Function(String taskId, double grabMin, Offset global)
-      onDragStart;
+  final void Function(String taskId, double grabMin, Offset global) onDragStart;
   final void Function(String taskId, Offset global) onDragMove;
   final void Function(String taskId) onDragEnd;
   final VoidCallback onResizeStart;
@@ -522,9 +622,9 @@ class _DayColumn extends ConsumerWidget {
       for (final t in tasks)
         (
           taskId: t.id,
-          startMin:
-              t.scheduledStart!.hour * 60 + t.scheduledStart!.minute,
-          endMin: t.scheduledStart!.hour * 60 +
+          startMin: t.scheduledStart!.hour * 60 + t.scheduledStart!.minute,
+          endMin:
+              t.scheduledStart!.hour * 60 +
               t.scheduledStart!.minute +
               (t.durationMin ?? 30),
         ),
@@ -539,87 +639,98 @@ class _DayColumn extends ConsumerWidget {
       builder: (context, candidates, rejects) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onLongPressStart: (d) => onQuickCreate(dayIndex,
-              (d.localPosition.dy / _hourH * 60 / 15).floor() * 15),
-          child: Stack(children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _DayGridPainter(
-                  date: date,
-                  hours: hours,
-                  lineColor: theme.colorScheme.outline,
-                  shadeColor:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.035),
-                  altColor:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.02),
-                ),
-              ),
-            ),
-            if (candidates.isNotEmpty)
+          onLongPressStart: (d) => onQuickCreate(
+            dayIndex,
+            (d.localPosition.dy / _hourH * 60 / 15).floor() * 15,
+          ),
+          child: Stack(
+            children: [
               Positioned.fill(
-                child: Container(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.06),
+                child: CustomPaint(
+                  painter: _DayGridPainter(
+                    date: date,
+                    hours: hours,
+                    lineColor: theme.colorScheme.outline,
+                    shadeColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.035,
+                    ),
+                    altColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.02,
+                    ),
+                  ),
                 ),
               ),
-            for (final b in boxes)
-              _ScheduledBlock(
-                key: ValueKey(b.taskId),
-                box: b,
-                task: tasks.firstWhere((t) => t.id == b.taskId),
-                color: colorOf(tasks.firstWhere((t) => t.id == b.taskId)),
-                drag: drag,
-                resize: resize,
-                onDragStart: onDragStart,
-                onDragMove: onDragMove,
-                onDragEnd: onDragEnd,
-                onResizeStart: onResizeStart,
-                onResizeTick: onResizeTick,
-                onResizeEnd: onResizeEnd,
-              ),
-            // Drag ghost — the moving block preview on the target column.
-            ValueListenableBuilder(
-              valueListenable: drag,
-              builder: (context, d, _) {
-                if (d == null || d.dayIndex != dayIndex) {
-                  return const SizedBox.shrink();
-                }
-                Task? task;
-                for (final t in ref.read(tasksProvider).value ??
-                    const <Task>[]) {
-                  if (t.id == d.taskId) task = t;
-                }
-                if (task == null) return const SizedBox.shrink();
-                final dur = task.durationMin ?? 30;
-                return Positioned(
-                  left: 2,
-                  right: 2,
-                  top: d.topMin / 60 * _hourH,
-                  height: (dur / 60 * _hourH).clamp(24.0, 24 * _hourH),
+              if (candidates.isNotEmpty)
+                Positioned.fill(
                   child: Container(
-                    decoration: BoxDecoration(
-                      color: colorOf(task).withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.06),
+                  ),
+                ),
+              for (final b in boxes)
+                _ScheduledBlock(
+                  key: ValueKey(b.taskId),
+                  box: b,
+                  task: tasks.firstWhere((t) => t.id == b.taskId),
+                  color: colorOf(tasks.firstWhere((t) => t.id == b.taskId)),
+                  drag: drag,
+                  resize: resize,
+                  onDragStart: onDragStart,
+                  onDragMove: onDragMove,
+                  onDragEnd: onDragEnd,
+                  onResizeStart: onResizeStart,
+                  onResizeTick: onResizeTick,
+                  onResizeEnd: onResizeEnd,
+                ),
+              // Drag ghost — the moving block preview on the target column.
+              ValueListenableBuilder(
+                valueListenable: drag,
+                builder: (context, d, _) {
+                  if (d == null || d.dayIndex != dayIndex) {
+                    return const SizedBox.shrink();
+                  }
+                  Task? task;
+                  for (final t
+                      in ref.read(tasksProvider).value ?? const <Task>[]) {
+                    if (t.id == d.taskId) task = t;
+                  }
+                  if (task == null) return const SizedBox.shrink();
+                  final dur = task.durationMin ?? 30;
+                  return Positioned(
+                    left: 2,
+                    right: 2,
+                    top: d.topMin / 60 * _hourH,
+                    height: (dur / 60 * _hourH).clamp(24.0, 24 * _hourH),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorOf(task).withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: colorOf(task).withValues(alpha: 0.9),
-                          width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
                             color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 12,
-                            offset: const Offset(0, 6)),
-                      ],
-                    ),
-                    padding: const EdgeInsets.fromLTRB(6, 3, 4, 0),
-                    child: Text(task.title,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.fromLTRB(6, 3, 4, 0),
+                      child: Text(
+                        task.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: theme.colorScheme.onSurface)),
-                  ),
-                );
-              },
-            ),
-          ]),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -661,17 +772,22 @@ class _DayGridPainter extends CustomPainter {
       for (final r in ranges) {
         if (r.startMin > cursor) {
           canvas.drawRect(
-              Rect.fromLTRB(0, cursor / 60 * _hourH, size.width,
-                  r.startMin / 60 * _hourH),
-              shade);
+            Rect.fromLTRB(
+              0,
+              cursor / 60 * _hourH,
+              size.width,
+              r.startMin / 60 * _hourH,
+            ),
+            shade,
+          );
         }
         if (r.endMin > cursor) cursor = r.endMin;
       }
       if (cursor < 1440) {
         canvas.drawRect(
-            Rect.fromLTRB(
-                0, cursor / 60 * _hourH, size.width, 24 * _hourH),
-            shade);
+          Rect.fromLTRB(0, cursor / 60 * _hourH, size.width, 24 * _hourH),
+          shade,
+        );
       }
     }
     // Hour + half-hour hairlines.
@@ -683,10 +799,16 @@ class _DayGridPainter extends CustomPainter {
       ..strokeWidth = 0.5;
     for (var h = 0; h <= 24; h++) {
       canvas.drawLine(
-          Offset(0, h * _hourH), Offset(size.width, h * _hourH), line);
+        Offset(0, h * _hourH),
+        Offset(size.width, h * _hourH),
+        line,
+      );
       if (h < 24) {
-        canvas.drawLine(Offset(0, h * _hourH + _hourH / 2),
-            Offset(size.width, h * _hourH + _hourH / 2), half);
+        canvas.drawLine(
+          Offset(0, h * _hourH + _hourH / 2),
+          Offset(size.width, h * _hourH + _hourH / 2),
+          half,
+        );
       }
     }
   }
@@ -720,8 +842,7 @@ class _ScheduledBlock extends StatelessWidget {
   final Color color;
   final ValueNotifier<DragPreview?> drag;
   final ValueNotifier<ResizePreview?> resize;
-  final void Function(String taskId, double grabMin, Offset global)
-      onDragStart;
+  final void Function(String taskId, double grabMin, Offset global) onDragStart;
   final void Function(String taskId, Offset global) onDragMove;
   final void Function(String taskId) onDragEnd;
   final VoidCallback onResizeStart;
@@ -740,85 +861,91 @@ class _ScheduledBlock extends StatelessWidget {
           final beingResized = r?.taskId == task.id;
           // While moving, the ghost owns this block — hide the original.
           if (beingDragged) return const SizedBox.shrink();
-          final dur =
-              beingResized ? r!.durMin : (task.durationMin ?? 30);
-          return LayoutBuilder(builder: (context, c) {
-            final laneW = c.maxWidth / box.lanes;
-            return Positioned(
-              left: box.lane * laneW + 1,
-              top: box.startMin / 60 * _hourH,
-              width: laneW - 2,
-              height: (dur / 60 * _hourH).clamp(24.0, 24 * _hourH),
-              child: Semantics(
-                label: 'Scheduled task ${task.title}. '
-                    'Long press to move, drag bottom edge to resize.',
-                child: AnimatedContainer(
-                  duration: AppMotion.of(context, AppMotion.fast),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.28),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: color.withValues(alpha: 0.55)),
-                  ),
-                  child: Stack(children: [
-                    // Body — long-press to move; tap opens the detail.
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onLongPressStart: (det) => onDragStart(
-                            task.id,
-                            det.localPosition.dy / _hourH * 60,
-                            det.globalPosition),
-                        onLongPressMoveUpdate: (det) =>
-                            onDragMove(task.id, det.globalPosition),
-                        onLongPressEnd: (_) => onDragEnd(task.id),
-                        onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    TaskDetailScreen(taskId: task.id))),
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(6, 3, 4, 0),
-                          child: Text(
-                            task.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                                height: 1.15),
-                          ),
-                        ),
-                      ),
+          final dur = beingResized ? r!.durMin : (task.durationMin ?? 30);
+          return LayoutBuilder(
+            builder: (context, c) {
+              final laneW = c.maxWidth / box.lanes;
+              return Positioned(
+                left: box.lane * laneW + 1,
+                top: box.startMin / 60 * _hourH,
+                width: laneW - 2,
+                height: (dur / 60 * _hourH).clamp(24.0, 24 * _hourH),
+                child: Semantics(
+                  label:
+                      'Scheduled task ${task.title}. '
+                      'Long press to move, drag bottom edge to resize.',
+                  child: AnimatedContainer(
+                    duration: AppMotion.of(context, AppMotion.fast),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.28),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withValues(alpha: 0.55)),
                     ),
-                    // Bottom resize handle.
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 14,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onVerticalDragStart: (_) => onResizeStart(),
-                        onVerticalDragUpdate: (det) =>
-                            onResizeTick(task.id, det.delta.dy),
-                        onVerticalDragEnd: (_) => onResizeEnd(task.id),
-                        child: Center(
-                          child: Container(
-                            width: 24,
-                            height: 3,
-                            margin: const EdgeInsets.only(bottom: 3),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(2),
+                    child: Stack(
+                      children: [
+                        // Body — long-press to move; tap opens the detail.
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onLongPressStart: (det) => onDragStart(
+                              task.id,
+                              det.localPosition.dy / _hourH * 60,
+                              det.globalPosition,
+                            ),
+                            onLongPressMoveUpdate: (det) =>
+                                onDragMove(task.id, det.globalPosition),
+                            onLongPressEnd: (_) => onDragEnd(task.id),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    TaskDetailScreen(taskId: task.id),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(6, 3, 4, 0),
+                              child: Text(
+                                task.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  height: 1.15,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        // Bottom resize handle.
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: 14,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onVerticalDragStart: (_) => onResizeStart(),
+                            onVerticalDragUpdate: (det) =>
+                                onResizeTick(task.id, det.delta.dy),
+                            onVerticalDragEnd: (_) => onResizeEnd(task.id),
+                            child: Center(
+                              child: Container(
+                                width: 24,
+                                height: 3,
+                                margin: const EdgeInsets.only(bottom: 3),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.8),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ]),
+                  ),
                 ),
-              ),
-            );
-          });
+              );
+            },
+          );
         },
       ),
     );
@@ -840,21 +967,25 @@ class _UnscheduledTray extends StatelessWidget {
       padding: EdgeInsets.only(bottom: bottomPad + 70),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-            top: BorderSide(color: theme.colorScheme.outline)),
+        border: Border(top: BorderSide(color: theme.colorScheme.outline)),
       ),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         children: [
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: Text('UNSCHEDULED',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      letterSpacing: 1.4)),
+              child: Text(
+                'UNSCHEDULED',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 1.4,
+                ),
+              ),
             ),
           ),
           for (final t in tasks)
@@ -867,7 +998,9 @@ class _UnscheduledTray extends StatelessWidget {
                   child: _trayChip(theme, t, lifted: true),
                 ),
                 childWhenDragging: Opacity(
-                    opacity: 0.3, child: _trayChip(theme, t)),
+                  opacity: 0.3,
+                  child: _trayChip(theme, t),
+                ),
                 child: _trayChip(theme, t),
               ),
             ),
@@ -879,7 +1012,9 @@ class _UnscheduledTray extends StatelessWidget {
   Widget _trayChip(ThemeData theme, Task t, {bool lifted = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
@@ -887,24 +1022,33 @@ class _UnscheduledTray extends StatelessWidget {
         boxShadow: lifted
             ? [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 14,
-                    offset: const Offset(0, 8))
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 14,
+                  offset: const Offset(0, 8),
+                ),
               ]
             : null,
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.drag_indicator_rounded,
-            size: 14, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 160),
-          child: Text(t.title,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.drag_indicator_rounded,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 160),
+            child: Text(
+              t.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium),
-        ),
-      ]),
+              style: theme.textTheme.labelMedium,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

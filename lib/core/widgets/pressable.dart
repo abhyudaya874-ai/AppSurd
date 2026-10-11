@@ -7,7 +7,12 @@ import '../theme/motion.dart';
 /// back on release. Wraps [child] in a [GestureDetector] — use it for every
 /// tappable card/button so the whole app shares one press feel.
 class Pressable extends StatefulWidget {
-  const Pressable({super.key, required this.child, this.onTap, this.scale = 0.97});
+  const Pressable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scale = 0.97,
+  });
 
   final Widget child;
   final VoidCallback? onTap;

@@ -51,10 +51,10 @@ class RateLimiter {
 
   /// Record a 429 with optional Retry-After seconds; the next [run] waits.
   static void noteRateLimited(String providerId, {int? retryAfterSeconds}) {
-    final secs = (retryAfterSeconds ?? 5) +
+    final secs =
+        (retryAfterSeconds ?? 5) +
         DateTime.now().millisecond % 3; // tiny jitter
-    _backoffUntil[providerId] =
-        DateTime.now().add(Duration(seconds: secs));
+    _backoffUntil[providerId] = DateTime.now().add(Duration(seconds: secs));
   }
 
   /// Test hooks.

@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-
 /// Orb states drive distinct motion/color behavior:
 /// idle breathe → listening (level-reactive) → thinking (swirl) →
 /// speaking (rhythmic pulse) → error shiver.
@@ -135,34 +134,31 @@ class _OrbPainter extends CustomPainter {
     );
 
     // ---- Blobs: overlapping gradient discs on Lissajous paths ----
-    canvas.saveLayer(
-        Offset.zero & size, Paint()..blendMode = BlendMode.plus);
+    canvas.saveLayer(Offset.zero & size, Paint()..blendMode = BlendMode.plus);
     for (var i = 0; i < 4; i++) {
       final ph = tt * (0.5 + i * 0.17) + swirl * (1 + i * 0.3) + i * 1.9;
       final wob = sin(tt * (1.1 + i * 0.4) + i * 2.6);
-      final cx = c.dx +
+      final cx =
+          c.dx +
           errorOffset +
           baseR * 0.28 * sin(ph * 1.3) +
           baseR * distort * 0.15 * sin(tt * 3 + i);
-      final cy = c.dy +
+      final cy =
+          c.dy +
           baseR * 0.28 * cos(ph * 1.7) +
           baseR * distort * 0.15 * cos(tt * 2.4 + i * 1.3);
-      final r = baseR *
+      final r =
+          baseR *
           breathe *
           (0.62 + 0.2 * wob + distort * level * 0.3 * (i.isEven ? 1 : -1));
       canvas.drawCircle(
         Offset(cx, cy),
         r,
         Paint()
-          ..shader = ui.Gradient.radial(
-            Offset(cx, cy),
-            r,
-            [
-              colors[i % colors.length]
-                  .withValues(alpha: 0.75 * brightness),
-              colors[i % colors.length].withValues(alpha: 0.0),
-            ],
-          ),
+          ..shader = ui.Gradient.radial(Offset(cx, cy), r, [
+            colors[i % colors.length].withValues(alpha: 0.75 * brightness),
+            colors[i % colors.length].withValues(alpha: 0.0),
+          ]),
       );
     }
     canvas.restore();
@@ -172,41 +168,41 @@ class _OrbPainter extends CustomPainter {
       c + Offset(errorOffset, 0),
       baseR * breathe * 0.34,
       Paint()
-        ..color = Colors.white
-            .withValues(alpha: state == OrbState.error ? 0.9 : 0.85 * brightness)
+        ..color = Colors.white.withValues(
+          alpha: state == OrbState.error ? 0.9 : 0.85 * brightness,
+        )
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
     );
   }
 
   List<Color> _palette(Color tint) => switch (state) {
-        OrbState.error => const [
-            Color(0xFFFF5A5A),
-            Color(0xFFFF8A5C),
-            Color(0xFFD63A3A),
-            Color(0xFFFFB199),
-          ],
-        OrbState.speaking => [
-            tint,
-            HSLColor.fromColor(tint)
-                .withLightness(0.7)
-                .withHue(
-                    (HSLColor.fromColor(tint).hue + 30) % 360)
-                .toColor(),
-            const Color(0xFFFFC88A), // warmer accent while speaking
-            tint.withValues(alpha: 0.9),
-          ],
-        _ => [
-            tint,
-            HSLColor.fromColor(tint)
-                .withHue((HSLColor.fromColor(tint).hue + 40) % 360)
-                .toColor(),
-            HSLColor.fromColor(tint)
-                .withHue((HSLColor.fromColor(tint).hue - 30) % 360)
-                .withSaturation(0.8)
-                .toColor(),
-            Colors.white.withValues(alpha: 0.8),
-          ],
-      };
+    OrbState.error => const [
+      Color(0xFFFF5A5A),
+      Color(0xFFFF8A5C),
+      Color(0xFFD63A3A),
+      Color(0xFFFFB199),
+    ],
+    OrbState.speaking => [
+      tint,
+      HSLColor.fromColor(tint)
+          .withLightness(0.7)
+          .withHue((HSLColor.fromColor(tint).hue + 30) % 360)
+          .toColor(),
+      const Color(0xFFFFC88A), // warmer accent while speaking
+      tint.withValues(alpha: 0.9),
+    ],
+    _ => [
+      tint,
+      HSLColor.fromColor(tint)
+          .withHue((HSLColor.fromColor(tint).hue + 40) % 360)
+          .toColor(),
+      HSLColor.fromColor(tint)
+          .withHue((HSLColor.fromColor(tint).hue - 30) % 360)
+          .withSaturation(0.8)
+          .toColor(),
+      Colors.white.withValues(alpha: 0.8),
+    ],
+  };
 
   @override
   bool shouldRepaint(_OrbPainter old) =>
