@@ -5,18 +5,45 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/motion.dart';
-import '../../core/theme/spacing.dart';
-import '../../core/widgets/animated_app_icon.dart';
 import '../arena/arena_state.dart';
+import '../home/home_screen.dart';
 import '../model_picker/model_selection.dart';
 import '../playground/playground_screen.dart';
-import '../settings/settings_screen.dart';
-import '../tasks/task_list_screen.dart';
-import '../voice/voice_overlay.dart';
+import '../profile/profile_screen.dart';
+import '../schedule/schedule_screen.dart';
+import '../tasks/tasks_tab_screen.dart';
 
-/// The app's persistent shell — content tabs in an IndexedStack (state is
-/// preserved per tab) with a floating glass pill bar that slides a stretched
-/// highlight blob between tabs.
+/// The visible tab — writable so any screen can switch tabs (Create Task
+/// jumps to Tasks after save) without a navigator hack.
+final shellTabProvider =
+    NotifierProvider<ShellTabNotifier, int>(ShellTabNotifier.new);
+
+class ShellTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  /// Switches the visible tab (0–4).
+  void set(int v) => state = v;
+}
+
+/// Id of a freshly created task — the Tasks tab pulses its row once so the
+/// user sees where it landed.
+final highlightedTaskProvider =
+    NotifierProvider<HighlightedTaskNotifier, String?>(
+        HighlightedTaskNotifier.new);
+
+class HighlightedTaskNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  /// Sets (or clears) the highlighted task id.
+  void set(String? v) => state = v;
+}
+
+/// The app's persistent shell — 5 fixed tabs in an IndexedStack (state is
+/// preserved per tab) with a glass pill bar pinned to the bottom safe area.
+/// Always 5 slots: no conditional tabs, no center orb (mic lives in the
+/// Home composer and evidence sheet instead).
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
@@ -25,13 +52,13 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  int _tab = 0;
+  static const _tabCount = 5;
 
   @override
   void initState() {
     super.initState();
     // Arena persisted on but lineup is empty (pre-seeding installs) — seed
-    // once so the Arena tab can appear.
+    // once so Arena stays reachable from Ask/Profile.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final sel = ref.read(modelSelectionProvider);
       if (sel.arenaMode && sel.arenaLineup.length < 2) {
@@ -42,128 +69,80 @@ class _AppShellState extends ConsumerState<AppShell> {
       }
     });
   }
-  List<({AppIconType icon, String label, Widget page})> get _tabs => [
-        (
-          icon: AppIconType.tasks,
-          label: 'Tasks',
-          page: const TaskListScreen(),
-        ),
-        (
-          icon: AppIconType.ask,
-          label: 'Ask',
-          page: const PlaygroundScreen(),
-        ),
-        // Arena tab exists only when a lineup is selected.
-        if (ref.watch(arenaReadyProvider))
-          (
-            icon: AppIconType.arena,
-            label: 'Arena',
-            page: const _ArenaTab(),
-          ),
-        (
-          icon: AppIconType.settings,
-          label: 'Settings',
-          page: const SettingsScreen(),
-        ),
-      ];
 
   @override
   Widget build(BuildContext context) {
-    final tabs = _tabs;
-    if (_tab >= tabs.length) _tab = 0; // arena tab hid → clamp
+    var tab = ref.watch(shellTabProvider).clamp(0, _tabCount - 1);
     final kbOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-    return Scaffold(
-      extendBody: true, // tab bar floats over content
-      body: IndexedStack(
-        index: _tab,
-        children: [for (final t in tabs) t.page],
-      ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: AnimatedSlide(
-        offset: kbOpen ? const Offset(0, 2) : Offset.zero,
-        duration: AppMotion.base,
-        child: RepaintBoundary(child: _FloatingTabBar(
-          tabs: tabs,
-          index: _tab,
-          onSelect: (i) {
-            HapticFeedback.selectionClick();
-            setState(() => _tab = i);
-          },
-          onOrb: () => VoiceOrbButton.show(context,
-              intent: VoiceIntent.task),
-        )),
-      ),
-    );
-  }
-}
+    const pages = [
+      HomeScreen(),
+      TasksTabScreen(),
+      ScheduleScreen(),
+      PlaygroundScreen(),
+      ProfileScreen(),
+    ];
 
-/// Arena tab content — explained below in `_ArenaTab`. Kept minimal: the
-/// lineup, a free "does this hold up?" prompt is out of scope; the tab
-/// surfaces the lineup + last verdicts so the jury is discoverable.
-class _ArenaTab extends ConsumerWidget {
-  const _ArenaTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final lineup = ref.watch(arenaLineupProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Arena')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(
-              'Jury of ${lineup.length}',
-              style: theme.textTheme.headlineLarge,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            for (final m in lineup)
-              Text(
-                '${m.provider.label} · ${m.displayName}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant),
-              ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Submit proof on a task while Arena is on — every judge '
-              'votes, and the verdict is computed in code.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ]),
+      // Content extends behind the floating bar; each tab pads its own
+      // scrollables by the bar height.
+      extendBody: true,
+      body: TweenAnimationBuilder<double>(
+        key: ValueKey(tab),
+        tween: Tween(begin: 0, end: 1),
+        duration: AppMotion.of(context, AppMotion.base),
+        curve: AppMotion.standard,
+        builder: (context, v, child) => Opacity(opacity: v, child: child),
+        child: IndexedStack(index: tab, children: pages),
+      ),
+      bottomNavigationBar: AnimatedSlide(
+        offset: kbOpen ? const Offset(0, 1.5) : Offset.zero,
+        duration: AppMotion.of(context, AppMotion.base),
+        curve: AppMotion.standard,
+        child: RepaintBoundary(
+          child: _GlassTabBar(
+            index: tab,
+            onSelect: (i) {
+              if (i != tab) HapticFeedback.selectionClick();
+              ref.read(shellTabProvider.notifier).set(i);
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-/// The floating glass bar: highlight blob stretches toward the tapped tab,
-/// active tab's label expands beside its icon.
-class _FloatingTabBar extends StatelessWidget {
-  const _FloatingTabBar({
-    required this.tabs,
-    required this.index,
-    required this.onSelect,
-    required this.onOrb,
-  });
+/// One tab slot descriptor — Material icon + label. Custom-painted icons
+/// proved invisible in the inactive state, so the bar uses stock icons with
+/// a scale/colour animation instead (always legible).
+class _TabSpec {
+  const _TabSpec(this.icon, this.label);
+  final IconData icon;
+  final String label;
+}
 
-  final List<({AppIconType icon, String label, Widget page})> tabs;
+const _tabSpecs = [
+  _TabSpec(Icons.home_rounded, 'Home'),
+  _TabSpec(Icons.checklist_rounded, 'Tasks'),
+  _TabSpec(Icons.calendar_month_rounded, 'Schedule'),
+  _TabSpec(Icons.chat_bubble_outline_rounded, 'Ask'),
+  _TabSpec(Icons.person_outline_rounded, 'Profile'),
+];
+
+/// The fixed full-width glass bar: a highlight blob stretches to the tapped
+/// slot (position = width/5 × index), active slot shows icon + label.
+class _GlassTabBar extends StatelessWidget {
+  const _GlassTabBar({required this.index, required this.onSelect});
+
   final int index;
   final ValueChanged<int> onSelect;
-  final VoidCallback onOrb;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
     final pad = MediaQuery.paddingOf(context).bottom;
-
-    // Slots: tabs split by the center orb button.
-    final slotCount = tabs.length + 1;
-    final orbAt = (slotCount / 2).floor();
 
     return Padding(
       padding: EdgeInsets.only(bottom: pad + 8),
@@ -181,15 +160,14 @@ class _FloatingTabBar extends StatelessWidget {
                   color: theme.colorScheme.outline.withValues(alpha: 0.6)),
             ),
             child: LayoutBuilder(builder: (context, c) {
-              final slotW = c.maxWidth / slotCount;
-              // Blob position: which slot the active tab occupies.
-              final blobX = slotW * (index < orbAt ? index : index + 1);
+              final slotW = c.maxWidth / _tabSpecs.length;
               return Stack(children: [
-                // Stretching highlight blob.
+                // Stretching highlight blob — centred on the active slot.
                 AnimatedPositioned(
-                  duration: const Duration(milliseconds: 350),
+                  duration: AppMotion.of(context,
+                      const Duration(milliseconds: 350)),
                   curve: Curves.easeOutBack,
-                  left: blobX + 4,
+                  left: slotW * index + 4,
                   top: 6,
                   bottom: 6,
                   width: slotW - 8,
@@ -201,22 +179,14 @@ class _FloatingTabBar extends StatelessWidget {
                   ),
                 ),
                 Row(children: [
-                  for (var i = 0; i < slotCount; i++)
-                    if (i == orbAt)
-                      SizedBox(
-                        width: slotW,
-                        child: Center(child: _OrbButton(onTap: onOrb)),
-                      )
-                    else
-                      SizedBox(
-                        width: slotW,
-                        child: _TabSlot(
-                          icon: tabs[i < orbAt ? i : i - 1].icon,
-                          label: tabs[i < orbAt ? i : i - 1].label,
-                          active: (i < orbAt ? i : i - 1) == index,
-                          onTap: () => onSelect(i < orbAt ? i : i - 1),
-                        ),
+                  for (var i = 0; i < _tabSpecs.length; i++)
+                    Expanded(
+                      child: _TabSlot(
+                        spec: _tabSpecs[i],
+                        active: i == index,
+                        onTap: () => onSelect(i),
                       ),
+                    ),
                 ]),
               ]);
             }),
@@ -229,14 +199,12 @@ class _FloatingTabBar extends StatelessWidget {
 
 class _TabSlot extends StatelessWidget {
   const _TabSlot({
-    required this.icon,
-    required this.label,
+    required this.spec,
     required this.active,
     required this.onTap,
   });
 
-  final AppIconType icon;
-  final String label;
+  final _TabSpec spec;
   final bool active;
   final VoidCallback onTap;
 
@@ -246,63 +214,42 @@ class _TabSlot extends StatelessWidget {
     final color = active
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Center(
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          AnimatedAppIcon(
-              type: icon, active: active, size: 21, color: color),
-          // Label expands beside the active icon.
-          ClipRect(
-            child: AnimatedSize(
-              duration: AppMotion.base,
+    return Semantics(
+      label: '${spec.label} tab',
+      selected: active,
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            AnimatedScale(
+              scale: active ? 1.1 : 1.0,
+              duration: AppMotion.of(context, AppMotion.fast),
               curve: AppMotion.standard,
-              child: active
-                  ? Padding(
-                      padding:
-                          const EdgeInsets.only(left: AppSpacing.xxs),
-                      child: Text(label,
+              child: Icon(spec.icon, size: 21, color: color),
+            ),
+            // Label expands beside the active icon.
+            ClipRect(
+              child: AnimatedSize(
+                duration: AppMotion.of(context, AppMotion.base),
+                curve: AppMotion.standard,
+                child: active
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          spec.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
                           style: theme.textTheme.labelMedium
-                              ?.copyWith(color: color)),
-                    )
-                  : const SizedBox.shrink(),
+                              ?.copyWith(color: color),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-/// Raised center orb — opens the voice overlay (phase 5b wired it).
-class _OrbButton extends StatelessWidget {
-  const _OrbButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
-      child: Container(
-        width: 44,
-        height: 44,
-        transform: Matrix4.translationValues(0, -6, 0), // raised
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.4),
-              blurRadius: 16,
-            ),
-          ],
+          ]),
         ),
-        child: const Icon(Icons.mic, color: Colors.black, size: 22),
       ),
     );
   }

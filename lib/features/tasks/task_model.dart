@@ -64,6 +64,10 @@ class Task {
     this.integrityDelta = 0,
     this.isDemo = false,
     this.groupId,
+    this.dueAt,
+    this.priority = 0,
+    this.durationMin,
+    this.scheduledStart,
   });
 
   final String id;
@@ -84,6 +88,26 @@ class Task {
   /// Optional group assignment (Personal / College / Work / custom).
   final String? groupId;
 
+  /// Optional deadline — set from Create Task; used by due-date grouping and
+  /// the schedule grid's "due" chips.
+  final DateTime? dueAt;
+
+  /// 0 = none, 1 = medium, 2 = high. Drives sort + auto-schedule order.
+  final int priority;
+
+  /// Planned length of a scheduled block; defaults to 30 in the scheduler.
+  final int? durationMin;
+
+  /// When the task sits on the Schedule grid; null = in the unscheduled tray.
+  final DateTime? scheduledStart;
+
+  /// When the task was verified — the last attempt's submission time. Null
+  /// until the task reaches `done`; feeds the contribution heatmap.
+  DateTime? get completedAt =>
+      status == TaskStatus.done && attempts.isNotEmpty
+          ? attempts.last.submittedAt
+          : null;
+
   Task copyWith({
     String? title,
     String? description,
@@ -92,6 +116,14 @@ class Task {
     int? integrityDelta,
     bool? isDemo,
     String? groupId,
+    DateTime? dueAt,
+    int? priority,
+    int? durationMin,
+    DateTime? scheduledStart,
+    bool clearDueAt = false,
+    bool clearDurationMin = false,
+    bool clearScheduledStart = false,
+    bool clearGroupId = false,
   }) {
     return Task(
       id: id,
@@ -102,7 +134,14 @@ class Task {
       attempts: attempts ?? this.attempts,
       integrityDelta: integrityDelta ?? this.integrityDelta,
       isDemo: isDemo ?? this.isDemo,
-      groupId: groupId ?? this.groupId,
+      groupId: clearGroupId ? null : (groupId ?? this.groupId),
+      dueAt: clearDueAt ? null : (dueAt ?? this.dueAt),
+      priority: priority ?? this.priority,
+      durationMin:
+          clearDurationMin ? null : (durationMin ?? this.durationMin),
+      scheduledStart: clearScheduledStart
+          ? null
+          : (scheduledStart ?? this.scheduledStart),
     );
   }
 
@@ -116,6 +155,10 @@ class Task {
         'integrityDelta': integrityDelta,
         'isDemo': isDemo,
         'groupId': groupId,
+        'dueAt': dueAt?.toIso8601String(),
+        'priority': priority,
+        'durationMin': durationMin,
+        'scheduledStart': scheduledStart?.toIso8601String(),
       };
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
@@ -133,5 +176,10 @@ class Task {
         integrityDelta: (json['integrityDelta'] as num?)?.toInt() ?? 0,
         isDemo: json['isDemo'] as bool? ?? false,
         groupId: json['groupId'] as String?,
+        dueAt: DateTime.tryParse(json['dueAt'] as String? ?? ''),
+        priority: (json['priority'] as num?)?.toInt() ?? 0,
+        durationMin: (json['durationMin'] as num?)?.toInt(),
+        scheduledStart:
+            DateTime.tryParse(json['scheduledStart'] as String? ?? ''),
       );
 }

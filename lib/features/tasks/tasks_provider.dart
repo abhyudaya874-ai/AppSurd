@@ -35,16 +35,27 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
   }
 
   /// Adds a task and returns it so the caller can navigate to its detail.
-  Future<Task> addTask(
-      {required String title,
-      String description = '',
-      String? groupId}) async {
+  /// Scheduling fields are optional — Create Task sets them, the quick
+  /// composer leaves them null.
+  Future<Task> addTask({
+    required String title,
+    String description = '',
+    String? groupId,
+    DateTime? dueAt,
+    int priority = 0,
+    int? durationMin,
+    DateTime? scheduledStart,
+  }) async {
     final task = Task(
       id: _uuid.v4(),
       title: title,
       description: description,
       createdAt: DateTime.now(),
       groupId: groupId,
+      dueAt: dueAt,
+      priority: priority,
+      durationMin: durationMin,
+      scheduledStart: scheduledStart,
     );
     await _persist(task);
     return task;
