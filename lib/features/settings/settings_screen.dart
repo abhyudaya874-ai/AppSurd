@@ -10,6 +10,7 @@ import '../../core/theme/extensions.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/widgets/fade_slide_in.dart';
+import '../tasks/tasks_provider.dart';
 
 /// Settings: paste a key per provider (stored in flutter_secure_storage),
 /// "Test key" validates it against GET /models, demo-mode toggle lives here
@@ -245,10 +246,27 @@ class _DemoModeTile extends ConsumerWidget {
 final demoModeProvider = NotifierProvider<DemoModeNotifier, bool>(
     DemoModeNotifier.new);
 
-/// Persists the demo-mode flag in the settings box.
+/// Persists the demo-mode flag in the settings box and seeds example tasks.
 class DemoModeNotifier extends Notifier<bool> {
   @override
   bool build() => false;
 
-  void setEnabled(bool value) => state = value;
+  /// Toggling on seeds three labelled demo tasks covering the pitch paths:
+  /// a good-URL pass, a weak-evidence fail, and a lazy-text roast.
+  Future<void> setEnabled(bool value) async {
+    state = value;
+    if (!value) return;
+    final notifier = ref.read(tasksProvider.notifier);
+    final existing = ref.read(tasksProvider).value ?? const [];
+    if (existing.any((t) => t.isDemo)) return; // seed once
+    final demos = [
+      ('Ship the landing page', 'a public URL that loads'),
+      ('Go to the gym', 'a photo or note with specifics'),
+      ('Read 20 pages', 'a summary that proves you read it'),
+    ];
+    for (final (title, proof) in demos) {
+      final t = await notifier.addTask(title: title, description: proof);
+      await notifier.updateTask(t.copyWith(isDemo: true));
+    }
+  }
 }
