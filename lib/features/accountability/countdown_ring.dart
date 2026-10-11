@@ -31,6 +31,11 @@ class _CountdownRingState extends State<CountdownRing>
     )..addStatusListener((s) {
         if (s == AnimationStatus.dismissed) widget.onFinished();
       });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     // Run 1→0 so value = fraction remaining.
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.value = 0;

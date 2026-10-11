@@ -218,7 +218,7 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tints = theme.extension<ProviderTints>()!;
+    final tints = theme.extension<ProviderTints>() ?? const ProviderTints();
     if (msg.isUser) {
       return Align(
         alignment: Alignment.centerRight,

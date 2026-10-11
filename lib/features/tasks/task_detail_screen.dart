@@ -5,7 +5,9 @@ import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/fade_slide_in.dart';
+import '../accountability/challenge_screen.dart';
 import '../verification/verification_screen.dart';
+import '../verification/verdict_model.dart';
 import 'evidence_sheet.dart';
 import 'task_model.dart';
 import 'tasks_provider.dart';
@@ -67,7 +69,7 @@ class TaskDetailScreen extends ConsumerWidget {
             if (done)
               _DoneBanner()
             else if (locked)
-              _LockedBanner()
+              _LockedBanner(task: task)
             else
               FilledButton.icon(
                 onPressed: () => EvidenceSheet.show(context, task),
@@ -137,22 +139,56 @@ class _AttemptTile extends StatelessWidget {
   }
 }
 
-/// Shown when a challenge is pending (phase 5 replaces with the challenge).
+/// Shown while a challenge is pending — button resumes the challenge stored
+/// on the latest attempt's verdict.
 class _LockedBanner extends StatelessWidget {
+  const _LockedBanner({required this.task});
+  final Task task;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final challengeJson = task.attempts.isEmpty
+        ? null
+        : task.attempts.last.verdictJson?['challenge'];
+    final challenge = challengeJson is Map
+        ? ChallengeDef.fromJson(challengeJson.cast<String, dynamic>())
+        : null;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(children: [
-          Icon(Icons.lock_outline, color: theme.colorScheme.tertiary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              'Accountability challenge pending — finish it to submit new evidence.',
-              style: theme.textTheme.bodyMedium,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.lock_outline, color: theme.colorScheme.tertiary),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Accountability challenge pending — finish it to submit new evidence.',
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
+          ]),
+          const SizedBox(height: AppSpacing.sm),
+          FilledButton.tonalIcon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ChallengeScreen(
+                  challenge: challenge ??
+                      const ChallengeDef(
+                        title: 'Say it like you mean it',
+                        instructions:
+                            'Retype: I will submit real proof next time.',
+                        seconds: 60,
+                        kind: 'retype',
+                      ),
+                  taskId: task.id,
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.timer_outlined, size: 18),
+            label: Text(challenge == null
+                ? 'Resume challenge'
+                : 'Resume: ${challenge.title}'),
           ),
         ]),
       ),

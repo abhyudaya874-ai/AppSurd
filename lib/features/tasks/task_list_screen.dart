@@ -11,6 +11,7 @@ import '../playground/playground_screen.dart';
 import 'add_task_sheet.dart';
 import 'task_card.dart';
 import 'task_detail_screen.dart';
+import 'task_model.dart';
 import 'tasks_provider.dart';
 
 /// Home screen — the proof-or-it-didn't-happen task list. Animated entries,
@@ -86,6 +87,11 @@ class TaskListScreen extends ConsumerWidget {
                           },
                           child: TaskCard(
                             task: task,
+                            // Small "unresolved accountability" nudge while
+                            // some other task is locked.
+                            accountabilityPending: task.status !=
+                                    TaskStatus.locked &&
+                                ref.watch(anyLockedProvider),
                             onTap: () => Navigator.of(context).push(
                               AppTransitions.sharedAxis(
                                   TaskDetailScreen(taskId: task.id)),

@@ -8,10 +8,18 @@ import 'task_model.dart';
 /// One task in the list. The card container + title carry the Hero tag into
 /// the detail screen; the status chip mirrors the task state machine.
 class TaskCard extends StatelessWidget {
-  const TaskCard({super.key, required this.task, required this.onTap});
+  const TaskCard({
+    super.key,
+    required this.task,
+    required this.onTap,
+    this.accountabilityPending = false,
+  });
 
   final Task task;
   final VoidCallback onTap;
+
+  /// Shows the "unresolved accountability" dot when another task is locked.
+  final bool accountabilityPending;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +62,16 @@ class TaskCard extends StatelessWidget {
                           child: Text('demo',
                               style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.tertiary)),
+                        ),
+                      if (accountabilityPending)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Tooltip(
+                            message: 'Unresolved accountability on another task',
+                            child: Icon(Icons.flag_outlined,
+                                size: 14,
+                                color: theme.colorScheme.tertiary),
+                          ),
                         ),
                     ]),
                     if (task.description.isNotEmpty)

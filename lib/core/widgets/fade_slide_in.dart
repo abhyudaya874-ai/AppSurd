@@ -36,6 +36,11 @@ class _FadeSlideInState extends State<FadeSlideIn>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.value = 1;
       return;

@@ -12,6 +12,7 @@ import '../../core/ai/openai_compat_client.dart';
 import '../../core/ai/prompts.dart';
 import '../../core/net/github_client.dart';
 import '../../core/net/link_verifier.dart';
+import '../accountability/roast_bank.dart';
 import '../model_picker/model_selection.dart';
 import '../tasks/task_model.dart';
 import 'verdict_model.dart';
@@ -49,7 +50,7 @@ class VerdictReadyEvent extends VerificationEvent {
   });
 
   final Verdict verdict;
-  final ModelSpec usedBy;
+  final ModelSpec? usedBy;
   final AiProvider? reroutedFrom;
   final ModelSpec? visionSwappedTo;
 
@@ -218,6 +219,13 @@ class VerifierService {
         customModelId: sel.customModelId,
       );
       visionSwap = plan.visionSwappedTo;
+      if (plan.candidates.isEmpty) {
+        // No provider key — never dead-end the demo. The fetches above still
+        // REALLY happened, so we judge deterministically and label it clearly.
+        verdict = _localVerdict(attempt, checks, commit);
+        usedBy = null;
+        roastFallback = true;
+      } else {
       try {
         final userContent = <Object>[
           {
@@ -259,10 +267,28 @@ class VerifierService {
         usedBy = outcome.used;
         reroutedFrom = outcome.reroutedFrom;
         verdict = Verdict.parse(outcome.value);
+        // Non-pass always carries a roast + challenge — from the local bank
+        // when the model didn't provide one (keeps the loop unbreakable).
+        if (verdict.kind != VerdictKind.pass) {
+          verdict = verdict.copyWith(
+            roast: (verdict.roast?.isNotEmpty ?? false)
+                ? verdict.roast
+                : RoastBank.pick(),
+            challenge: verdict.challenge ??
+                ChallengeDef(
+                  title: 'Say it like you mean it',
+                  instructions:
+                      'Retype: I will submit real proof for "${task.title}".',
+                  seconds: 60,
+                  kind: 'retype',
+                ),
+          );
+        }
       } on AiFailure catch (e) {
         debugPrint('[verify] model failed: $e');
         yield VerifyFailedEvent(e);
         return;
+      }
       }
     }
 
@@ -283,20 +309,81 @@ class VerifierService {
     yield const StepEvent(VerifyStep.writing, VerifyStepState.done);
     yield VerdictReadyEvent(
       verdict: verdict,
-      usedBy: usedBy ??
-          const ModelSpec(
-            id: 'none',
-            provider: AiProvider.groq,
-            displayName: 'offline rules',
-            tier: Tier.swift,
-            strength: 0,
-            blurb: '',
-          ),
+      usedBy: usedBy,
       reroutedFrom: reroutedFrom,
       visionSwappedTo: visionSwap,
       roastIsFallback: roastFallback,
     );
   }
+
+  /// Deterministic local verdict used when no provider key is configured.
+  /// The fetches genuinely happened — this just scores them honestly and is
+  /// always labelled "[demo verdict]" so nobody mistakes it for a model call.
+  Verdict _localVerdict(
+      EvidenceAttempt attempt, List<LinkCheck> checks, CommitInfo? commit) {
+    switch (attempt.type) {
+      case EvidenceType.url:
+        final c = checks.first;
+        final rich = c.textExtract.length > 200;
+        if (c.ok && rich) {
+          return Verdict(
+            kind: VerdictKind.pass,
+            confidence: 0.75,
+            summary:
+                '[demo verdict — no API key] The link resolves and carries real content (${c.title ?? c.uri.host}). Fetched and status-checked locally.',
+            checks: const [
+              VerdictCheck(label: 'Link returned 2xx', ok: true),
+              VerdictCheck(label: 'Page has meaningful content', ok: true),
+            ],
+            claims: const [],
+          );
+        }
+        return _weakVerdict(
+            '[demo verdict] The link opened but showed very little content.',
+            checks);
+      case EvidenceType.commit:
+        if (commit?.ok == true) {
+          return Verdict(
+            kind: VerdictKind.pass,
+            confidence: 0.7,
+            summary:
+                '[demo verdict — no API key] Commit exists with ${commit!.files.length} changed file(s).',
+            checks: const [
+              VerdictCheck(label: 'Commit fetchable via GitHub API', ok: true),
+            ],
+            claims: const [],
+          );
+        }
+        return _weakVerdict('[demo verdict] Commit could not be fetched.', null);
+      case EvidenceType.screenshot:
+        return _weakVerdict(
+            '[demo verdict] Screenshots need a vision model — add an API key to judge this properly.',
+            null);
+      case EvidenceType.text:
+        return _weakVerdict(
+            '[demo verdict] Text evidence needs the model — this is a plausibility stub.',
+            null);
+    }
+  }
+
+  Verdict _weakVerdict(String summary, List<LinkCheck>? checks) => Verdict(
+        kind: VerdictKind.partial,
+        confidence: 0.4,
+        summary: summary,
+        checks: checks
+                ?.map((c) =>
+                    VerdictCheck(label: 'Link returned 2xx', ok: c.ok))
+                .toList() ??
+            const [],
+        claims: const [],
+        roast: RoastBank.pick(),
+        challenge: const ChallengeDef(
+          title: 'Say it like you mean it',
+          instructions: 'Retype: I will bring real evidence next time.',
+          seconds: 60,
+          kind: 'retype',
+        ),
+      );
 
   /// Verified = fetched 2xx AND the text actually backs at least one claim.
   SourceInfo _reclassify(SourceInfo s, int index, List<VerdictClaim> claims,

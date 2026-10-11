@@ -104,6 +104,13 @@ final integrityScoreProvider = Provider<int>((ref) {
   return score.clamp(0, 999);
 });
 
+/// True while any task is locked behind a challenge — other cards show the
+/// "unresolved accountability" badge.
+final anyLockedProvider = Provider<bool>((ref) {
+  final tasks = ref.watch(tasksProvider).value ?? const [];
+  return tasks.any((t) => t.status == TaskStatus.locked);
+});
+
 /// A single task lookup by id (for the detail screen).
 final taskByIdProvider = Provider.family<Task?, String>((ref, id) {
   final tasks = ref.watch(tasksProvider).value ?? const [];

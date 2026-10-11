@@ -186,7 +186,7 @@ class _ProviderGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tint = theme.extension<ProviderTints>()!.forId(provider.id);
+    final tint = (theme.extension<ProviderTints>() ?? const ProviderTints()).forId(provider.id);
     final models = kModelCatalog
         .where((m) => m.provider == provider)
         .where((m) => alive == null || alive!.contains(m.id))

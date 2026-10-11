@@ -87,6 +87,26 @@ class Verdict {
   final String? roast;
   final ChallengeDef? challenge;
 
+  Verdict copyWith({
+    VerdictKind? kind,
+    double? confidence,
+    String? summary,
+    List<VerdictCheck>? checks,
+    List<VerdictClaim>? claims,
+    String? roast,
+    ChallengeDef? challenge,
+  }) {
+    return Verdict(
+      kind: kind ?? this.kind,
+      confidence: confidence ?? this.confidence,
+      summary: summary ?? this.summary,
+      checks: checks ?? this.checks,
+      claims: claims ?? this.claims,
+      roast: roast ?? this.roast,
+      challenge: challenge ?? this.challenge,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'verdict': kind.name,
         'confidence': confidence,

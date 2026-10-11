@@ -79,8 +79,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         case VerdictReadyEvent():
           _verdict = event.verdict;
           _roastFallback = event.roastIsFallback;
-          _usedByLabel =
-              '${event.usedBy.provider.label} · ${event.usedBy.displayName}';
+          _usedByLabel = event.usedBy != null
+              ? '${event.usedBy!.provider.label} · ${event.usedBy!.displayName}'
+              : 'local rules · demo verdict';
           _reroutedLabel = event.reroutedFrom != null
               ? 'rerouted from ${event.reroutedFrom!.label}'
               : null;
@@ -166,7 +167,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
-                if (_failure != null) _FailureCard(failure: _failure!),
+                if (_failure != null)
+                  _FailureCard(
+                    failure: _failure!,
+                    onRetry: () => setState(() {
+                      _failure = null;
+                      _stepStates.clear();
+                      _sources = const [];
+                      _verdict = null;
+                      _run();
+                    }),
+                  ),
                 if (_verdict != null)
                   _VerdictSection(
                     verdict: _verdict!,
@@ -191,7 +202,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 theme.colorScheme.primary,
                 theme.colorScheme.tertiary,
                 theme.colorScheme.error,
-                theme.extension<ProviderTints>()!.groq,
+                (theme.extension<ProviderTints>() ?? const ProviderTints()).groq,
               ],
             ),
           ),
@@ -343,8 +354,9 @@ class _SourceCard extends StatelessWidget {
 
 /// In-character failure — never a stack trace.
 class _FailureCard extends StatelessWidget {
-  const _FailureCard({required this.failure});
+  const _FailureCard({required this.failure, required this.onRetry});
   final AiFailure failure;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -365,6 +377,12 @@ class _FailureCard extends StatelessWidget {
           Text('Verification failed', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppSpacing.xs),
           Text(msg, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.sm),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Try again'),
+          ),
         ]),
       ),
     );
@@ -516,6 +534,11 @@ class _CitationTextState extends State<_CitationText>
       vsync: this,
       duration: Duration(milliseconds: (_words.length * 30).clamp(400, 3000)),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.value = 1;
     } else {

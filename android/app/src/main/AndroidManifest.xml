@@ -2,7 +2,7 @@
     <!-- Evidence fetching + AI provider calls happen client-side. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="receipts"
+        android:label="Receipts"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

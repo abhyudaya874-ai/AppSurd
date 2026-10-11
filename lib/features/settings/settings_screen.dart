@@ -133,7 +133,7 @@ class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tint =
-        theme.extension<ProviderTints>()!.forId(widget.provider.id);
+        (theme.extension<ProviderTints>() ?? const ProviderTints()).forId(widget.provider.id);
     final configured =
         ref.watch(configuredKeysProvider).value?.containsKey(widget.provider) ??
             false;

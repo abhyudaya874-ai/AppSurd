@@ -30,6 +30,11 @@ class _DrawnCheckState extends State<DrawnCheck>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: AppMotion.base);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     if (widget.animate && !MediaQuery.disableAnimationsOf(context)) {
       _controller.forward();
     } else {

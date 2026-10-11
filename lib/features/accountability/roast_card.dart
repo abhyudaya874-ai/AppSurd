@@ -37,6 +37,11 @@ class _RoastCardState extends State<RoastCard>
   void initState() {
     super.initState();
     _drop = AnimationController(vsync: this, duration: AppMotion.slow);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
       _drop.value = 1;
     } else {

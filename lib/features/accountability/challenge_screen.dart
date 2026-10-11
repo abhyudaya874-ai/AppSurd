@@ -88,8 +88,8 @@ class _ChallengeScreenState extends ConsumerState<ChallengeScreen> {
                           'quiz' => _QuizBody(
                               taskId: widget.taskId,
                               onPass: _complete),
-                          'reupload' =>
-                            _ReuploadBody(taskId: widget.taskId),
+                          'reupload' => _ReuploadBody(
+                              taskId: widget.taskId, onPass: _complete),
                           _ => _RetypeBody(
                               instructions: c.instructions,
                               onPass: _complete),
@@ -297,14 +297,21 @@ class _QuizBodyState extends ConsumerState<_QuizBody> {
 }
 
 /// reupload: a countdown window to submit stronger evidence via the sheet.
+/// Completes automatically once a new attempt lands (the sheet adds one and
+/// flips the task to `verifying`).
 class _ReuploadBody extends ConsumerWidget {
-  const _ReuploadBody({required this.taskId});
+  const _ReuploadBody({required this.taskId, required this.onPass});
   final String taskId;
+  final VoidCallback onPass;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final task = ref.watch(taskByIdProvider(taskId));
+    if (task != null && task.status == TaskStatus.verifying) {
+      // New evidence submitted during the countdown — challenge satisfied.
+      WidgetsBinding.instance.addPostFrameCallback((_) => onPass());
+    }
     return Column(children: [
       Text('The clock is running. Bring better evidence.',
           style: theme.textTheme.bodyMedium),

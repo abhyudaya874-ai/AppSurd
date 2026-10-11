@@ -67,7 +67,7 @@ class ModelPillState extends ConsumerState<ModelPill>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tints = theme.extension<ProviderTints>()!;
+    final tints = theme.extension<ProviderTints>() ?? const ProviderTints();
     final selection = ref.watch(modelSelectionProvider);
     final model = ref.watch(resolvedModelProvider);
     final tint = model != null
