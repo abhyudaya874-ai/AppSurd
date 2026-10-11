@@ -17,14 +17,38 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
   static const _boxName = 'receipts_tasks';
   static const _uuid = Uuid();
 
+  /// Fixed id for the always-present demo task — "prove it with any photo".
+  /// Pinned, labelled Demo, and verified by a deterministic local path so
+  /// the hackathon demo works onstage with zero keys and no network.
+  static const demoPhotoTaskId = 'demo-photo-receipt';
+
   @override
   Future<List<Task>> build() async {
     final box = await Hive.openBox(_boxName);
-    final tasks = [
+    await ensureDemoPhotoTask(box);
+    return [
       for (final key in box.keys)
         Task.fromJson(Map<String, dynamic>.from(box.get(key) as Map)),
     ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return tasks;
+  }
+
+  /// Creates the demo task once (idempotent — safe to call on every load
+  /// and from Profile's 'Reset demo data').
+  Future<void> ensureDemoPhotoTask(Box box) async {
+    if (box.containsKey(demoPhotoTaskId)) return;
+    await box.put(
+      demoPhotoTaskId,
+      Task(
+        id: demoPhotoTaskId,
+        title: 'Demo: prove it with any photo',
+        description:
+            'Upload any photo — the demo verifier accepts it. '
+            '(Real tasks are judged by real models.)',
+        createdAt: DateTime.now(),
+        isDemo: true,
+        pinned: true,
+      ).toJson(),
+    );
   }
 
   Future<Box> _box() => Hive.openBox(_boxName);
