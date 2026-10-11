@@ -12,6 +12,7 @@ import '../arena/arena_state.dart';
 import '../model_picker/model_pill.dart';
 import '../model_picker/model_selection.dart';
 import '../settings/settings_screen.dart';
+import '../voice/voice_overlay.dart';
 import '../playground/playground_screen.dart';
 import 'add_task_sheet.dart';
 import 'task_card.dart';
@@ -124,10 +125,21 @@ class TaskListScreen extends ConsumerWidget {
           ),
         ]),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => AddTaskSheet.show(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New task'),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Speak a task into existence — the orb fills the title.
+          VoiceOrbButton(
+            intent: VoiceIntent.task,
+            onResult: (r) => AddTaskSheet.show(context, initialTitle: r.text),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          FloatingActionButton.extended(
+            onPressed: () => AddTaskSheet.show(context),
+            icon: const Icon(Icons.add),
+            label: const Text('New task'),
+          ),
+        ],
       ),
     );
   }

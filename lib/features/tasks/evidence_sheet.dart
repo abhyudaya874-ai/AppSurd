@@ -13,6 +13,7 @@ import '../arena/arena_screen.dart';
 import '../arena/arena_state.dart';
 import '../model_picker/model_selection.dart';
 import '../verification/verification_screen.dart';
+import '../voice/voice_overlay.dart';
 import 'task_model.dart';
 import 'tasks_provider.dart';
 
@@ -329,15 +330,33 @@ class _TextInput extends StatelessWidget {
   const _TextInput({super.key, required this.ctrl});
   final TextEditingController ctrl;
   @override
-  Widget build(BuildContext context) => TextField(
-        controller: ctrl,
-        minLines: 4,
-        maxLines: 6,
-        maxLength: 1200,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(
-          hintText: 'Explain what you did, with specifics…',
-        ),
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: ctrl,
+            minLines: 4,
+            maxLines: 6,
+            maxLength: 1200,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              hintText: 'Explain what you did, with specifics…',
+            ),
+          ),
+          // Speak your proof — the orb transcribes into this field.
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () async {
+                final r = await VoiceOrbButton.show(context,
+                    intent: VoiceIntent.proof);
+                if (r != null) ctrl.text = r.text;
+              },
+              icon: const Icon(Icons.mic_none_rounded, size: 16),
+              label: const Text('Speak it'),
+            ),
+          ),
+        ],
       );
 }
 

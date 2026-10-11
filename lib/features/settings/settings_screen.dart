@@ -11,6 +11,7 @@ import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../tasks/tasks_provider.dart';
+import '../voice/voice_engines.dart';
 
 /// Settings: paste a key per provider (stored in flutter_secure_storage),
 /// "Test key" validates it against GET /models, demo-mode toggle lives here
@@ -58,14 +59,21 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           FadeSlideIn(
             index: 6,
-            child: _DemoModeTile(),
+            child: _EnginePickerTile(),
           ),
           const SizedBox(height: AppSpacing.xl),
           FadeSlideIn(
             index: 7,
+            child: _DemoModeTile(),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          FadeSlideIn(
+            index: 8,
             child: Text(
               'About — Receipts keeps everything on this device. Evidence you '
               'submit is sent only to the selected AI provider for verification. '
+              'Voice audio is deleted after transcription and never uploaded '
+              'unless you pick the Groq cloud engine (it is labelled). '
               'No accounts, no analytics, no cloud sync.',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -268,5 +276,66 @@ class DemoModeNotifier extends Notifier<bool> {
       final t = await notifier.addTask(title: title, description: proof);
       await notifier.updateTask(t.copyWith(isDemo: true));
     }
+  }
+}
+
+/// Transcription engine picker — Whisper on-device / System / Groq cloud,
+/// with unavailable engines dimmed (Whisper dims until its model downloads,
+/// Groq dims without a key). Selected choice persists.
+class _EnginePickerTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final choice = ref.watch(engineChoiceProvider);
+    final engines = ref.watch(engineListProvider).value ?? const [];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Transcription engine', style: theme.textTheme.titleLarge),
+      const SizedBox(height: AppSpacing.xs),
+      Text(
+        'Mic audio is deleted right after transcription — it only leaves '
+        'the device if you pick the cloud engine below.',
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      for (final (engine, avail) in engines)
+        ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          enabled: avail,
+          leading: Icon(
+            engine.info.id == 'whisper'
+                ? Icons.memory
+                : engine.info.id == 'groq'
+                    ? Icons.cloud_outlined
+                    : Icons.mic,
+            size: 20,
+            color: avail
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          title: Text(engine.info.label,
+              style: theme.textTheme.bodyMedium),
+          subtitle: engine.info.id == 'groq'
+              ? const Text('Audio is uploaded — cloud engine',
+                  style: TextStyle(fontSize: 11))
+              : null,
+          trailing: EngineChoice.values.firstWhere(
+                      (c) => c.name == engine.info.id,
+                      orElse: () => EngineChoice.system) ==
+                  choice
+              ? Icon(Icons.check_circle,
+                  size: 18, color: theme.colorScheme.primary)
+              : Icon(Icons.circle_outlined,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant),
+          onTap: avail
+              ? () => ref.read(engineChoiceProvider.notifier).set(
+                  EngineChoice.values.firstWhere(
+                      (c) => c.name == engine.info.id,
+                      orElse: () => EngineChoice.system))
+              : null,
+        ),
+    ]);
   }
 }

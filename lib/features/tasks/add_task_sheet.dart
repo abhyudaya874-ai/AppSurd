@@ -7,14 +7,17 @@ import 'tasks_provider.dart';
 /// Bottom sheet for creating a task — title plus an optional "what counts as
 /// proof?" hint that goes to the verifier so it can judge evidence fit.
 class AddTaskSheet extends ConsumerStatefulWidget {
-  const AddTaskSheet({super.key});
+  const AddTaskSheet({super.key, this.initialTitle});
 
-  static Future<void> show(BuildContext context) {
+  /// Pre-filled title — used when a task was dictated via the voice orb.
+  final String? initialTitle;
+
+  static Future<void> show(BuildContext context, {String? initialTitle}) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => const AddTaskSheet(),
+      builder: (_) => AddTaskSheet(initialTitle: initialTitle),
     );
   }
 
@@ -23,7 +26,7 @@ class AddTaskSheet extends ConsumerStatefulWidget {
 }
 
 class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
-  final _title = TextEditingController();
+  late final _title = TextEditingController(text: widget.initialTitle);
   final _proof = TextEditingController();
   bool _saving = false;
 

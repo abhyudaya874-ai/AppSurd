@@ -49,3 +49,15 @@ Found: ProviderTints extension null in tests — safe ?? fallback.
 - Arena mode: parallel OpenAI-compat calls per judge (max 600 tokens, 30s),
   aggregation computed in Dart — verdict math is never delegated to a model.
 - Strictness slider adds one prompt line per detent; thresholds live in code.
+
+## Phase 5b — Voice orb
+- `features/voice/` — `Transcriber` interface with three engines:
+  `WhisperLocalTranscriber` (whisper_flutter_new, tiny model downloaded at
+  runtime from HuggingFace — on-device, labelled), `SystemTranscriber`
+  (Android recognizer, streams partials), `GroqWhisperTranscriber`
+  (/audio/transcriptions, clearly labelled cloud; only with a Groq key).
+- Orb: CustomPainter, one AnimationController; idle/listening(th
+  level-reactive)/thinking/speaking/error states; provider-tinted.
+- Roast read-aloud via flutter_tts; `voice_quiz` challenge asks aloud and
+  judges the spoken answer in code (word overlap).
+- Mic audio deleted immediately after transcription; RECORD_AUDIO added.

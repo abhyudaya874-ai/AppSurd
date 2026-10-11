@@ -56,3 +56,9 @@ No keys? ─► labelled "[demo verdict]" heuristic over the REAL fetches.
 - Aggregation is pure code: confidence-weighted vote, ties→strict, strictness
   floor on pass, strictest judge supplies roast+challenge.
 - UI: jury bar + paged judge cards + dissent tags + animated consensus meter.
+
+## Phase 5b — Voice orb (done)
+- `features/voice/` — orb painter + overlay + three-engine transcriber.
+- Entry points: task-list mic FAB (dictate a task), evidence-sheet "Speak it".
+- Privacy: WAV deleted after transcription; cloud engine labelled; Settings
+  picks the engine with availability dimming.

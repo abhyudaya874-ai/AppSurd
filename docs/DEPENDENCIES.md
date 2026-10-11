@@ -20,3 +20,8 @@
 ## Versions
 Pinned to latest stable at build time (October 2026). `flutter pub outdated`
 warns about majors we intentionally skip mid-hackathon.
+| record | mic capture (16kHz WAV) + amplitude stream for the orb | 6.x |
+| speech_to_text | system recognizer transcriber (streams partials) | 7.x |
+| flutter_tts | roast read-aloud + voice_quiz spoken questions | 4.x |
+| path_provider | temp dir for WAV captures (deleted after transcribe) | 2.x |
+| whisper_flutter_new | whisper.cpp on-device transcription; model downloads on first use (never bundled) | 1.0.1 (GPL-3.0) |

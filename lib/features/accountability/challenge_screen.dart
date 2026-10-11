@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/api_key_store.dart';
@@ -17,6 +18,7 @@ import '../../core/utils/responsive.dart';
 import '../model_picker/model_selection.dart';
 import '../tasks/task_model.dart';
 import '../tasks/tasks_provider.dart';
+import '../voice/voice_overlay.dart';
 import '../verification/verdict_model.dart';
 import 'countdown_ring.dart';
 import '../tasks/evidence_sheet.dart';
@@ -92,6 +94,11 @@ class _ChallengeScreenState extends ConsumerState<ChallengeScreen> {
                               onPass: _complete),
                           'reupload' => _ReuploadBody(
                               taskId: widget.taskId, onPass: _complete),
+                          'voice_quiz' => _VoiceQuizBody(
+                              target: c.instructions.isNotEmpty
+                                  ? c.instructions
+                                  : 'I will submit real evidence next time.',
+                              onPass: _complete),
                           _ => _RetypeBody(
                               instructions: c.instructions,
                               onPass: _complete),
@@ -409,5 +416,128 @@ class _ThinkingDotsState extends State<_ThinkingDots>
           ),
       ]),
     );
+  }
+}
+
+/// voice_quiz: the AI's question/commitment is spoken aloud (TTS), the user
+/// answers by voice (orb), and the transcript is checked in code — ≥70% of
+/// the target's words must appear. Type-in fallback if the mic is denied.
+class _VoiceQuizBody extends ConsumerStatefulWidget {
+  const _VoiceQuizBody({required this.target, required this.onPass});
+  final String target;
+  final VoidCallback onPass;
+
+  @override
+  ConsumerState<_VoiceQuizBody> createState() => _VoiceQuizBodyState();
+}
+
+class _VoiceQuizBodyState extends ConsumerState<_VoiceQuizBody> {
+  String? _heard;
+  bool _asked = false;
+  FlutterTts? _tts;
+
+  @override
+  void initState() {
+    super.initState();
+    // Speak the prompt aloud — this is the "AI asks" half of cross-exam.
+    _tts = FlutterTts();
+    _tts!.setSpeechRate(0.52);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _tts!.speak(widget.target);
+      if (mounted) setState(() => _asked = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tts?.stop();
+    super.dispose();
+  }
+
+  bool _passes(String transcript) {
+    final want = widget.target
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.length > 2)
+        .toSet();
+    final got = transcript
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .toSet();
+    if (want.isEmpty) return transcript.trim().length > 5;
+    return want.where(got.contains).length / want.length >= 0.7;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(children: [
+      Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(children: [
+          Text(widget.target, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(_asked ? 'Your turn — say it back.' : 'Asking aloud…',
+              style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant)),
+        ]),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      FilledButton.tonalIcon(
+        onPressed: () async {
+          final r = await VoiceOrbButton.show(context,
+              intent: VoiceIntent.proof);
+          if (r == null) return;
+          setState(() => _heard = r.text);
+          if (_passes(r.text)) {
+            widget.onPass();
+          } else {
+            HapticFeedback.heavyImpact();
+          }
+        },
+        icon: const Icon(Icons.mic_none_rounded, size: 18),
+        label: const Text('Answer by voice'),
+      ),
+      if (_heard != null)
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: Text('Heard: "$_heard"',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: _passes(_heard!)
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.error)),
+        ),
+      const SizedBox(height: AppSpacing.sm),
+      TextButton.icon(
+        onPressed: () => _typeFallback(context),
+        icon: const Icon(Icons.keyboard, size: 16),
+        label: const Text('Type instead'),
+      ),
+    ]);
+  }
+
+  Future<void> _typeFallback(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Type it'),
+        content: TextField(controller: ctrl, autofocus: true),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, _passes(ctrl.text)),
+              child: const Text('Check')),
+        ],
+      ),
+    );
+    if (ok == true) widget.onPass();
   }
 }

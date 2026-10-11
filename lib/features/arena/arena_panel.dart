@@ -10,6 +10,7 @@ import '../../core/theme/spacing.dart';
 import '../model_picker/model_selection.dart';
 import '../model_picker/strength_slider.dart';
 import 'arena_models.dart';
+import 'arena_state.dart';
 
 /// The picker's Arena body: multi-select lineup (min 2, max 4) grouped by
 /// provider, plus the Strictness slider reusing the strength widget.
@@ -22,6 +23,22 @@ class ArenaPanel extends ConsumerStatefulWidget {
 
 class _ArenaPanelState extends ConsumerState<ArenaPanel> {
   Strictness? _preview;
+
+  @override
+  void initState() {
+    super.initState();
+    // Empty lineup in arena mode → seed a diverse default jury so the
+    // feature is reachable even before keys exist (Demo Mode runs canned).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final sel = ref.read(modelSelectionProvider);
+      if (sel.arenaMode && sel.arenaLineup.length < 2) {
+        final n = ref.read(modelSelectionProvider.notifier);
+        for (final id in defaultLineup()) {
+          n.toggleArenaModel(id);
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

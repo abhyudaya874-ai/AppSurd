@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
@@ -50,8 +51,27 @@ class _RoastCardState extends State<RoastCard>
     }
   }
 
+  bool _speaking = false;
+  FlutterTts? _tts;
+
+  Future<void> _speak() async {
+    if (_speaking) {
+      await _tts?.stop();
+      if (mounted) setState(() => _speaking = false);
+      return;
+    }
+    _tts ??= FlutterTts();
+    setState(() => _speaking = true);
+    await _tts!.setSpeechRate(0.52);
+    _tts!.setCompletionHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+    await _tts!.speak(widget.roast);
+  }
+
   @override
   void dispose() {
+    _tts?.stop();
     _drop.dispose();
     super.dispose();
   }
@@ -96,6 +116,20 @@ class _RoastCardState extends State<RoastCard>
                 Row(children: [
                   Text('The auditor has notes',
                       style: theme.textTheme.titleMedium),
+                  // Read the roast aloud — the orb's speaking state plays
+                  // under it on the verdict screen.
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Read aloud',
+                    icon: Icon(
+                      _speaking
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_up_outlined,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: _speak,
+                  ),
                   const Spacer(),
                   // NOPE stamp — pops in late with overshoot.
                   ScaleTransition(
