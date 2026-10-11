@@ -8,6 +8,7 @@ import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/theme/typography.dart';
 import '../../core/utils/responsive.dart';
+import '../shell/app_shell.dart';
 import '../tasks/group_model.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_model.dart';
@@ -298,6 +299,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 ),
                 child: Row(
                   children: [
+                    const MenuAvatar(size: 30),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       'Schedule',
                       style: AppTypography.grotesk(theme.colorScheme.onSurface)
@@ -963,8 +966,8 @@ class _UnscheduledTray extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      height: 64 + bottomPad + 70, // clear the floating tab bar
-      padding: EdgeInsets.only(bottom: bottomPad + 70),
+      height: 64 + bottomPad,
+      padding: EdgeInsets.only(bottom: bottomPad),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(top: BorderSide(color: theme.colorScheme.outline)),

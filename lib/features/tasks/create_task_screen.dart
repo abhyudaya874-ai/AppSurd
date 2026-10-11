@@ -18,6 +18,8 @@ import 'tasks_provider.dart';
 PageRouteBuilder<bool> createTaskRoute(
   String initialTitle, {
   String? initialGroupId,
+  DateTime? initialDueAt,
+  List<String> attachmentPaths = const [],
 }) {
   return PageRouteBuilder<bool>(
     transitionDuration: AppMotion.slow,
@@ -25,6 +27,8 @@ PageRouteBuilder<bool> createTaskRoute(
     pageBuilder: (context, animation, secondary) => CreateTaskScreen(
       initialTitle: initialTitle,
       initialGroupId: initialGroupId,
+      initialDueAt: initialDueAt,
+      attachmentPaths: attachmentPaths,
     ),
     transitionsBuilder: (context, animation, secondary, child) {
       final curved = CurvedAnimation(
@@ -53,10 +57,17 @@ class CreateTaskScreen extends ConsumerStatefulWidget {
     super.key,
     required this.initialTitle,
     this.initialGroupId,
+    this.initialDueAt,
+    this.attachmentPaths = const [],
   });
 
   final String initialTitle;
   final String? initialGroupId;
+  final DateTime? initialDueAt;
+
+  /// Image paths attached in the composer — shown as a reminder chip row so
+  /// they can be re-attached as evidence later.
+  final List<String> attachmentPaths;
 
   @override
   ConsumerState<CreateTaskScreen> createState() => _CreateTaskScreenState();
@@ -81,6 +92,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     _title = TextEditingController(text: widget.initialTitle);
     _proof = TextEditingController();
     _groupId = widget.initialGroupId;
+    _dueAt = widget.initialDueAt;
     // Focus only after the Hero flight finishes — an early keyboard would
     // jank the shared-element animation.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -174,7 +186,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         );
     // Land in the Tasks tab with the new row highlighted.
     ref.read(highlightedTaskProvider.notifier).set(task.id);
-    ref.read(shellTabProvider.notifier).set(1);
+    ref.read(navIndexProvider.notifier).set(1);
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -259,6 +271,26 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 ),
                 style: theme.textTheme.bodyLarge,
               ),
+              if (widget.attachmentPaths.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: [
+                      for (final p in widget.attachmentPaths)
+                        Chip(
+                          avatar: const Icon(Icons.image_outlined, size: 14),
+                          label: Text(
+                            p.split('/').last,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: AppSpacing.lg),
               Wrap(
                 spacing: AppSpacing.xs,

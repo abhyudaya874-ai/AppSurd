@@ -18,6 +18,7 @@ import '../../core/widgets/shimmer_box.dart';
 import '../arena/arena_info_screen.dart';
 import '../arena/arena_state.dart';
 import '../settings/settings_screen.dart';
+import '../shell/app_shell.dart';
 import '../tasks/task_model.dart';
 import '../tasks/tasks_provider.dart';
 import 'contribution_heatmap.dart';
@@ -336,7 +337,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final integrity = ref.watch(integrityScoreProvider);
     final byDay = receiptsByDay(tasks);
     final stats = computeStats(byDay, DateTime.now());
-    final barPad = 110.0 + MediaQuery.paddingOf(context).bottom;
+    final barPad = 24.0 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       body: SafeArea(
@@ -349,10 +350,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               barPad,
             ),
             children: [
-              Text(
-                'Profile',
-                style: AppTypography.grotesk(theme.colorScheme.onSurface)
-                    .copyWith(fontSize: 24, fontWeight: FontWeight.w700),
+              Row(
+                children: [
+                  const MenuAvatar(size: 30),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Profile',
+                    style: AppTypography.grotesk(theme.colorScheme.onSurface)
+                        .copyWith(fontSize: 24, fontWeight: FontWeight.w700),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.md),
 

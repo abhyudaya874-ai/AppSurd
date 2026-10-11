@@ -24,6 +24,21 @@ import '../research/research_trace_view.dart';
 import '../../core/theme/motion.dart';
 import '../arena/arena_info_screen.dart';
 import '../arena/arena_state.dart';
+import '../shell/app_shell.dart';
+
+/// One-shot text seed for the Ask composer — Home's Ask mode writes it, the
+/// screen consumes it once into `_input` and clears it.
+final askSeedProvider = NotifierProvider<AskSeedNotifier, String?>(
+  AskSeedNotifier.new,
+);
+
+class AskSeedNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  /// Sets (or clears, with null) the pending seed text.
+  void set(String? v) => state = v;
+}
 
 /// The Ask tab — a research chat. Composer carries +/attachments, the
 /// "Search ▾" and "Agentic ▾" override chips, the model pill, and a send
@@ -272,8 +287,21 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Consume a Home-sent Ask seed into the input field (once).
+    final seed = ref.watch(askSeedProvider);
+    if (seed != null) {
+      _input.text = seed;
+      _input.selection = TextSelection.collapsed(offset: seed.length);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(askSeedProvider.notifier).set(null);
+      });
+    }
     return Scaffold(
       appBar: AppBar(
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 8),
+          child: MenuAvatar(size: 30),
+        ),
         title: const Text('Ask'),
         actions: [
           // Arena lives behind Ask/Profile now — entry point only when a

@@ -8,6 +8,7 @@ import '../../core/utils/responsive.dart';
 import '../../core/widgets/animated_app_icon.dart';
 import '../../core/widgets/app_chip.dart';
 import '../../core/widgets/fade_slide_in.dart';
+import '../shell/app_drawer.dart';
 import '../shell/app_shell.dart';
 import 'focus_view.dart';
 import 'group_model.dart';
@@ -61,7 +62,18 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
       });
     }
 
-    final bottomPad = 110.0 + MediaQuery.paddingOf(context).bottom;
+    // Consume any search submitted from the sidebar — opens the field
+    // pre-filtered.
+    final seed = ref.watch(tasksSearchProvider);
+    if (seed.isNotEmpty && !_searchOpen) {
+      _searchCtrl.text = seed;
+      _searchOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(tasksSearchProvider.notifier).set('');
+      });
+    }
+
+    final bottomPad = 24.0 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       body: SafeArea(
@@ -212,6 +224,8 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
             right: AppSpacing.xs,
             child: Row(
               children: [
+                const MenuAvatar(size: 30),
+                const SizedBox(width: AppSpacing.xs),
                 Text('Tasks', style: theme.textTheme.headlineLarge),
                 const SizedBox(width: AppSpacing.sm),
                 // Overlapped avatar cluster beside the title.
