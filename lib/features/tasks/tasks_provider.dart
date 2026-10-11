@@ -125,7 +125,9 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
       type: last.type,
       payload: last.payload,
       submittedAt: last.submittedAt,
-      verdictJson: verdictJson,
+      // The applied delta lives INSIDE the verdict json so deleting this
+      // attempt later reverses exactly what it added.
+      verdictJson: {...verdictJson, 'integrityDelta': integrityDelta},
     );
     await _persist(
       task.copyWith(
@@ -146,6 +148,78 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
       if (t.id == id) return t;
     }
     return null;
+  }
+
+  /// Status implied by the remaining attempts: latest verdict pass → done,
+  /// partial/fail → locked (per the accountability rules), none → open.
+  TaskStatus _statusFor(List<EvidenceAttempt> attempts) {
+    if (attempts.isEmpty) return TaskStatus.open;
+    switch (attempts.last.verdictJson?['verdict'] as String?) {
+      case 'pass':
+        return TaskStatus.done;
+      case 'partial':
+      case 'fail':
+        return TaskStatus.locked;
+      default:
+        return TaskStatus.open;
+    }
+  }
+
+  /// Removes one attempt, reverses its stored integrity delta and
+  /// recomputes status from what remains — used by swipe-delete + undo.
+  Future<void> removeAttempt(String taskId, String attemptId) async {
+    final task = _find(taskId);
+    if (task == null) return;
+    final idx = task.attempts.indexWhere((a) => a.id == attemptId);
+    if (idx < 0) return;
+    final removed = task.attempts[idx];
+    final remaining = [...task.attempts]..removeAt(idx);
+    final delta = (removed.verdictJson?['integrityDelta'] as num?) ?? 0;
+    await _persist(
+      task.copyWith(
+        attempts: remaining,
+        status: _statusFor(remaining),
+        integrityDelta: task.integrityDelta - delta.toInt(),
+      ),
+    );
+  }
+
+  /// Reinserts a previously removed attempt at its old index — exact
+  /// inverse of [removeAttempt] (delta restored, status recomputed).
+  Future<void> restoreAttempt(
+    String taskId,
+    EvidenceAttempt attempt,
+    int index,
+  ) async {
+    final task = _find(taskId);
+    if (task == null) return;
+    final attempts = [...task.attempts]
+      ..insert(index.clamp(0, task.attempts.length), attempt);
+    final delta = (attempt.verdictJson?['integrityDelta'] as num?) ?? 0;
+    await _persist(
+      task.copyWith(
+        attempts: attempts,
+        status: _statusFor(attempts),
+        integrityDelta: task.integrityDelta + delta.toInt(),
+      ),
+    );
+  }
+
+  /// Clears every attempt on a task — back to open, deltas reversed.
+  Future<void> clearAttempts(String taskId) async {
+    final task = _find(taskId);
+    if (task == null || task.attempts.isEmpty) return;
+    var delta = 0;
+    for (final a in task.attempts) {
+      delta += (a.verdictJson?['integrityDelta'] as num?)?.toInt() ?? 0;
+    }
+    await _persist(
+      task.copyWith(
+        attempts: const [],
+        status: TaskStatus.open,
+        integrityDelta: task.integrityDelta - delta,
+      ),
+    );
   }
 }
 

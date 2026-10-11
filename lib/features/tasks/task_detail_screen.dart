@@ -80,7 +80,18 @@ class TaskDetailScreen extends ConsumerWidget {
                 label: const Text('Submit proof'),
               ),
             const SizedBox(height: AppSpacing.lg),
-            Text('Attempts', style: theme.textTheme.titleMedium),
+            Row(
+              children: [
+                Text('Attempts', style: theme.textTheme.titleMedium),
+                const Spacer(),
+                if (task.attempts.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => _clearAttempts(context, ref, task),
+                    icon: const Icon(Icons.clear_all_rounded, size: 16),
+                    label: const Text('Clear all'),
+                  ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.xs),
             if (task.attempts.isEmpty)
               Text(
@@ -93,12 +104,78 @@ class TaskDetailScreen extends ConsumerWidget {
               for (var i = 0; i < task.attempts.length; i++)
                 FadeSlideIn(
                   index: i,
-                  child: _AttemptTile(attempt: task.attempts[i]),
+                  child: Dismissible(
+                    key: ValueKey(task.attempts[i].id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    confirmDismiss: (_) async {
+                      final a = task.attempts[i];
+                      ref
+                          .read(tasksProvider.notifier)
+                          .removeAttempt(task.id, a.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Attempt removed'),
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () => ref
+                                .read(tasksProvider.notifier)
+                                .restoreAttempt(task.id, a, i),
+                          ),
+                        ),
+                      );
+                      return true;
+                    },
+                    child: _AttemptTile(attempt: task.attempts[i]),
+                  ),
                 ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// Confirms, then clears every attempt on the task (status → open,
+/// integrity deltas reversed — same recompute as swipe-delete).
+Future<void> _clearAttempts(
+  BuildContext context,
+  WidgetRef ref,
+  Task task,
+) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Clear all attempts?'),
+      content: const Text(
+        'Every submitted attempt and its verdict will be removed. '
+        'The task goes back to open.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Clear all'),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) {
+    await ref.read(tasksProvider.notifier).clearAttempts(task.id);
   }
 }
 
