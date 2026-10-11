@@ -30,18 +30,24 @@ class TasksTabScreen extends ConsumerStatefulWidget {
 
 class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
   final _searchCtrl = TextEditingController();
+  final _scroll = ScrollController();
   bool _searchOpen = false;
   bool _focusMode = false;
   TaskStatus? _statusFilter;
   String? _groupFilter; // '' = Inbox, null = all
 
+  /// Section/index pairs already entrance-animated — rows only animate on
+  /// first build, never on every scroll.
+  final _seenSections = <String>{};
+
   static const _avatarRowH = 84.0;
   static const _headerMax = 158.0;
-  static const _headerMin = 64.0;
+  static const _headerMin = 56.0;
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -78,130 +84,182 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
     return Scaffold(
       body: SafeArea(
         child: ConstrainedContent(
-          child: CustomScrollView(
-            slivers: [
-              // ---- Collapsing header: title row + stories avatars ----
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StoriesHeaderDelegate(
-                  minExtent: _headerMin,
-                  maxExtent: _headerMax,
-                  avatarRowHeight: _avatarRowH,
-                  builder: (context, t) => _header(
-                    context,
-                    theme,
-                    groups,
-                    tasksAsync.value ?? const [],
-                    t,
-                  ),
-                ),
-              ),
-
-              // ---- Collapsing search field ----
-              SliverToBoxAdapter(
-                child: AnimatedSize(
+          // Snap the collapsing header to whichever end is closer — it must
+          // never rest mid-fold.
+          child: NotificationListener<ScrollEndNotification>(
+            onNotification: (_) {
+              const range = _headerMax - _headerMin;
+              final off = _scroll.offset;
+              if (_scroll.hasClients && off > 0 && off < range) {
+                _scroll.animateTo(
+                  off < range / 2 ? 0 : range,
                   duration: AppMotion.of(context, AppMotion.base),
                   curve: AppMotion.standard,
-                  child: _searchOpen
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                          ),
-                          child: TextField(
-                            controller: _searchCtrl,
-                            autofocus: true,
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              hintText: 'Search tasks',
-                              isDense: true,
-                              prefixIcon: const Icon(Icons.search, size: 18),
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.close, size: 18),
-                                onPressed: () => setState(() {
-                                  _searchOpen = false;
-                                  _searchCtrl.clear();
-                                }),
-                              ),
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+                );
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              controller: _scroll,
+              slivers: [
+                // ---- Collapsing header: title row + stories avatars ----
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StoriesHeaderDelegate(
+                    minExtent: _headerMin,
+                    maxExtent: _headerMax,
+                    avatarRowHeight: _avatarRowH,
+                    builder: (context, t) => _header(
+                      context,
+                      theme,
+                      groups,
+                      tasksAsync.value ?? const [],
+                      t,
+                    ),
+                  ),
                 ),
-              ),
 
-              // ---- Status filter chips ----
-              SliverToBoxAdapter(child: _filterBar(theme)),
+                // ---- Collapsing search field ----
+                SliverToBoxAdapter(
+                  child: AnimatedSize(
+                    duration: AppMotion.of(context, AppMotion.base),
+                    curve: AppMotion.standard,
+                    child: _searchOpen
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                            ),
+                            child: TextField(
+                              controller: _searchCtrl,
+                              autofocus: true,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                hintText: 'Search tasks',
+                                isDense: true,
+                                prefixIcon: const Icon(Icons.search, size: 18),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  onPressed: () => setState(() {
+                                    _searchOpen = false;
+                                    _searchCtrl.clear();
+                                  }),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
 
-              // ---- Content ----
-              tasksAsync.when(
-                loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                // ---- Status filter chips ----
+                SliverToBoxAdapter(child: _filterBar(theme)),
+
+                // ---- Content: states / Focus feed / sticky sections ----
+                ..._contentSlivers(
+                  theme,
+                  tasksAsync,
+                  groups,
+                  view,
+                  now,
+                  bottomPad,
                 ),
-                error: (e, _) => const SliverFillRemaining(
-                  child: Center(child: Text('Could not load tasks.')),
-                ),
-                data: (tasks) {
-                  var list = _filtered(tasks, now);
-                  if (list.isEmpty) {
-                    return SliverFillRemaining(
-                      child: _EmptyState(filtered: tasks.isNotEmpty),
-                    );
-                  }
-                  if (_focusMode) {
-                    return SliverFillRemaining(
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: bottomPad - 60),
-                        child: FocusTaskFeed(tasks: list),
-                      ),
-                    );
-                  }
-                  final sections = groupTasks(list, groups, view.groupBy, now);
-                  return SliverList(
-                    delegate: SliverChildListDelegate([
-                      for (final s in sections) ...[
-                        if (s.label.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg,
-                              AppSpacing.sm,
-                              AppSpacing.lg,
-                              AppSpacing.xxs,
-                            ),
-                            child: Text(
-                              s.label,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        for (var i = 0; i < s.tasks.length; i++)
-                          FadeSlideIn(
-                            index: i,
-                            stagger: const Duration(milliseconds: 40),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.xxs,
-                              ),
-                              child: TaskRow(task: s.tasks[i]),
-                            ),
-                          ),
-                      ],
-                      SizedBox(height: bottomPad),
-                    ]),
-                  );
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  /// The list region: loading/error/empty, the Focus snap feed, or one
+  /// [SliverMainAxisGroup] per section whose pinned header sticks under the
+  /// collapsing header until that section's last row scrolls past — then
+  /// the next section's header pushes it out (built-in behaviour).
+  List<Widget> _contentSlivers(
+    ThemeData theme,
+    AsyncValue<List<Task>> tasksAsync,
+    List<Group> groups,
+    TaskViewOptions view,
+    DateTime now,
+    double bottomPad,
+  ) {
+    return tasksAsync.when(
+      loading: () => [
+        const SliverFillRemaining(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ],
+      error: (e, _) => [
+        const SliverFillRemaining(
+          child: Center(child: Text('Could not load tasks.')),
+        ),
+      ],
+      data: (tasks) {
+        final list = _filtered(tasks, now);
+        if (list.isEmpty) {
+          return [
+            SliverFillRemaining(child: _EmptyState(filtered: tasks.isNotEmpty)),
+          ];
+        }
+        if (_focusMode) {
+          return [
+            SliverFillRemaining(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: bottomPad - 60),
+                child: FocusTaskFeed(tasks: list),
+              ),
+            ),
+          ];
+        }
+        final sections = groupTasks(list, groups, view.groupBy, now);
+        return [
+          for (final s in sections)
+            SliverMainAxisGroup(
+              slivers: [
+                if (s.label.isNotEmpty)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SectionHeaderDelegate(
+                      label: s.label,
+                      count: s.tasks.length,
+                    ),
+                  ),
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    for (var i = 0; i < s.tasks.length; i++)
+                      // Entrance-animate only the first time a row is
+                      // built — never on every scroll.
+                      _seenSections.add('${s.label}#$i')
+                          ? FadeSlideIn(
+                              index: i,
+                              stagger: const Duration(milliseconds: 40),
+                              child: _rowPad(s.tasks[i]),
+                            )
+                          : _rowPad(s.tasks[i]),
+                  ]),
+                ),
+              ],
+            ),
+          SliverToBoxAdapter(child: SizedBox(height: bottomPad)),
+        ];
+      },
+    );
+  }
+
+  /// Row padding wrapper shared by the animated/static paths above.
+  Widget _rowPad(Task task) => Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.xxs,
+    ),
+    child: TaskRow(task: task),
+  );
+
   /// Header content rendered inside the persistent sliver. [t] is collapse
-  /// progress 0→1; avatars fade/slide away while a compact overlapped
-  /// cluster fades in beside the title.
+  /// progress 0→1 and drives EVERYTHING directly — no setState, no implicit
+  /// animations: the stories row tilts back in perspective, translates up,
+  /// shrinks and fades; the title shrinks 28→18; the avatar cluster docks
+  /// beside the title once t > 0.6.
   Widget _header(
     BuildContext context,
     ThemeData theme,
@@ -209,26 +267,32 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
     List<Task> all,
     double t,
   ) {
-    final avatarT = (1 - (t / 0.7)).clamp(0.0, 1.0); // gone by 70% collapse
-    final clusterT = ((t - 0.45) / 0.55).clamp(0.0, 1.0);
+    final avatarT = (1 - (t / 0.75)).clamp(0.0, 1.0); // gone by 75%
+    final clusterT = ((t - 0.6) / 0.4).clamp(0.0, 1.0); // docks after 60%
+    final titleT = Curves.easeOut.transform(t);
+    final titleSize = 28 - 10 * titleT; // 28sp → 18sp
     final storyGroups = _storyGroups(groups, all);
 
-    return Container(
-      color: theme.colorScheme.surface.withValues(alpha: 0.0),
+    return RepaintBoundary(
       child: Stack(
         children: [
-          // Title row (always visible).
+          // Title row (always visible, shrinks on collapse).
           Positioned(
-            top: 8,
+            top: 6,
             left: AppSpacing.lg,
             right: AppSpacing.xs,
             child: Row(
               children: [
                 const MenuAvatar(size: 30),
                 const SizedBox(width: AppSpacing.xs),
-                Text('Tasks', style: theme.textTheme.headlineLarge),
+                Text(
+                  'Tasks',
+                  style: theme.textTheme.headlineLarge?.copyWith(
+                    fontSize: titleSize,
+                  ),
+                ),
                 const SizedBox(width: AppSpacing.sm),
-                // Overlapped avatar cluster beside the title.
+                // Overlapped avatar cluster docked beside the title.
                 Expanded(
                   child: Opacity(
                     opacity: clusterT,
@@ -256,42 +320,55 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
               ],
             ),
           ),
-          // Stories avatar row — fades and slides up as the header collapses.
+          // Stories row — folds away in perspective (tilt + shrink + fade).
           Positioned(
-            top: 56,
+            top: 50,
             left: 0,
             right: 0,
             height: _avatarRowH,
             child: Opacity(
               opacity: avatarT,
-              child: Transform.translate(
-                offset: Offset(0, -14 * t),
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _GroupAvatar(
-                      label: 'All',
-                      count: all.length,
-                      color: theme.colorScheme.primary,
-                      selected: _groupFilter == null,
-                      onTap: () => _pickGroupFilter(null),
-                    ),
-                    for (final g in storyGroups)
-                      _GroupAvatar(
-                        label: g.name,
-                        count: g.id == ''
-                            ? all.where((t) => _isInbox(t, groups)).length
-                            : all.where((t) => t.groupId == g.id).length,
-                        color: g.color,
-                        selected: _groupFilter == g.id,
-                        onTap: () => _pickGroupFilter(g.id),
+              child: Transform(
+                alignment: Alignment.bottomCenter,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.0012)
+                  ..rotateX(t * 0.9),
+                child: Transform.translate(
+                  offset: Offset(0, -24 * t),
+                  child: Transform.scale(
+                    scale: 1 - 0.45 * t, // 1.0 → 0.55
+                    alignment: Alignment.bottomCenter,
+                    child: IgnorePointer(
+                      ignoring: avatarT < 0.2,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          _GroupAvatar(
+                            label: 'All',
+                            count: all.length,
+                            color: theme.colorScheme.primary,
+                            selected: _groupFilter == null,
+                            onTap: () => _pickGroupFilter(null),
+                          ),
+                          for (final g in storyGroups)
+                            _GroupAvatar(
+                              label: g.name,
+                              count: g.id == ''
+                                  ? all.where((t) => _isInbox(t, groups)).length
+                                  : all.where((t) => t.groupId == g.id).length,
+                              color: g.color,
+                              selected: _groupFilter == g.id,
+                              onTap: () => _pickGroupFilter(g.id),
+                            ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -882,6 +959,67 @@ class _GroupAvatar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Pinned section header ("Today · 4") — sticks under the collapsing
+/// header until its section's last row scrolls past, then the next
+/// section's header pushes it out (SliverMainAxisGroup behaviour). Solid
+/// background so rows slide under it cleanly; a hairline appears only
+/// while content is overlapping it.
+class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _SectionHeaderDelegate({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  double get minExtent => 30;
+  @override
+  double get maxExtent => 30;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(
+            color: overlapsContent
+                ? theme.colorScheme.outline
+                : Colors.transparent,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SectionHeaderDelegate old) =>
+      old.label != label || old.count != count;
 }
 
 /// Persistent-header plumbing: hands collapse progress (0→1) to [builder].

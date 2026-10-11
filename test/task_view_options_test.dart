@@ -68,8 +68,10 @@ void main() {
       expect(dueBucket(now, now), 'Today');
       expect(dueBucket(now.subtract(const Duration(days: 2)), now), 'Today');
       expect(dueBucket(now.add(const Duration(days: 1)), now), 'Tomorrow');
-      expect(dueBucket(now.add(const Duration(days: 5)), now), 'This week');
-      expect(dueBucket(now.add(const Duration(days: 20)), now), 'Later');
+      // +5 days = Friday 16 Oct 2026 → per-day section label.
+      expect(dueBucket(now.add(const Duration(days: 5)), now), 'Fri 16 Oct');
+      // Beyond the week → month bucket.
+      expect(dueBucket(now.add(const Duration(days: 20)), now), 'Oct 2026');
     });
   });
 
@@ -93,11 +95,11 @@ void main() {
     test('due buckets appear in chronological order', () {
       final ts = [
         _t('none'),
-        _t('later', dueAt: now.add(const Duration(days: 30))),
+        _t('later', dueAt: now.add(const Duration(days: 30))), // Nov 2026
         _t('today', dueAt: now),
       ];
       final s = groupTasks(ts, const [], TaskGroupBy.due, now);
-      expect(s.map((x) => x.label), ['Today', 'Later', 'No date']);
+      expect(s.map((x) => x.label), ['Today', 'Nov 2026', 'No date']);
     });
   });
 }

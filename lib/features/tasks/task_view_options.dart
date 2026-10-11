@@ -21,7 +21,7 @@ class TaskSection {
 /// Immutable view options record — read/written via [taskViewProvider].
 class TaskViewOptions {
   const TaskViewOptions({
-    this.groupBy = TaskGroupBy.none,
+    this.groupBy = TaskGroupBy.due,
     this.sortBy = TaskSortBy.activity,
     this.ascending = false,
   });
@@ -64,7 +64,7 @@ class TaskViewNotifier extends Notifier<TaskViewOptions> {
       state = TaskViewOptions(
         groupBy: TaskGroupBy.values.firstWhere(
           (g) => g.name == raw['groupBy'],
-          orElse: () => TaskGroupBy.none,
+          orElse: () => TaskGroupBy.due,
         ),
         sortBy: TaskSortBy.values.firstWhere(
           (s) => s.name == raw['sortBy'],
@@ -113,17 +113,49 @@ int _cmpNullable(DateTime? a, DateTime? b) {
   return a.compareTo(b);
 }
 
-/// Due-date bucket used by `Group by · Due date`.
-String dueBucket(DateTime? dueAt, DateTime now) {
-  if (dueAt == null) return 'No date';
+/// Short weekday + month names for due-date section headers — hand-rolled
+/// so we don't pull in `intl` just for this.
+const _wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/// Due-date section for a task — `(sortKey, label)`. Overdue+today →
+/// 'Today', tomorrow → 'Tomorrow', the rest of the week one section per day
+/// ('Mon 13 Oct'), anything further out lumps into its month ('Oct 2026'),
+/// undated sinks to 'No date' (key 99999999).
+(int, String) dueSection(DateTime? dueAt, DateTime now) {
+  if (dueAt == null) return (99999999, 'No date');
   final today = DateTime(now.year, now.month, now.day);
   final day = DateTime(dueAt.year, dueAt.month, dueAt.day);
   final diff = day.difference(today).inDays;
-  if (diff <= 0) return 'Today';
-  if (diff == 1) return 'Tomorrow';
-  if (diff <= 7) return 'This week';
-  return 'Later';
+  if (diff <= 0) return (-1, 'Today'); // key -1 sorts before everything
+  if (diff == 1) return (0, 'Tomorrow');
+  if (diff <= 6) {
+    return (
+      day.year * 10000 + day.month * 100 + day.day,
+      '${_wd[day.weekday - 1]} ${day.day} ${_months[day.month - 1]}',
+    );
+  }
+  return (
+    day.year * 10000 + day.month * 100,
+    '${_months[day.month - 1]} ${day.year}',
+  );
 }
+
+/// Label only — kept for the popover + tests.
+String dueBucket(DateTime? dueAt, DateTime now) => dueSection(dueAt, now).$2;
 
 /// Buckets [tasks] into ordered sections per [groupBy]; section ordering is
 /// fixed and human-meaningful (status lifecycle, due chronology, priority
@@ -163,14 +195,16 @@ List<TaskSection> groupTasks(
       if (inbox.isNotEmpty) sections.add(TaskSection('Inbox', inbox));
       return sections;
     case TaskGroupBy.due:
-      const order = ['Today', 'Tomorrow', 'This week', 'Later', 'No date'];
+      // Bucket by sort key so day/month sections stay chronological; the
+      // key also decides which tasks share one header.
+      final byKey = <int, List<Task>>{};
+      for (final t in tasks) {
+        byKey.putIfAbsent(dueSection(t.dueAt, now).$1, () => []).add(t);
+      }
+      final keys = byKey.keys.toList()..sort();
       return [
-        for (final b in order)
-          if (tasks.any((t) => dueBucket(t.dueAt, now) == b))
-            TaskSection(
-              b,
-              tasks.where((t) => dueBucket(t.dueAt, now) == b).toList(),
-            ),
+        for (final k in keys)
+          TaskSection(dueSection(byKey[k]!.first.dueAt, now).$2, byKey[k]!),
       ];
     case TaskGroupBy.priority:
       const order = [(2, 'High'), (1, 'Medium'), (0, 'No priority')];
