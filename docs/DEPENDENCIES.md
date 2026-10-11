@@ -26,3 +26,5 @@ warns about majors we intentionally skip mid-hackathon.
 | path_provider | temp dir for WAV captures (deleted after transcribe) | 2.x |
 | whisper_flutter_new | whisper.cpp on-device transcription; model downloads on first use (never bundled) | 1.0.1 (GPL-3.0) |
 | — bundled fonts — | Inter (UI), Space Grotesk (headings), Fraunces serif (display); pubspec `fonts:` section, google_fonts fetch disabled | — |
+| flutter_svg | renders bundled brand SVGs | 2.x |
+| lobe-icons (@lobehub/icons-static-svg) | 12 brand logo SVGs in assets/logos/ — see SOURCES.md | MIT set; marks © owners |

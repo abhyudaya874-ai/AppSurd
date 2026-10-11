@@ -136,7 +136,7 @@ class ModelSelectionNotifier extends Notifier<ModelSelection> {
     _persist();
   }
 
-  /// Toggle a model in/out of the lineup (min 2 enforced on read, max 4
+  /// Toggle a model in/out of the lineup (min 2 enforced on read, max 3 (free-tier quota)
   /// enforced on write).
   void toggleArenaModel(String id) {
     final lineup = [...state.arenaLineup];

@@ -9,6 +9,7 @@ import '../tasks/task_model.dart';
 import '../verification/evidence_prep.dart';
 import '../verification/verdict_model.dart';
 import 'arena_models.dart';
+import '../../core/ai/free_guard.dart';
 
 /// Per-judge progress for the jury bar + cards.
 sealed class ArenaEvent {
@@ -97,12 +98,17 @@ class ArenaService {
     }
 
     // Fan out concurrently — one call per judge, each 30s / ≤600 tokens.
-    final futures = {
-      for (final m in judges)
-        m.id: _judge(task, attempt, prep, m, keys[m.provider], strictness),
-    };
+    // Free tiers: cap at 3 judges, stagger starts ~150ms to spread quota.
+    final capped = judges.take(3).toList();
+    final futures = <String, Future<JudgeResult>>{};
+    for (var i = 0; i < capped.length; i++) {
+      final m = capped[i];
+      futures[m.id] = _staggeredJudge(i, task, attempt, prep, m,
+          keys[m.provider], strictness);
+    }
+    final judges2 = capped;
     final results = <JudgeResult>[];
-    for (final m in judges) {
+    for (final m in judges2) {
       yield JudgeStarted(m);
     }
     for (final entry in futures.entries) {
@@ -110,13 +116,12 @@ class ArenaService {
       results.add(r);
       yield JudgeDone(r);
     }
-
     if (results.where((r) => r.finished).isEmpty) {
       // ALL judges failed — one retry round, then give up.
-      for (final m in judges) {
+      for (final m in judges2) {
         yield JudgeStarted(m);
       }
-      for (final m in judges) {
+      for (final m in judges2) {
         final r = await _judge(
             task, attempt, prep, m, keys[m.provider], strictness);
         results.add(r);
@@ -125,6 +130,22 @@ class ArenaService {
     }
 
     yield ArenaDone(_aggregate(results, strictness));
+  }
+
+  /// Staggered start for free-tier rate limits (~150ms per judge).
+  Future<JudgeResult> _staggeredJudge(
+    int i,
+    Task task,
+    EvidenceAttempt attempt,
+    PreparedEvidence prep,
+    ModelSpec m,
+    String? key,
+    Strictness s,
+  ) async {
+    if (i > 0) {
+      await Future<void>.delayed(Duration(milliseconds: 150 * i));
+    }
+    return _judge(task, attempt, prep, m, key, s);
   }
 
   /// Calls one judge model directly (no tier routing — arena picks models).
@@ -142,6 +163,7 @@ class ArenaService {
     }
     final sw = Stopwatch()..start();
     try {
+      FreeGuard.assertFree(model); // free-only, even for judges
       final client = OpenAiCompatClient(
         baseUrl: model.provider.baseUrl,
         apiKey: key,

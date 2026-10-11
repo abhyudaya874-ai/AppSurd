@@ -6,12 +6,13 @@ import '../../core/ai/api_key_store.dart';
 import '../../core/ai/model_catalog.dart';
 import '../../core/ai/model_router.dart';
 import '../../core/ai/openai_compat_client.dart';
-import '../../core/theme/extensions.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
+import '../../core/widgets/brand_icon.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../tasks/tasks_provider.dart';
 import '../voice/voice_engines.dart';
+import '../../core/ai/request_counter.dart';
 import '../../core/search/search_router.dart';
 
 /// Settings: paste a key per provider (stored in flutter_secure_storage),
@@ -91,15 +92,37 @@ class SettingsScreen extends ConsumerWidget {
             child: Text(
               'About — Receipts keeps everything on this device. Evidence you '
               'submit is sent only to the selected AI provider for verification. '
-              'Voice audio is deleted after transcription and never uploaded '
-              'unless you pick the Groq cloud engine (it is labelled). '
+              'Free models only. Free endpoints are rate-limited and some '
+              'providers may log prompts on free tiers — do not submit sensitive '
+              'evidence. Voice audio is deleted after transcription and never '
+              'uploaded unless you pick the Groq cloud engine. Brand logos are '
+              'trademarks of their owners, shown only to identify models. '
               'No accounts, no analytics, no cloud sync.',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          const FadeSlideIn(index: 9, child: _RequestCounter()),
         ],
       ),
+    );
+  }
+}
+
+/// Tiny dev counter — calls per provider this session (helps spot 429s).
+class _RequestCounter extends ConsumerWidget {
+  const _RequestCounter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final counts = RequestCounterStats.counts; // session map, read on open
+    final theme = Theme.of(context);
+    if (counts.isEmpty) return const SizedBox.shrink();
+    return Text(
+      'Requests this session: ${counts.entries.map((e) => '${e.key}×${e.value}').join('  ')}',
+      style: theme.textTheme.labelSmall
+          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
     );
   }
 }
@@ -159,8 +182,6 @@ class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tint =
-        (theme.extension<ProviderTints>() ?? const ProviderTints()).forId(widget.provider.id);
     final configured =
         ref.watch(configuredKeysProvider).value?.containsKey(widget.provider) ??
             false;
@@ -179,11 +200,15 @@ class _ProviderKeyTileState extends ConsumerState<_ProviderKeyTile> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration:
-                    BoxDecoration(color: tint, shape: BoxShape.circle),
+              SizedBox(
+                width: 18, height: 18,
+                child: BrandIcon(
+                  model: ModelSpec(
+                      id: widget.provider.id,
+                      provider: widget.provider,
+                      displayName: widget.provider.label,
+                      tier: Tier.swift, strength: 0, blurb: ''),
+                  size: 16, showBadge: false),
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(widget.provider.label, style: theme.textTheme.titleMedium),

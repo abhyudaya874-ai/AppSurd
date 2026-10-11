@@ -52,6 +52,7 @@ dependencies:
   record: ^7.1.2
   path_provider: ^2.1.6
   whisper_flutter_new: ^1.0.1
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +79,7 @@ flutter:
   # Bundled fonts — google_fonts resolves these locally, no runtime download.
   assets:
     - assets/fonts/
+    - assets/logos/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

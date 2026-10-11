@@ -77,3 +77,9 @@ fetches it really made.
 | `rules/`, `workflows/` | the spec this was built to |
 
 Tested: `flutter analyze` clean, `flutter test` 13/13, on-device Android.
+
+## Credits & trademarks
+
+Built with Devin CLI (SWE-2 Max). Brand logos are trademarks of their
+respective owners, bundled from the open lobe-icons set solely to identify
+models/providers — no endorsement implied. See assets/logos/SOURCES.md.

@@ -68,3 +68,14 @@ Found: ProviderTints extension null in tests — safe ?? fallback.
 - `research_pipeline` — Plan(JSON) ⇒ Search(≤3 queries) ⇒ Read(LinkVerifier)
   ⇒ Synthesize(only numbered sources; citations scrubbed in code).
 - Research trace UI + Answer/Links tabs; AttachmentBar (Ask + evidence).
+
+## Phase 2a — Free-only models
+- `FreeGuard.assertFree` runs before EVERY provider call (router + arena
+  judges); a paid model is blocked in code with an in-character error.
+- Live `GET /models` builds the catalog: OpenRouter pricing==0 (or :free id),
+  NIM curated allowlist ∩ live list, Groq chat-only; raw payloads cached in
+  Hive. `StrengthEstimator` computes 0..1 strength; quartiles become the
+  4 tiers. `RateLimiter` (≤2 concurrent/provider, spacing, 429+Retry-After
+  backoff) wraps every call; request counter in Settings.
+- Brand logos bundled (lobe-icons SVGs, SOURCES.md); BrandResolver +
+  BrandIcon w/ provider badge + monogram fallback; 15-id test.

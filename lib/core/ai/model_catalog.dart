@@ -4,6 +4,15 @@
 /// so a stale ID never becomes a broken call.
 library;
 
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_ce/hive_ce.dart';
+
+import 'api_key_store.dart';
+import 'brand_resolver.dart';
+import 'free_guard.dart';
+import 'strength_estimator.dart';
+
 /// AI providers — all OpenAI-compatible.
 enum AiProvider {
   groq('groq', 'Groq', 'https://api.groq.com/openai/v1'),
@@ -50,6 +59,10 @@ class ModelSpec {
     required this.strength,
     this.supportsVision = false,
     this.supportsReasoning = false,
+    this.isFree = true, // seed catalog is curated free-tier
+    this.freeReason = 'curated free tier',
+    this.brand,
+    this.contextK = 0,
     required this.blurb,
   });
 
@@ -66,6 +79,18 @@ class ModelSpec {
 
   /// One-line "what this is for" shown under the pill when expanded.
   final String blurb;
+
+  /// Computed at catalog-build time — FreeGuard trusts this, not the name.
+  final bool isFree;
+
+  /// Why we think it's free ("OpenRouter pricing = 0", "NIM allowlist"…).
+  final String freeReason;
+
+  /// Model-maker brand key for the logo resolver ('meta','qwen'…).
+  final String? brand;
+
+  /// Advertised context window in K tokens (0 = unknown).
+  final int contextK;
 }
 
 /// Seed catalog. Prefer low-cost/free models — the demo runs on real keys.
@@ -199,3 +224,175 @@ const List<ModelSpec> kModelCatalog = [
     blurb: 'mixture-of-experts deep check',
   ),
 ];
+
+// ---------------------------------------------------------------------------
+// Dynamic catalog (phase 2a): live /models ∩ free-only filtering, cached.
+// Seed catalog remains as the offline/first-boot fallback.
+// ---------------------------------------------------------------------------
+
+/// Result of building the catalog — the list plus which models are free.
+final liveCatalogProvider = AsyncNotifierProvider<CatalogNotifier,
+    List<ModelSpec>>(CatalogNotifier.new);
+
+class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
+  static const _box = 'receipts_settings';
+  static const _key = 'live_models_v1';
+
+  @override
+  Future<List<ModelSpec>> build() => load();
+
+  /// Pull each configured provider's /models, keep only free chat models,
+  /// cache the raw payload for offline rebuilds.
+  Future<List<ModelSpec>> load() async {
+    final keys = await ref.read(configuredKeysProvider.future);
+    final all = <ModelSpec>[];
+    final cached = <String, dynamic>{};
+    for (final provider in AiProvider.values) {
+      final key = keys[provider];
+      if (key == null || key.isEmpty) continue;
+      try {
+        final dio = Dio(BaseOptions(
+          baseUrl: provider.baseUrl,
+          headers: {
+            'Authorization': 'Bearer $key',
+            ...provider.extraHeaders,
+          },
+          connectTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
+        ));
+        final res = await dio.get<Map<String, dynamic>>('/models');
+        cached[provider.id] = res.data;
+        all.addAll(_parse(provider, res.data ?? const {}));
+      } on DioException {
+        // Offline/error → cached payload, else the seed catalog slice.
+        final box = await Hive.openBox(_box);
+        final raw = box.get('$_key.${provider.id}');
+        if (raw is Map) {
+          all.addAll(_parse(provider,
+              Map<String, dynamic>.from(raw)));
+        } else {
+          all.addAll(kModelCatalog
+              .where((m) => m.provider == provider));
+        }
+      }
+    }
+    if (cached.isNotEmpty) {
+      final box = await Hive.openBox(_box);
+      for (final e in cached.entries) {
+        await box.put('$_key.${e.key}', e.value);
+      }
+    }
+    if (all.isEmpty) return List.of(kModelCatalog);
+    return _withStrength(all);
+  }
+
+  /// Builds ModelSpecs from a provider's /models payload — free-only.
+  List<ModelSpec> _parse(AiProvider provider, Map<String, dynamic> data) {
+    final out = <ModelSpec>[];
+    final list = data['data'];
+    if (list is! List) return out;
+    for (final raw in list) {
+      if (raw is! Map) continue;
+      final id = raw['id'] as String? ?? '';
+      if (id.isEmpty) continue;
+
+      final pricing = raw['pricing'] as Map?;
+      final promptZero =
+          (pricing?['prompt'] as num?)?.toDouble() == 0;
+      final completionZero =
+          (pricing?['completion'] as num?)?.toDouble() == 0;
+      final arch = raw['architecture'] as Map?;
+      final modalities =
+          (arch?['input_modalities'] as List? ?? const []).cast<String>();
+      final supported =
+          (raw['supported_parameters'] as List? ?? const []).cast<String>();
+      final context =
+          (raw['context_length'] as num?)?.toInt() ?? 0;
+
+      final vision = modalities.contains('image') ||
+          RegExp(r'vision|\bvl\b|llava|scout|maverick|gemma-3|llama-4')
+              .hasMatch(id);
+      final reasoning = supported.contains('reasoning') ||
+          RegExp(r'r1|gpt-oss|qwq|thinking').hasMatch(id);
+
+      final isChat = switch (provider) {
+        AiProvider.groq => FreeGuard.groqIsChat(id),
+        _ => true,
+      };
+      final isFree = FreeGuard.evaluate(
+        id: id,
+        provider: provider,
+        pricingIsZero: promptZero && completionZero,
+        onNimAllowlist: FreeGuard.nimAllowlist.contains(id),
+        isChatCapable: isChat,
+      );
+      if (!isFree) continue;
+
+      out.add(ModelSpec(
+        id: id,
+        provider: provider,
+        displayName: _prettyName(id, raw),
+        tier: Tier.swift, // reassigned from quartiles below
+        strength: 0,
+        supportsVision: vision,
+        supportsReasoning: reasoning,
+        isFree: true,
+        freeReason: switch (provider) {
+          AiProvider.openrouter => 'OpenRouter pricing = 0',
+          AiProvider.nvidia => 'NIM free catalog allowlist',
+          AiProvider.groq => 'Groq free plan',
+        },
+        brand: BrandResolver.fromModel(id, provider),
+        contextK: context ~/ 1000,
+        blurb: _blurb(vision, reasoning, context),
+      ));
+    }
+    return out;
+  }
+
+  /// Strength-normalize across the set, then bucket into quartile tiers.
+  static List<ModelSpec> _withStrength(List<ModelSpec> models) {
+    final strength = StrengthEstimator.normalized(models);
+    final sorted = models.toList()
+      ..sort((a, b) =>
+          (strength[a.id] ?? 0).compareTo(strength[b.id] ?? 0));
+    final n = sorted.length;
+    return [
+      for (var i = 0; i < n; i++)
+        ModelSpec(
+          id: sorted[i].id,
+          provider: sorted[i].provider,
+          displayName: sorted[i].displayName,
+          tier: Tier.values[(i * 4 ~/ n).clamp(0, 3)],
+          strength: strength[sorted[i].id] ?? 0,
+          supportsVision: sorted[i].supportsVision,
+          supportsReasoning: sorted[i].supportsReasoning,
+          isFree: true,
+          freeReason: sorted[i].freeReason,
+          brand: sorted[i].brand,
+          contextK: sorted[i].contextK,
+          blurb: sorted[i].blurb,
+        ),
+    ];
+  }
+
+  static String _prettyName(String id, Map raw) {
+    final name = raw['name'] as String?;
+    if (name != null && name.length > 2 && name.length < 60) {
+      return name;
+    }
+    final base = id.split('/').last.split(':').first;
+    return base
+        .replaceAll(RegExp(r'[-_]'), ' ')
+        .split(' ')
+        .map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+  }
+
+  static String _blurb(bool vision, bool reasoning, int ctx) => [
+        if (reasoning) 'reasoning',
+        if (vision) 'vision',
+        if (ctx >= 128000) 'long context',
+        if (!reasoning && !vision && ctx < 128000) 'chat',
+      ].join(' · ');
+}

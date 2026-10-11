@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/model_catalog.dart';
+import '../../core/widgets/brand_icon.dart';
 import '../../core/theme/extensions.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
@@ -286,21 +287,13 @@ class _AvatarStack extends StatelessWidget {
               height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: tints
-                    .forId(models[i].provider.id)
-                    .withValues(alpha: 0.25),
+                color: Theme.of(context).colorScheme.surface,
                 border: Border.all(
                     color: tints.forId(models[i].provider.id), width: 1.2),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                models[i].provider.label.substring(0, 1),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: tints.forId(models[i].provider.id),
-                ),
-              ),
+              clipBehavior: Clip.antiAlias,
+              padding: const EdgeInsets.all(3),
+              child: BrandIcon(model: models[i], size: 14, showBadge: false),
             ),
           ),
         if (n == 0)

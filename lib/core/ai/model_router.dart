@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ai_failure.dart';
 import 'api_key_store.dart';
+import 'free_guard.dart';
 import 'model_catalog.dart';
 import 'openai_compat_client.dart';
+import 'rate_limiter.dart';
+import 'request_counter.dart';
 
 /// How strongly the router should bias toward low latency.
 enum SpeedPref { normal, fast }
@@ -145,13 +148,17 @@ class ModelRouter {
       final spec = plan.candidates[i];
       final key = keys[spec.provider];
       if (key == null) continue;
+      // Hard guard — a paid model can never be called, even by accident.
+      FreeGuard.assertFree(spec);
       final client = OpenAiCompatClient(
         baseUrl: spec.provider.baseUrl,
         apiKey: key,
         extraHeaders: spec.provider.extraHeaders,
       );
       try {
-        final value = await call(client, spec);
+        RequestCounterStats.bump(spec.provider.id);
+        final value = await RateLimiter.run(
+            spec.provider.id, () => call(client, spec));
         debugPrint('[router] ${spec.provider.id}/${spec.id} answered');
         return RouteOutcome(
           used: spec,
@@ -161,6 +168,10 @@ class ModelRouter {
       } on AiFailure catch (e) {
         debugPrint('[router] ${spec.id} failed (${e.runtimeType}), falling back');
         lastError = e;
+        // 429 → record backoff for the next call, keep falling through.
+        if (e is RateLimitFailure) {
+          RateLimiter.noteRateLimited(spec.provider.id);
+        }
         // Auth failures don't benefit from retrying a sibling provider with a
         // different key — but a 429/5xx/timeout does.
         if (e is AuthFailure) continue;
