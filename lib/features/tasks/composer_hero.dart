@@ -17,10 +17,17 @@ Widget composerTextShuttle(
   BuildContext fromHeroContext,
   BuildContext toHeroContext,
 ) {
-  TextField? fieldOf(BuildContext ctx) =>
-      (ctx.widget as Hero).child is TextField
-      ? (ctx.widget as Hero).child as TextField
-      : null;
+  // Both endpoints wrap the field in a transparent Material, so unwrap one
+  // level when the Hero's child isn't the TextField itself.
+  TextField? fieldOf(BuildContext ctx) {
+    final child = (ctx.widget as Hero).child;
+    if (child is TextField) return child;
+    if (child is Material && child.child is TextField) {
+      return child.child as TextField;
+    }
+    return null;
+  }
+
   final from = fieldOf(fromHeroContext);
   final to = fieldOf(toHeroContext);
   final text =
