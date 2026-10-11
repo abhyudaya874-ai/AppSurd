@@ -70,6 +70,8 @@ class Task {
     this.priority = 0,
     this.durationMin,
     this.scheduledStart,
+    this.pinned = false,
+    this.unread = false,
   });
 
   final String id;
@@ -103,6 +105,13 @@ class Task {
   /// When the task sits on the Schedule grid; null = in the unscheduled tray.
   final DateTime? scheduledStart;
 
+  /// Pinned tasks float to the top of the sidebar's Recent list.
+  final bool pinned;
+
+  /// Lightweight "unread" flag — the sidebar shows an accent dot until the
+  /// user opens it or marks it read.
+  final bool unread;
+
   /// When the task was verified — the last attempt's submission time. Null
   /// until the task reaches `done`; feeds the contribution heatmap.
   DateTime? get completedAt => status == TaskStatus.done && attempts.isNotEmpty
@@ -121,6 +130,8 @@ class Task {
     int? priority,
     int? durationMin,
     DateTime? scheduledStart,
+    bool? pinned,
+    bool? unread,
     bool clearDueAt = false,
     bool clearDurationMin = false,
     bool clearScheduledStart = false,
@@ -142,6 +153,8 @@ class Task {
       scheduledStart: clearScheduledStart
           ? null
           : (scheduledStart ?? this.scheduledStart),
+      pinned: pinned ?? this.pinned,
+      unread: unread ?? this.unread,
     );
   }
 
@@ -159,6 +172,8 @@ class Task {
     'priority': priority,
     'durationMin': durationMin,
     'scheduledStart': scheduledStart?.toIso8601String(),
+    'pinned': pinned,
+    'unread': unread,
   };
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
@@ -182,5 +197,7 @@ class Task {
     priority: (json['priority'] as num?)?.toInt() ?? 0,
     durationMin: (json['durationMin'] as num?)?.toInt(),
     scheduledStart: DateTime.tryParse(json['scheduledStart'] as String? ?? ''),
+    pinned: json['pinned'] as bool? ?? false,
+    unread: json['unread'] as bool? ?? false,
   );
 }

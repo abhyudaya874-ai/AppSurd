@@ -12,6 +12,7 @@ import '../../core/widgets/fade_slide_in.dart';
 import '../arena/arena_state.dart';
 import '../profile/profile_data.dart';
 import '../settings/settings_screen.dart';
+import '../tasks/group_model.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_model.dart';
 import '../tasks/tasks_provider.dart';
@@ -333,7 +334,9 @@ class _NavRow extends StatelessWidget {
   }
 }
 
-/// Last ~8 tasks with status dots; the sidebar search filters this live.
+/// Last ~8 tasks with status dots; the sidebar search filters this live./// Last ~8 tasks with status dots; the sidebar search filters this live.
+/// Pinned tasks float to the top. Long-press (or the ⋮ button) opens an
+/// animated context menu — Pin, Mark unread, Rename, Move to group, Delete.
 class _RecentList extends ConsumerWidget {
   const _RecentList({required this.tasks, required this.onClose});
   final List<Task> tasks;
@@ -343,11 +346,14 @@ class _RecentList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final q = ref.watch(tasksSearchProvider).trim().toLowerCase();
-    final recent = tasks
-        .where((t) => q.isEmpty || t.title.toLowerCase().contains(q))
-        .take(8)
-        .toList();
-    if (recent.isEmpty) {
+    final recent =
+        tasks
+            .where((t) => q.isEmpty || t.title.toLowerCase().contains(q))
+            .toList()
+          // Pinned first, then provider order (created desc).
+          ..sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+    final shown = recent.take(8).toList();
+    if (shown.isEmpty) {
       return Center(
         child: Text(
           q.isEmpty ? 'No tasks yet' : 'No matches',
@@ -359,39 +365,259 @@ class _RecentList extends ConsumerWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      itemCount: recent.length,
-      itemBuilder: (context, i) {
-        final t = recent[i];
-        final dot = switch (t.status) {
-          TaskStatus.done => theme.colorScheme.primary,
-          TaskStatus.verifying => theme.colorScheme.primary,
-          TaskStatus.locked => theme.colorScheme.tertiary,
-          TaskStatus.open => theme.colorScheme.onSurfaceVariant,
-        };
-        return ListTile(
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          leading: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+      itemCount: shown.length,
+      itemBuilder: (context, i) => _RecentRow(task: shown[i], onClose: onClose),
+    );
+  }
+}
+
+/// One recent-task row with a ChatGPT-style long-press context menu.
+class _RecentRow extends ConsumerWidget {
+  const _RecentRow({required this.task, required this.onClose});
+  final Task task;
+  final VoidCallback onClose;
+
+  /// Rename → dialog → updateTask (write-through to Hive as usual).
+  Future<void> _rename(BuildContext context, WidgetRef ref) async {
+    final ctrl = TextEditingController(text: task.title);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename task'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(hintText: 'Task title'),
+          onSubmitted: (v) => Navigator.pop(context, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          title: Text(
-            t.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium,
+          FilledButton(
+            onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+            child: const Text('Rename'),
           ),
-          onTap: () {
-            onClose();
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => TaskDetailScreen(taskId: t.id),
+        ],
+      ),
+    );
+    if (name != null && name.isNotEmpty) {
+      await ref
+          .read(tasksProvider.notifier)
+          .updateTask(task.copyWith(title: name));
+    }
+  }
+
+  /// Delete with the same undo snackbar the Tasks list uses.
+  void _delete(BuildContext context, WidgetRef ref) {
+    final n = ref.read(tasksProvider.notifier);
+    n.deleteTask(task.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Deleted "${task.title}"'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => n.restoreTask(task),
+        ),
+      ),
+    );
+  }
+
+  /// Move-to-group submenu entries: each group + "No group".
+  List<Widget> _groupItems(WidgetRef ref) {
+    final groups = ref.watch(groupsProvider);
+    return [
+      for (final g in groups)
+        MenuItemButton(
+          leadingIcon: Icon(Icons.circle, size: 10, color: g.color),
+          onPressed: () => ref
+              .read(tasksProvider.notifier)
+              .updateTask(task.copyWith(groupId: g.id)),
+          child: Text(g.name),
+        ),
+      if (groups.isNotEmpty) const Divider(height: 1),
+      MenuItemButton(
+        leadingIcon: const Icon(Icons.remove_circle_outline, size: 16),
+        onPressed: () => ref
+            .read(tasksProvider.notifier)
+            .updateTask(task.copyWith(clearGroupId: true)),
+        child: const Text('No group'),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final t = task;
+    final dot = t.unread
+        ? theme
+              .colorScheme
+              .primary // unread overrides the status dot
+        : switch (t.status) {
+            TaskStatus.done => theme.colorScheme.primary,
+            TaskStatus.verifying => theme.colorScheme.primary,
+            TaskStatus.locked => theme.colorScheme.tertiary,
+            TaskStatus.open => theme.colorScheme.onSurfaceVariant,
+          };
+
+    return MenuAnchor(
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(
+          theme.colorScheme.surfaceContainerHighest,
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+      builder: (context, controller, child) => ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        leading: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+        ),
+        title: Row(
+          children: [
+            if (t.pinned)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.push_pin_rounded,
+                  size: 12,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            );
-          },
-        );
-      },
+            Expanded(
+              child: Text(
+                t.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.more_vert_rounded, size: 16),
+          visualDensity: VisualDensity.compact,
+          onPressed: () =>
+              controller.isOpen ? controller.close() : controller.open(),
+        ),
+        onTap: () {
+          // Opening a recent marks it read, then navigates to detail.
+          if (t.unread) {
+            ref
+                .read(tasksProvider.notifier)
+                .updateTask(t.copyWith(unread: false));
+          }
+          onClose();
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => TaskDetailScreen(taskId: t.id),
+            ),
+          );
+        },
+        onLongPress: () => controller.open(),
+      ),
+      menuChildren: [
+        _item(
+          theme,
+          icon: t.pinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+          label: t.pinned ? 'Unpin' : 'Pin',
+          shortcut: 'P',
+          onTap: () => ref
+              .read(tasksProvider.notifier)
+              .updateTask(t.copyWith(pinned: !t.pinned)),
+        ),
+        _item(
+          theme,
+          icon: t.unread
+              ? Icons.mark_email_read_outlined
+              : Icons.mark_email_unread_outlined,
+          label: t.unread ? 'Mark as read' : 'Mark as unread',
+          shortcut: 'U',
+          onTap: () => ref
+              .read(tasksProvider.notifier)
+              .updateTask(t.copyWith(unread: !t.unread)),
+        ),
+        _item(
+          theme,
+          icon: Icons.edit_outlined,
+          label: 'Rename',
+          shortcut: 'R',
+          onTap: () => _rename(context, ref),
+        ),
+        SubmenuButton(
+          leadingIcon: Icon(
+            Icons.folder_outlined,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          menuChildren: _groupItems(ref),
+          child: _row(theme, 'Move to group', '›'),
+        ),
+        const Divider(height: 1),
+        _item(
+          theme,
+          icon: Icons.delete_outline_rounded,
+          label: 'Delete',
+          shortcut: 'D',
+          danger: true,
+          onTap: () => _delete(context, ref),
+        ),
+      ],
+    );
+  }
+
+  /// One menu row: icon + label + trailing shortcut letter (ChatGPT style).
+  Widget _item(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required String shortcut,
+    required VoidCallback onTap,
+    bool danger = false,
+  }) {
+    return MenuItemButton(
+      leadingIcon: Icon(
+        icon,
+        size: 16,
+        color: danger
+            ? theme.colorScheme.error
+            : theme.colorScheme.onSurfaceVariant,
+      ),
+      onPressed: onTap,
+      child: _row(
+        theme,
+        label,
+        shortcut,
+        color: danger ? theme.colorScheme.error : null,
+      ),
+    );
+  }
+
+  Widget _row(ThemeData theme, String label, String shortcut, {Color? color}) {
+    return SizedBox(
+      width: 180,
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(color: color),
+          ),
+          const Spacer(),
+          Text(
+            shortcut,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
