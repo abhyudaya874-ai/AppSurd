@@ -1,3 +1,5 @@
+// READ THIS FIRST — the only network voice in the app. Three providers,
+// one OpenAI-compatible /chat/completions shape; stream() parses SSE.
 import 'dart:async';
 import 'dart:convert';
 

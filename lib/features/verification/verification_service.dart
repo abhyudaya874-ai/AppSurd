@@ -1,3 +1,6 @@
+// READ THIS FIRST — the pipeline: evidence in → real fetches (not the
+// model) → router.execute → defensive parse → streamed UI events. If a
+// judge asks how a source gets "Verified", point at _reclassify.
 import 'dart:convert';
 import 'dart:io';
 

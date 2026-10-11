@@ -1,3 +1,5 @@
+// READ THIS FIRST — every mutation writes through to Hive. done is only
+// reachable via attachVerdict(pass); locked only via partial/fail.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:uuid/uuid.dart';

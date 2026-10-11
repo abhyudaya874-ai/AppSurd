@@ -3,6 +3,8 @@
 /// extract the first balanced {...} block before decoding.
 library;
 
+// READ THIS FIRST — the strict-JSON contract + defensive parser. The
+// confidence floor (pass needs >=0.7) is enforced HERE, not in a prompt.
 import 'dart:convert';
 
 enum VerdictKind { pass, partial, fail }

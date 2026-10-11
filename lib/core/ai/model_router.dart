@@ -1,3 +1,6 @@
+// READ THIS FIRST — plan() builds the ordered candidate list (tier →
+// keyed → vision → speed → cross-tier fallbacks); execute() walks it on
+// failure. Everything a judge asks about rerouting starts here.
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

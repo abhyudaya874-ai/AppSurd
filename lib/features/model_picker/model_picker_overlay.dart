@@ -1,3 +1,5 @@
+// READ THIS FIRST — the pill morph. Overlay + source-rect grow animation
+// into the floating picker card; slider + custom panel live inside.
 import 'package:flutter/material.dart';
 
 import '../../core/theme/motion.dart';

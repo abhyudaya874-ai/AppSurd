@@ -1,3 +1,6 @@
+// READ THIS FIRST — Perplexity-style: animated steps, fetched-source
+// strip with honest statuses, citations tap → pulse source card, verdict
+// reveal, roast card entry point.
 import 'dart:math';
 
 import 'package:confetti/confetti.dart';

@@ -1,3 +1,5 @@
+// READ THIS FIRST — three challenge kinds (retype/quiz/reupload) under
+// one countdown ring; completion unlocks the task (+2 if fast).
 import 'dart:convert';
 import 'dart:math';
 

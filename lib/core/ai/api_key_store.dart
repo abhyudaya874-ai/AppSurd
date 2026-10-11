@@ -1,3 +1,6 @@
+// READ THIS FIRST — keys come from flutter_secure_storage at runtime or
+// --dart-define-from-file at build time. Never logged, never echoed in
+// errors, only ever sent to the provider's own base URL.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 

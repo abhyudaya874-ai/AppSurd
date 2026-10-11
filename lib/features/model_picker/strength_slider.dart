@@ -1,3 +1,5 @@
+// READ THIS FIRST — custom-painted 4-detent slider. Thumb stretches on
+// drag, spring-snaps on release, haptic at detent crossing.
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';

@@ -1,3 +1,5 @@
+// READ THIS FIRST — we fetch, not the model. 8s timeout, 200KB cap,
+// redirects followed, tags stripped, ≤4 concurrent. Sources of truth.
 import 'dart:async';
 
 import 'package:dio/dio.dart';
