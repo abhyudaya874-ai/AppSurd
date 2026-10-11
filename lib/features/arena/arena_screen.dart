@@ -339,19 +339,14 @@ class _JudgeCard extends StatelessWidget {
             VerdictKind.partial => ('partial', theme.colorScheme.tertiary),
             VerdictKind.fail => ('fail', theme.colorScheme.error),
           };
-    return AnimatedContainer(
+    final card = AnimatedContainer(
       duration: AppMotion.base,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: dissent
-              ? theme.colorScheme.tertiary
-              : tint.withValues(alpha: 0.5),
-          // Dashed dissent look: simulated with a wider, warning-tinted
-          // border + tag (dashed borders need a painter; see polish).
-          width: dissent ? 2 : 1,
-        ),
+        border: dissent
+            ? null // dashed overlay below carries the dissent outline
+            : Border.all(color: tint.withValues(alpha: 0.5)),
       ),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -408,6 +403,12 @@ class _JudgeCard extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant),
           ),
       ]),
+    );
+    if (!dissent) return card;
+    return CustomPaint(
+      foregroundPainter:
+          _DashedBorderPainter(color: theme.colorScheme.tertiary),
+      child: card,
     );
   }
 }
@@ -602,4 +603,33 @@ class _PageDots extends StatelessWidget {
         ),
     ]);
   }
+}
+
+/// Dashed rounded-rect border — the dissent card's "I disagree" styling.
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    const dash = 6.0, gap = 4.0;
+    final rr = RRect.fromRectAndRadius(
+        Offset.zero & size, const Radius.circular(16));
+    final path = Path()..addRRect(rr);
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        final end = min(d + dash, metric.length);
+        canvas.drawPath(metric.extractPath(d, end), paint);
+        d = end + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
 }

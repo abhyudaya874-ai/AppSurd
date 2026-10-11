@@ -45,3 +45,24 @@
 > no account, no silent AI. The verifier contract is enforced in code, so even
 > a hallucinating model can't pass you on confidence alone. Receipts doesn't
 > track what you *meant* to do — it tracks what you proved. Thanks."
+
+## Arena beat (insert after the roast)
+
+> "And when the evidence actually matters — when you're about to be judged —
+> you don't want one model's mood. Flip Arena on." [tap the groups icon]
+> "Pick your jury — two to four models, any provider mix. Submit proof now and
+> they all judge the same evidence in parallel. Watch the jury bar fill as
+> they come back — 400ms, 900ms — and here's the part that matters: they can
+> *disagree*. This one's dissenting — dashed border, tagged — and the
+> consensus meter shows a split decision. The verdict itself is computed in
+> code: weighted vote, ties go strict. Democracy, but the counting is
+> arithmetic, not vibes."
+
+## Voice beat (insert before the close)
+
+> "Last thing — the lazy person's API." [tap the mic FAB — orb blooms]
+> "Speak your proof. This is whisper.cpp running *on the phone* — the chip
+> says who transcribed, the audio is deleted the second it's text. And when
+> the app roasts you, it can now say it out loud." [speaker icon — TTS reads]
+> "A voice in, a verdict out — and somewhere a model is disappointed in you
+> verbally."

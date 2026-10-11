@@ -18,7 +18,12 @@ a physical device; and own final judgment on roasts, copy, and ethics.
 
 **Model used for the build:** SWE-2 Max via the Devin CLI. **Models used at
 runtime:** whichever catalog model the router selects per request — the app
-never hides which model answered.
+never hides which model answered. **Arena mode** fans one evidence pack out
+to a 2–4-model jury; verdict aggregation is computed in Dart (weighted vote,
+strictness floor), never delegated. **Voice:** whisper.cpp runs on-device via
+`whisper_flutter_new` (tiny model downloaded at runtime from HuggingFace —
+disclosed third-party asset, never bundled); speech_to_text and Groq's hosted
+Whisper are labelled fallbacks; roast read-aloud uses flutter_tts.
 
 All code was written fresh for this event; nothing was copied from other
 projects.

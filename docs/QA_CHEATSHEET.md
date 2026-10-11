@@ -145,3 +145,39 @@ nothing — and if your evidence is weak, the app tells you so. Beautifully."
 The pill — a router you'd normally hide in settings, turned into the app's
 signature interaction. (Alt: the demo-mode honesty — it labels rather than
 fakes.)
+
+## Arena & voice (phase 5a/5b)
+
+**29. Why is the arena verdict computed in code, not by a model?**
+Because "who won the vote" is arithmetic, not judgement. Each judge returns
+the same strict JSON as single mode; Dart sums confidence per verdict kind,
+breaks ties toward the stricter verdict, applies the strictness floor, and
+takes the roast from the strictest judge. A model could lobby; arithmetic
+can't. `_aggregate` in `arena_service.dart` is ~60 lines and unit-tested.
+
+**30. How do ties resolve?**
+Equal weighted scores → the stricter verdict wins (fail > partial > pass).
+Strictness order is a constant map; the strictest judge (harshest vote,
+highest confidence on ties) supplies the roast + challenge.
+
+**31. Where does the Whisper model come from, and why isn't it bundled?**
+`whisper_flutter_new` downloads `ggml-tiny` (~40MB) from the public
+whisper.cpp HuggingFace repo on first use, into app storage. Bundling would
+double the APK for everyone; runtime download lets the app ship small and
+delete-able. It's disclosed as a third-party asset, never committed.
+
+**32. Why three transcription engines?**
+Honesty + resilience. Whisper is the gold path (truly on-device); the system
+recognizer exists on every Android but may use the network — so it's
+labelled "System recognizer", never "on-device"; Groq's hosted Whisper is
+explicitly labelled cloud. If Whisper's model or native lib fails, the demo
+still works. Every result carries an engine chip saying who transcribed.
+
+**33. What happens to the audio?**
+Recorded to a temp WAV at 16kHz mono, transcribed, deleted immediately.
+Uploaded only when the Groq engine is selected — and the UI says so.
+
+**34. What if a judge fails mid-arena?**
+DNF card with a short reason — the arena completes if ≥1 judge answers,
+with a note when fewer than 2 did. Retry only when ALL judges fail. Vision
+judges skip screenshots as "Can't see images" — an absence, not a failure.
