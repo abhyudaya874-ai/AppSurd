@@ -324,3 +324,78 @@ class SourceSheet extends StatelessWidget {
     );
   }
 }
+
+/// Collapsible "Thinking" block — shimmer label + live timer while reasoning
+/// streams into a small fixed-height window; collapses to "Thought for N s ›"
+/// when the answer begins. Nothing renders when no reasoning exists — honest.
+class ThinkingBlock extends StatefulWidget {
+  const ThinkingBlock({super.key, required this.msg});
+  final ThinkableMsg msg;
+
+  @override
+  State<ThinkingBlock> createState() => _ThinkingBlockState();
+}
+
+/// Duck-typed view of whatever bubble needs a thinking block.
+abstract class ThinkableMsg {
+  String get reasoning;
+  Stopwatch? get thinkClock;
+  bool get thinking;
+}
+
+class _ThinkingBlockState extends State<ThinkingBlock> {
+  bool _open = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final thinking = widget.msg.thinking;
+    if (widget.msg.reasoning.isEmpty && !thinking) {
+      return const SizedBox.shrink();
+    }
+    final secs = widget.msg.thinkClock?.elapsed.inMilliseconds ?? 0;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      InkWell(
+        onTap: thinking ? null : () => setState(() => _open = !_open),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(children: [
+            Icon(
+                thinking
+                    ? Icons.psychology_outlined
+                    : Icons.psychology,
+                size: 14,
+                color: theme.colorScheme.tertiary),
+            const SizedBox(width: 5),
+            Text(
+              thinking
+                  ? 'Thinking… ${(secs / 1000).toStringAsFixed(0)}s'
+                  : 'Thought for ${(secs / 1000).toStringAsFixed(0)}s ›',
+              style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.tertiary),
+            ),
+          ]),
+        ),
+      ),
+      AnimatedSize(
+        duration: AppMotion.fast,
+        child: _open || thinking
+            ? Container(
+                height: 64,
+                padding: const EdgeInsets.only(bottom: 4),
+                child: SingleChildScrollView(
+                  reverse: true,
+                  child: Text(
+                    widget.msg.reasoning,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.75)),
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+    ]);
+  }
+}

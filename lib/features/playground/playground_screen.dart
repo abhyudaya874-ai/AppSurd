@@ -58,6 +58,9 @@ class _Msg {
   List<SearchHit> sources;
   final List<Attachment> attachments;
   var setSpec = false;
+  String reasoning = '';
+  Stopwatch? thinkClock;
+  bool get thinking => thinkClock != null && text.isEmpty;
 
   _Msg copy() => _Msg.user(text, attachments: attachments)
     ..trace = trace
@@ -195,7 +198,7 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
       );
       var gotToken = false;
       try {
-        await for (final token in client.stream(
+        await for (final chunk in client.streamRich(
           model: spec.id,
           messages: history,
         )) {
@@ -203,7 +206,14 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
           answered = true;
           _updateLast(spec, i > 0 ? plan.candidates[0].provider : null,
               visionSwap: visionSwap);
-          _messages.last.text += token;
+          if (chunk.reasoning.isNotEmpty) {
+            _messages.last.reasoning += chunk.reasoning;
+            _messages.last.thinkClock ??= Stopwatch()..start();
+          }
+          if (chunk.text.isNotEmpty) {
+            _messages.last.text += chunk.text;
+            _messages.last.thinkClock?.stop();
+          }
           _scrollToBottom();
         }
       } on AiFailure {
@@ -519,14 +529,15 @@ class _BubbleState extends State<_Bubble> {
                   ),
               ]),
             ),
-          if (_tab == 0)
+          if (_tab == 0) ...[
+            _MsgThinking(msg: msg),
             Text(
               msg.text.isEmpty ? '…' : msg.text,
               style: AppTypography.display(
                       theme.colorScheme.onSurface, size: 15)
                   .copyWith(height: 1.45, fontWeight: FontWeight.w400),
-            )
-          else
+            ),
+          ] else
             Column(children: [
               for (final h in msg.sources) SourceRow(hit: h),
             ]),
@@ -534,4 +545,22 @@ class _BubbleState extends State<_Bubble> {
       ),
     );
   }
+}
+
+/// Thinking block bound to a playground message (duck-typed impl of the
+/// shared widget's interface).
+/// Adapter: playground _Msg → the shared ThinkableMsg duck type.
+class _MsgThinking extends StatelessWidget implements ThinkableMsg {
+  const _MsgThinking({required this.msg});
+  final _Msg msg;
+
+  @override
+  Widget build(BuildContext context) => ThinkingBlock(msg: this);
+
+  @override
+  String get reasoning => msg.reasoning;
+  @override
+  Stopwatch? get thinkClock => msg.thinkClock;
+  @override
+  bool get thinking => msg.thinking;
 }

@@ -123,6 +123,21 @@ class OpenAiCompatClient {
     double temperature = 0.6,
     int maxTokens = 1024,
   }) async* {
+    await for (final c in streamRich(
+        model: model, messages: messages, temperature: temperature, maxTokens: maxTokens)) {
+      if (c.text.isNotEmpty) yield c.text;
+    }
+  }
+
+  /// Rich stream — separates answer text from reasoning deltas
+  /// (`reasoning`/`reasoning_content` fields, or inline <think> tags).
+  /// A model with no reasoning simply yields text chunks.
+  Stream<StreamChunk> streamRich({
+    required String model,
+    required List<ChatMessage> messages,
+    double temperature = 0.6,
+    int maxTokens = 1024,
+  }) async* {
     final body = {
       'model': model,
       'messages': [for (final m in messages) m.toJson()],
@@ -149,6 +164,7 @@ class OpenAiCompatClient {
 
     // SSE frames are separated by blank lines; buffer partial frames between
     // chunk boundaries so a split "data:" line still parses.
+    var _inThink = false;
     final buffer = StringBuffer();
     await for (final chunk in bodyStream) {
       buffer.write(utf8.decode(chunk, allowMalformed: true));
@@ -169,8 +185,47 @@ class OpenAiCompatClient {
           final choices = json['choices'];
           if (choices is List && choices.isNotEmpty) {
             final delta = (choices.first as Map)['delta'];
-            final content = delta is Map ? delta['content'] : null;
-            if (content is String && content.isNotEmpty) yield content;
+            if (delta is Map) {
+              final reasoning = delta['reasoning'] ??
+                  delta['reasoning_content'] ??
+                  delta['thinking'];
+              final content = delta['content'];
+              if (reasoning is String && reasoning.isNotEmpty) {
+                yield StreamChunk(reasoning: reasoning);
+              }
+              if (content is String && content.isNotEmpty) {
+                // Inline <think>…</think> inside content (DeepSeek-style):
+                // route it to the reasoning channel, honestly labelled.
+                var rest = content;
+                while (rest.isNotEmpty) {
+                  if (_inThink) {
+                    final close = rest.indexOf('</think>');
+                    if (close < 0) {
+                      yield StreamChunk(reasoning: rest);
+                      rest = '';
+                    } else {
+                      yield StreamChunk(
+                          reasoning: rest.substring(0, close));
+                      rest = rest.substring(close + 8);
+                      _inThink = false;
+                    }
+                  } else {
+                    final open = rest.indexOf('<think>');
+                    if (open < 0) {
+                      yield StreamChunk(text: rest);
+                      rest = '';
+                    } else {
+                      if (open > 0) {
+                        yield StreamChunk(
+                            text: rest.substring(0, open));
+                      }
+                      rest = rest.substring(open + 7);
+                      _inThink = true;
+                    }
+                  }
+                }
+              }
+            }
           }
         } on FormatException {
           // A malformed SSE frame is skipped, not fatal.
@@ -193,4 +248,13 @@ class OpenAiCompatClient {
     }
     return BadResponseFailure('HTTP $code');
   }
+}
+
+/// One streamed delta — [text] for answer tokens, [reasoning] for visible
+/// thinking deltas (`reasoning`/`reasoning_content`/`thinking` fields or
+/// inline <think> tags, whichever the provider emits).
+class StreamChunk {
+  const StreamChunk({this.text = '', this.reasoning = ''});
+  final String text;
+  final String reasoning;
 }
