@@ -225,3 +225,14 @@ interval. Deterministic, ~40 lines, unit-tested.
 (+ tooltip counts) with the `html` package — the same real-fetch honesty as
 link verification. Offline it falls back to the Hive cache or a clear
 empty state.
+
+**42. Why a custom drawer instead of `Drawer`/`NavigationDrawer`?**
+Material's Drawer is opaque and can't finger-track the content layer or
+round its corners. Ours is a 2-layer Stack + AnimationController — ~120
+lines, fully explainable, matches the ChatGPT app's drag/scale/scrim feel.
+
+**43. Why does Home allow full-width swipe but other pages only the edge?**
+Schedule's PageView and the Ask chips own horizontal gestures on those
+screens. Restricting them to a 24dp edge zone keeps both working; Home has
+no horizontal scroll so anywhere swipes. One gesture recognizer per mode —
+no arena fights.

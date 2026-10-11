@@ -10,3 +10,6 @@
 - Tasks tab "stories" avatars list groups with ≥1 task only (an empty group
   has no avatar — intentional, matches the badge count).
 - Focus feed flattens group sections (grouping applies to List mode).
+- Sidebar "Recent" shows last 8 tasks by creation order (no manual pin).
+- Ask-mode send hands text to the Ask composer via askSeedProvider —
+  attachments picked in the + sheet only carry into Create Task.

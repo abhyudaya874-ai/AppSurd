@@ -121,3 +121,18 @@ No keys? ─► labelled "[demo verdict]" heuristic over the REAL fetches.
   via `completedAt`, GitHub mode via `fetchContributionCalendar` + 6h cache),
   `profile_screen.dart` (edit sheet, stats, export JSON, ~60-day demo seed,
   reset). Settings + Arena are pushed routes (Arena also in Ask's app bar).
+
+## Phase 6 rev2 — sidebar navigation (final shell)
+- Bottom tab bar removed entirely. `app_shell.dart` is a Stack: `AppDrawer`
+  layer under a content layer that slides right `drawerW*t`, rounds left
+  corners (28dp), and dims under a tap-to-close scrim. Finger-tracked 1:1;
+  release settles via `SpringSimulation(AppMotion.spring)` on
+  velocity+position. Home: full-width right-swipe opens; elsewhere a 24dp
+  left-edge zone only. `PopScope` makes back close the drawer first.
+- `app_drawer.dart` — ChatGPT-style: search (live-filters recents, submit →
+  Tasks via `tasksSearchProvider`), nav rows, last-8 recents w/ status dots,
+  footer profile+integrity+gear. `navIndexProvider` + `IndexedStack`.
+- Home = Perplexity layout: avatar / Task·Ask segment pill / integrity button;
+  centred mark + tagline + fading suggestions; bottom-pinned composer
+  (+ sheet, ModelPill, group, mic, white round send: waveform→arrow).
+  Ask mode seeds `askSeedProvider` into the Ask composer.
