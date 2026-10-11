@@ -274,6 +274,7 @@ class _AppShellState extends ConsumerState<AppShell>
                             ignoring: t == 0,
                             child: GestureDetector(
                               onTap: _close,
+                              onHorizontalDragStart: _dragStart,
                               onHorizontalDragUpdate: (d) => _dragUpdate(d, w),
                               onHorizontalDragEnd: _dragEnd,
                               child: Container(
