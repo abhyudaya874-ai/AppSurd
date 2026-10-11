@@ -92,3 +92,32 @@ No keys? ─► labelled "[demo verdict]" heuristic over the REAL fetches.
 - Ask composer: Search ▾ + Agentic ▾ chips, eye-icon vision-routing swap.
 - Citation scrub: `[n]` beyond retrieved sources and model-written URLs are
   stripped — only our own records render as links.
+
+## Phase 6 — 5-tab shell overhaul (done)
+- `features/shell/app_shell.dart` — fixed 5-tab `Scaffold.bottomNavigationBar`
+  glass pill (Home · Tasks · Schedule · Ask · Profile). Equal `Expanded`
+  slots, Material icons always visible, blob position = width/5, bar slides
+  down when the keyboard opens. `shellTabProvider`/`highlightedTaskProvider`
+  let deep screens switch tabs / pulse a new row.
+- `features/home/home_screen.dart` — Perplexity-style input only (mark,
+  integrity chip, headline, composer, suggestion chips). Send pushes
+  `CreateTaskScreen` via a Hero text flight (15→28sp, transparent Material
+  shuttle) on a 420ms emphasized route.
+- `features/tasks/` — `create_task_screen.dart` (proof, group, due, priority,
+  duration), `task_view_options.dart` (persisted group-by/sort-by + pure
+  groupTasks/sortTasks), `tasks_tab_screen.dart` (collapsing stories-avatar
+  SliverPersistentHeader, two-stage view popover, search, status chips),
+  `focus_view.dart` (vertical PageView snap feed), `task_row.dart` (swipe
+  prove/delete + new-row pulse).
+- `features/schedule/` — `schedule_screen.dart` (24h shared scroll × 5-day
+  PageView columns, now-line, long-press drag with 15-min snap + cross-day
+  ghost, bottom-handle resize, edge auto-scroll, DragTarget tray chips,
+  long-press quick-create), `working_hours.dart` + `working_hours_editor.dart`
+  (per-day ranges, validated, shaded on grid), `auto_schedule.dart` (greedy
+  priority-ordered placement), `block_layout.dart` (overlap lanes).
+- `features/profile/` — `profile_data.dart` (local account in Hive),
+  `contribution_stats.dart` (streaks/total/best day), `contribution_heatmap.dart`
+  (53×7 single-painter grid, diagonal stagger, tap → day card; Receipts mode
+  via `completedAt`, GitHub mode via `fetchContributionCalendar` + 6h cache),
+  `profile_screen.dart` (edit sheet, stats, export JSON, ~60-day demo seed,
+  reset). Settings + Arena are pushed routes (Arena also in Ask's app bar).

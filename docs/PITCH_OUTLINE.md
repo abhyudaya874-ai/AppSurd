@@ -49,3 +49,15 @@ whole pitch."
 - *What if the model is wrong?* Code-level floor: confidence, dead links, and
   source cross-checks are enforced in Dart, not in the prompt.
 - *Offline?* Roasts from a local bank; verification labels itself demo-mode.
+
+## Updated demo flow (post-overhaul)
+1. **Home**: type a task, hit send — the text physically flies into Create
+   Task. Set due date + priority + duration, save → lands highlighted in Tasks.
+2. **Tasks**: open the group-by/sort-by popover (persists), scroll to collapse
+   the stories avatars into the title cluster, switch to Focus for the
+   reels-style snap feed, swipe right to Prove it.
+3. **Schedule**: show working-hours shading, drag a block across days, resize
+   via the bottom handle, drop an unscheduled chip onto a slot, hit Auto.
+4. **Profile**: streak + integrity stats, Receipts heatmap (tap a day), flip
+   to GitHub mode for the real scraped graph, Load demo data for judges.
+5. **Ask**: research a question with sources; Arena entry sits top-right.

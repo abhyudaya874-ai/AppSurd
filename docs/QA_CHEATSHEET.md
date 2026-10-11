@@ -181,3 +181,47 @@ Uploaded only when the Groq engine is selected — and the UI says so.
 DNF card with a short reason — the arena completes if ≥1 judge answers,
 with a note when fewer than 2 did. Retry only when ALL judges fail. Vision
 judges skip screenshots as "Can't see images" — an absence, not a failure.
+
+## 5-tab shell & schedule (phase 6)
+
+**35. Why is the tab bar a `bottomNavigationBar` and not a FAB?**
+The FAB slot (`centerFloat`) hands the bar loose, centered constraints and
+draws it inside Scaffold's FAB machinery — that's what clipped content and
+mis-measured the blob. `bottomNavigationBar` + `extendBody` gives a fixed
+full-width pill with real safe-area math, and `IndexedStack` keeps tab state.
+
+**36. How does the composer text fly into Create Task?**
+Both fields share `Hero(tag: 'composer-text')`. The `flightShuttleBuilder`
+returns a transparent `Material` + lerped `Text` (15→28sp), so no caret or
+field chrome flashes mid-flight. Focus is requested only when the route
+animation completes, so the keyboard can't jank the shared element.
+
+**37. How does drag-and-drop scheduling work?**
+Long-press wins the gesture arena over the PageView's horizontal pan. The
+finger's global position is converted through the grid's `RenderBox`:
+Y + scroll offset → minutes (snapped to 15), X + page offset → day column.
+A `ValueNotifier` drives a ghost block on the target column; on release,
+`updateTask` persists `scheduledStart`. The bottom 14dp strip is a separate
+vertical-drag handle that snaps `durationMin` to 15-minute steps.
+
+**38. Why manual dragging instead of `Draggable`/`DragTarget` for blocks?**
+Blocks need a bottom resize handle and a cross-day ghost at 60fps; manual
+`onLongPressMoveUpdate` gives us both without fighting gesture disambiguation.
+`Draggable`/`DragTarget` is still used for the simpler tray chips.
+
+**39. How does auto-schedule place tasks?**
+Pure function: sort open unscheduled tasks by priority → due date → created,
+then for each, scan days (today→+14) × working ranges in 15-minute steps and
+take the first slot that fits inside one range without overlapping a busy
+interval. Deterministic, ~40 lines, unit-tested.
+
+**40. Where do group-by/sort-by choices persist?**
+`receipts_settings` Hive box under `taskView`; same box holds `workingHours`,
+`profile`, the groups list, and the 6-hour GitHub contributions cache.
+
+**41. How is the GitHub heatmap not a fake?**
+`GitHubClient.fetchContributionCalendar` GETs the public
+`github.com/users/<name>/contributions` page and parses `data-date`/`data-level`
+(+ tooltip counts) with the `html` package — the same real-fetch honesty as
+link verification. Offline it falls back to the Hive cache or a clear
+empty state.

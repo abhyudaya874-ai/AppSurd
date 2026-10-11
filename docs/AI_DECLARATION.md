@@ -27,3 +27,15 @@ Whisper are labelled fallbacks; roast read-aloud uses flutter_tts.
 
 All code was written fresh for this event; nothing was copied from other
 projects.
+
+## Addendum — final build session (phase 6)
+
+The last phase (5-tab shell, schedule grid, profile heatmap) was implemented
+in a single session under the ~72-minute feature freeze. The AI followed the
+same rules as earlier phases: token-driven styling, hand-written JSON,
+Riverpod notifiers, and unit tests for every pure function the UI depends on
+(view options, block layout, auto-scheduler, streak math). Two defects were
+caught by the new tests before submission (a `Positioned` nested inside
+`IgnorePointer`, and an avatar-row overflow) and fixed at the root. Where a
+spec item exceeded the timebox (e.g. header 1/3/5-day toggle), the smaller
+honest version shipped rather than a broken large one.

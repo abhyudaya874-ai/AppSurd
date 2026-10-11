@@ -79,3 +79,15 @@ Found: ProviderTints extension null in tests — safe ?? fallback.
   backoff) wraps every call; request counter in Settings.
 - Brand logos bundled (lobe-icons SVGs, SOURCES.md); BrandResolver +
   BrandIcon w/ provider badge + monogram fallback; 15-id test.
+
+## Phase 6 — 5-tab overhaul + schedule + profile
+- Drafted: shell rebuild (bottomNavigationBar pill, IndexedStack, tab-state
+  providers), Home/Create split with Hero text flight, Tasks group/sort
+  popover + collapsing stories header + Focus feed, schedule grid with drag/
+  resize/tray/working-hours/auto-schedule, profile account + heatmap + stats.
+- Adapted: replaced `StateProvider` (removed in Riverpod 3) with small
+  Notifiers; moved group picker into a shared sheet that actually persists
+  new groups (the old inline version created un-persisted groups).
+- Verified: `flutter analyze` 0 errors/warnings; `flutter test` 42/42
+  including new unit tests for sort/group, auto-schedule, working-hours
+  validation, contribution stats, and a 5-tab widget test.
