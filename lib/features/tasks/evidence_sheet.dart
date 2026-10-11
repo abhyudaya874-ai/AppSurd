@@ -9,6 +9,9 @@ import 'package:uuid/uuid.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/widgets/pressable.dart';
+import '../arena/arena_screen.dart';
+import '../arena/arena_state.dart';
+import '../model_picker/model_selection.dart';
 import '../verification/verification_screen.dart';
 import 'task_model.dart';
 import 'tasks_provider.dart';
@@ -109,10 +112,24 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
         .addAttempt(widget.task.id, attempt);
     if (!mounted) return;
     Navigator.of(context).pop();
-    await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => VerificationScreen(
-          taskId: widget.task.id, attemptId: attempt.id),
-    ));
+    // Arena mode with a valid lineup goes to the jury; else single verifier.
+    final arenaOn = ref.read(arenaReadyProvider);
+    if (arenaOn) {
+      final sel = ref.read(modelSelectionProvider);
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ArenaScreen(
+          taskId: widget.task.id,
+          attemptId: attempt.id,
+          lineup: ref.read(arenaLineupProvider),
+          strictness: sel.strictness,
+        ),
+      ));
+    } else {
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => VerificationScreen(
+            taskId: widget.task.id, attemptId: attempt.id),
+      ));
+    }
   }
 
   @override

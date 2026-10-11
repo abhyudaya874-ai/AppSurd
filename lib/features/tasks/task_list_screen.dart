@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/motion.dart';
@@ -6,6 +7,10 @@ import '../../core/theme/spacing.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/utils/transitions.dart';
 import '../../core/widgets/fade_slide_in.dart';
+import '../../core/widgets/pressable.dart';
+import '../arena/arena_state.dart';
+import '../model_picker/model_pill.dart';
+import '../model_picker/model_selection.dart';
 import '../settings/settings_screen.dart';
 import '../playground/playground_screen.dart';
 import 'add_task_sheet.dart';
@@ -44,15 +49,28 @@ class TaskListScreen extends ConsumerWidget {
         ],
       ),
       body: ConstrainedContent(
-        child: tasksAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Text('Could not load tasks.',
-                style: theme.textTheme.bodyMedium),
+        child: Column(children: [
+          // "Choose your judge" — the pill + Arena toggle live here.
+          const Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            child: Row(children: [
+              Flexible(child: ModelPill()),
+              SizedBox(width: AppSpacing.xs),
+              _ArenaToggle(),
+            ]),
           ),
-          data: (tasks) => tasks.isEmpty
-              ? const _EmptyState()
-              : ListView.builder(
+          Expanded(
+            child: tasksAsync.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text('Could not load tasks.',
+                    style: theme.textTheme.bodyMedium),
+              ),
+              data: (tasks) => tasks.isEmpty
+                  ? const _EmptyState()
+                  : ListView.builder(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   itemCount: tasks.length,
                   itemBuilder: (context, i) {
@@ -102,7 +120,9 @@ class TaskListScreen extends ConsumerWidget {
                     );
                   },
                 ),
-        ),
+            ),
+          ),
+        ]),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => AddTaskSheet.show(context),
@@ -164,6 +184,58 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Arena on/off — sits beside the pill on the task list.
+class _ArenaToggle extends ConsumerWidget {
+  const _ArenaToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final on = ref.watch(
+        modelSelectionProvider.select((s) => s.arenaMode));
+    return Pressable(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        final n = ref.read(modelSelectionProvider.notifier);
+        n.setArenaMode(!on);
+        // First enable with no picks → seed a diverse default jury.
+        if (!on && ref.read(modelSelectionProvider).arenaLineup.length < 2) {
+          for (final id in defaultLineup()) {
+            n.toggleArenaModel(id);
+          }
+        }
+      },
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: on
+              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+              : theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.7),
+          border: Border.all(
+            color: on
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline.withValues(alpha: 0.6),
+          ),
+        ),
+        child: Tooltip(
+          message: on ? 'Arena on — jury of models' : 'Arena off',
+          child: Icon(
+            Icons.groups_outlined,
+            size: 19,
+            color: on
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

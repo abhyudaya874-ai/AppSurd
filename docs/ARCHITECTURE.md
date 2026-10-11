@@ -49,3 +49,10 @@ No keys? ─► labelled "[demo verdict]" heuristic over the REAL fetches.
 - Motion tokens in `core/theme/motion.dart`; accessibility reduced-motion
   collapses all durations to zero.
 - No code generation anywhere; models are hand-written immutable classes.
+
+## Phase 5a — Arena mode (done)
+- `features/arena/` — jury of 2–4 models judging the same evidence.
+- Shared prep: `evidence_prep.dart` (fetch once, all judges see identical sources).
+- Aggregation is pure code: confidence-weighted vote, ties→strict, strictness
+  floor on pass, strictest judge supplies roast+challenge.
+- UI: jury bar + paged judge cards + dissent tags + animated consensus meter.

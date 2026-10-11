@@ -44,3 +44,8 @@ moved every check to didChangeDependencies.
 Found: google_fonts runtime fetch failed on device network — bundled Inter +
 Space Grotesk TTFs under assets/fonts and disabled runtime fetching.
 Found: ProviderTints extension null in tests — safe ?? fallback.
+
+## Phase 5a additions
+- Arena mode: parallel OpenAI-compat calls per judge (max 600 tokens, 30s),
+  aggregation computed in Dart — verdict math is never delegated to a model.
+- Strictness slider adds one prompt line per detent; thresholds live in code.

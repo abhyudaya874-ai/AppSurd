@@ -6,6 +6,7 @@ import '../../core/ai/model_catalog.dart';
 import '../../core/ai/model_router.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
+import '../arena/arena_panel.dart';
 import 'custom_panel.dart';
 import 'model_selection.dart';
 import 'resolved_model.dart';
@@ -110,7 +111,9 @@ class _PickerCardState extends ConsumerState<PickerCard> {
                     key: const ValueKey('custom'),
                     onBack: () => setState(() => _customOpen = false),
                   )
-                : _SliderBody(
+                : selection.arenaMode
+                    ? const ArenaPanel(key: ValueKey('arena'))
+                    : _SliderBody(
                     key: const ValueKey('slider'),
                     selection: selection,
                     shownTier: shownTier,
@@ -159,8 +162,8 @@ class _SliderBody extends StatelessWidget {
           child: StrengthSlider(
             value: shownTier.index.toDouble(),
             detentColors: [for (final v in tints) Color(v)],
-            onChanged: onDrag,
-            onChangeEnd: onCommit,
+            onChanged: (i) => onDrag(Tier.values[i]),
+            onChangeEnd: (i) => onCommit(Tier.values[i]),
           ),
         ),
         // Tier labels — active one brightens.

@@ -1,9 +1,6 @@
 // READ THIS FIRST — the pipeline: evidence in → real fetches (not the
 // model) → router.execute → defensive parse → streamed UI events. If a
 // judge asks how a source gets "Verified", point at _reclassify.
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +15,7 @@ import '../../core/net/link_verifier.dart';
 import '../accountability/roast_bank.dart';
 import '../model_picker/model_selection.dart';
 import '../tasks/task_model.dart';
+import 'evidence_prep.dart';
 import 'verdict_model.dart';
 
 /// Pipeline progress for the verification screen's animated step list.
@@ -114,50 +112,13 @@ class VerifierService {
 
     // ---------- Step 1: read the evidence ----------
     yield const StepEvent(VerifyStep.reading, VerifyStepState.started);
-    String evidenceText;
-    var needsVision = false;
-    String? imageB64;
-    final checks = <LinkCheck>[];
-    CommitInfo? commit;
-    var evidenceFetchFailed = false;
-
-    switch (attempt.type) {
-      case EvidenceType.url:
-        final uri = Uri.tryParse(attempt.payload);
-        if (uri == null) {
-          evidenceText = 'Invalid URL: ${attempt.payload}';
-          evidenceFetchFailed = true;
-          break;
-        }
-        final check = await LinkVerifier().verify(uri);
-        checks.add(check);
-        evidenceFetchFailed = !check.ok;
-        evidenceText = check.ok
-            ? 'Fetched page — title: ${check.title ?? 'none'}\n'
-                'description: ${check.description ?? 'none'}\n'
-                'content: ${check.textExtract.substring(0, check.textExtract.length > 8000 ? 8000 : check.textExtract.length)}'
-            : 'The URL could not be fetched (HTTP ${check.statusCode ?? 'error'}).';
-      case EvidenceType.commit:
-        commit = await GitHubClient().fetchCommit(attempt.payload);
-        evidenceFetchFailed = !commit.ok;
-        evidenceText = commit.ok
-            ? 'GitHub commit — message: ${commit.message}\n'
-                'files changed: ${commit.files.join(', ')}\n'
-                'patch:\n${commit.patch}'
-            : 'The commit could not be fetched (${commit.error}).';
-      case EvidenceType.screenshot:
-        needsVision = true;
-        try {
-          final bytes = await File(attempt.payload).readAsBytes();
-          imageB64 = base64Encode(bytes);
-          evidenceText = '[Screenshot attached — judge whether it shows the task done]';
-        } catch (_) {
-          evidenceText = 'Screenshot file could not be read.';
-          evidenceFetchFailed = true;
-        }
-      case EvidenceType.text:
-        evidenceText = attempt.payload;
-    }
+    final prep = await prepareEvidence(attempt);
+    final evidenceText = prep.evidenceText;
+    final needsVision = prep.needsVision;
+    final imageB64 = prep.imageB64;
+    final checks = prep.checks;
+    final commit = prep.commit;
+    final evidenceFetchFailed = prep.fetchFailed;
     yield const StepEvent(VerifyStep.reading, VerifyStepState.done);
 
     // ---------- Step 2: collect sources we fetched OURSELVES ----------

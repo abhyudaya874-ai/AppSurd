@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/ai/model_catalog.dart';
+
 import '../../core/theme/motion.dart';
 
 /// The signature strength slider: 4 detents (Swift → Deep), a thumb that
@@ -30,10 +30,10 @@ class StrengthSlider extends StatefulWidget {
 
   /// Fires whenever the continuous value crosses into a new detent while
   /// dragging — the pill label live-updates from this.
-  final ValueChanged<Tier> onChanged;
+  final ValueChanged<int> onChanged;
 
   /// Fires after the snap settles — where selection state is committed.
-  final ValueChanged<Tier>? onChangeEnd;
+  final ValueChanged<int>? onChangeEnd;
 
   @override
   State<StrengthSlider> createState() => _StrengthSliderState();
@@ -93,7 +93,7 @@ class _StrengthSliderState extends State<StrengthSlider>
     if (detent != _lastDetent) {
       _lastDetent = detent;
       HapticFeedback.selectionClick();
-      widget.onChanged(Tier.values[detent]);
+      widget.onChanged(detent);
     }
   }
 
@@ -105,7 +105,7 @@ class _StrengthSliderState extends State<StrengthSlider>
     Future.delayed(AppMotion.fast, () {
       if (mounted) setState(() => _stretch = 1);
     });
-    widget.onChangeEnd?.call(Tier.values[target.toInt()]);
+    widget.onChangeEnd?.call(target.toInt());
   }
 
   void _onTap(TapUpDetails d, double width) {
@@ -114,10 +114,10 @@ class _StrengthSliderState extends State<StrengthSlider>
     if (detent != _lastDetent) {
       _lastDetent = detent;
       HapticFeedback.selectionClick();
-      widget.onChanged(Tier.values[detent]);
+      widget.onChanged(detent);
     }
     _animateTo(detent.toDouble());
-    widget.onChangeEnd?.call(Tier.values[detent]);
+    widget.onChangeEnd?.call(detent);
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ai/model_catalog.dart';
 import '../../core/theme/extensions.dart';
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
@@ -73,6 +74,11 @@ class ModelPillState extends ConsumerState<ModelPill>
     final tint = model != null
         ? tints.forId(model.provider.id)
         : theme.colorScheme.onSurfaceVariant;
+    final arena = selection.arenaMode;
+    final lineupSpecs = [
+      for (final id in selection.arenaLineup)
+        ...kModelCatalog.where((m) => m.id == id),
+    ];
 
     return CompositedTransformTarget(
       link: _link,
@@ -98,13 +104,18 @@ class ModelPillState extends ConsumerState<ModelPill>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _ProviderGlyph(
-                    tint: tint,
-                    letter: model?.provider.label.substring(0, 1) ?? '?',
-                    locked: model == null,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  _StrengthDots(tierIndex: selection.preset.index, tint: tint),
+                  if (arena)
+                    _AvatarStack(models: lineupSpecs, tints: tints)
+                  else ...[
+                    _ProviderGlyph(
+                      tint: tint,
+                      letter: model?.provider.label.substring(0, 1) ?? '?',
+                      locked: model == null,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    _StrengthDots(
+                        tierIndex: selection.preset.index, tint: tint),
+                  ],
                   const SizedBox(width: AppSpacing.xs),
                   AnimatedSwitcher(
                     duration: AppMotion.fast,
@@ -119,14 +130,20 @@ class ModelPillState extends ConsumerState<ModelPill>
                       ),
                     ),
                     child: Text.rich(
-                      key: ValueKey('${model?.id}-${selection.preset.name}'),
+                      key: ValueKey(arena
+                          ? 'arena-${selection.arenaLineup.length}'
+                          : '${model?.id}-${selection.preset.name}'),
                       TextSpan(children: [
                         TextSpan(
-                          text: model?.displayName ?? 'No model',
+                          text: arena
+                              ? 'Arena · ${lineupSpecs.length} models'
+                              : (model?.displayName ?? 'No model'),
                           style: theme.textTheme.labelLarge,
                         ),
                         TextSpan(
-                          text: '  ${selection.preset.label}',
+                          text: arena
+                              ? '  ${selection.strictness.name}'
+                              : '  ${selection.preset.label}',
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -223,6 +240,54 @@ class _StrengthDots extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Overlapping provider glyphs — the arena lineup at a glance. Springs when
+/// the lineup count changes (AnimatedSize parent does the resize).
+class _AvatarStack extends StatelessWidget {
+  const _AvatarStack({required this.models, required this.tints});
+  final List<ModelSpec> models;
+  final ProviderTints tints;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 20.0, overlap = 7.0;
+    final n = models.length;
+    return SizedBox(
+      width: size + (n > 0 ? (n - 1) * (size - overlap) : 0),
+      height: size,
+      child: Stack(children: [
+        for (var i = 0; i < n; i++)
+          Positioned(
+            left: i * (size - overlap),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: tints
+                    .forId(models[i].provider.id)
+                    .withValues(alpha: 0.25),
+                border: Border.all(
+                    color: tints.forId(models[i].provider.id), width: 1.2),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                models[i].provider.label.substring(0, 1),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: tints.forId(models[i].provider.id),
+                ),
+              ),
+            ),
+          ),
+        if (n == 0)
+          Icon(Icons.groups_outlined,
+              size: size, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ]),
     );
   }
 }
