@@ -8,6 +8,7 @@ import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import '../arena/arena_panel.dart';
 import '../settings/settings_screen.dart';
+import 'model_picker_overlay.dart';
 import 'custom_panel.dart';
 import 'model_selection.dart';
 import 'resolved_model.dart';
@@ -78,11 +79,16 @@ class _PickerCardState extends ConsumerState<PickerCard> {
                       ),
                       if (shownModel == null)
                         InkWell(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const SettingsScreen(),
-                            ),
-                          ),
+                          onTap: () {
+                            // Close the picker first — it floats above the
+                            // Navigator, so Settings would push behind it.
+                            PickerScope.of(context)?.dismiss();
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const SettingsScreen(),
+                              ),
+                            );
+                          },
                           child: Text(
                             'Add a key in Settings →',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -173,78 +179,83 @@ class _SliderBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        const SizedBox(height: AppSpacing.sm),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: StrengthSlider(
-            value: shownTier.index.toDouble(),
-            detentColors: [for (final v in tints) Color(v)],
-            onChanged: (i) => onDrag(Tier.values[i]),
-            onChangeEnd: (i) => onCommit(Tier.values[i]),
-          ),
-        ),
-        // Tier labels — active one brightens.
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (final t in Tier.values)
-                AnimatedDefaultTextStyle(
-                  duration: AppMotion.fast,
-                  style:
-                      (t == shownTier
-                              ? theme.textTheme.labelLarge
-                              : theme.textTheme.labelSmall)!
-                          .copyWith(
-                            color: t == shownTier
-                                ? Color(tints[t.index])
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                  child: Text(t.label),
-                ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        const Divider(height: 1),
-        InkWell(
-          onTap: onOpenCustom,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
+    // Scrollable so the card's 60%-viewport clamp never clips content.
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: StrengthSlider(
+              value: shownTier.index.toDouble(),
+              detentColors: [for (final v in tints) Color(v)],
+              onChanged: (i) => onDrag(Tier.values[i]),
+              onChangeEnd: (i) => onCommit(Tier.values[i]),
             ),
+          ),
+          // Tier labels — active one brightens.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.tune_rounded,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Text('Custom', style: theme.textTheme.titleSmall),
-                if (selection.customModelId != null) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    '· custom model active',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
+                for (final t in Tier.values)
+                  AnimatedDefaultTextStyle(
+                    duration: AppMotion.fast,
+                    style:
+                        (t == shownTier
+                                ? theme.textTheme.labelLarge
+                                : theme.textTheme.labelSmall)!
+                            .copyWith(
+                              color: t == shownTier
+                                  ? Color(tints[t.index])
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                    child: Text(t.label),
                   ),
-                ],
-                const Spacer(),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
               ],
             ),
           ),
-        ),
-      ],
+          // No Spacer here — the Column is inside a SingleChildScrollView
+          // (unbounded height), so it would throw at runtime.
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(height: 1),
+          InkWell(
+            onTap: onOpenCustom,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text('Custom', style: theme.textTheme.titleSmall),
+                  if (selection.customModelId != null) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      '· custom model active',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

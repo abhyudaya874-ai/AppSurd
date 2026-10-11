@@ -358,9 +358,7 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
                           for (final g in storyGroups)
                             _GroupAvatar(
                               label: g.name,
-                              count: g.id == ''
-                                  ? all.where((t) => _isInbox(t, groups)).length
-                                  : all.where((t) => t.groupId == g.id).length,
+                              count: all.where((t) => t.groupId == g.id).length,
                               color: g.color,
                               selected: _groupFilter == g.id,
                               onTap: () => _pickGroupFilter(g.id),
@@ -378,17 +376,13 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
     );
   }
 
-  /// Groups that have ≥1 task, plus a synthetic Inbox entry when ungrouped
-  /// tasks exist.
+  /// Groups that have ≥1 task — just the real groups; no synthetic Inbox
+  /// avatar (users read "All" as the unfiltered state).
   List<Group> _storyGroups(List<Group> groups, List<Task> all) {
-    final list = <Group>[
+    return [
       for (final g in groups)
         if (all.any((t) => t.groupId == g.id)) g,
     ];
-    if (all.any((t) => _isInbox(t, groups))) {
-      list.add(const Group(id: '', name: 'Inbox', color: Color(0xFF8B9097)));
-    }
-    return list;
   }
 
   bool _isInbox(Task t, List<Group> groups) =>
@@ -482,17 +476,6 @@ class _TasksTabScreenState extends ConsumerState<TasksTabScreen> {
         scrollDirection: Axis.horizontal,
         children: [
           const SizedBox(width: AppSpacing.md),
-          Padding(
-            padding: const EdgeInsets.only(right: 6, top: 8),
-            child: AnimatedAppIcon(
-              type: AppIconType.filter,
-              active: _statusFilter != null || _groupFilter != null,
-              size: 18,
-              color: _statusFilter != null || _groupFilter != null
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
           for (final (v, label) in opts)
             Padding(
               padding: const EdgeInsets.only(right: 6, top: 8),

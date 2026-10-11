@@ -9,6 +9,21 @@ import 'picker_card.dart';
 /// a scrim barrier (tap-outside dismiss) plus a card anchored to the pill's
 /// screen rect, growing from pill size to full size (the shared-element morph)
 /// and clamped so it can never run off-screen — keyboard included.
+/// Lets descendants inside the picker card dismiss the whole overlay —
+/// e.g. "Add a key in Settings" must close the picker, otherwise it stays
+/// floating above the pushed Settings page.
+class PickerScope extends InheritedWidget {
+  const PickerScope({super.key, required this.dismiss, required super.child});
+
+  final VoidCallback dismiss;
+
+  static PickerScope? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PickerScope>();
+
+  @override
+  bool updateShouldNotify(PickerScope old) => dismiss != old.dismiss;
+}
+
 class ModelPickerOverlay extends StatefulWidget {
   const ModelPickerOverlay({
     super.key,
@@ -139,7 +154,10 @@ class _ModelPickerOverlayState extends State<ModelPickerOverlay> {
                     setState(() => _dragOffset = 0);
                   }
                 },
-                child: const PickerCard(),
+                child: PickerScope(
+                  dismiss: widget.onDismiss,
+                  child: const PickerCard(),
+                ),
               ),
             ),
           ),

@@ -216,8 +216,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                     tooltip: 'Back without saving',
                     onPressed: () => Navigator.of(context).pop(false),
                   ),
-                  const Spacer(),
-                  FilledButton(onPressed: _save, child: const Text('Save')),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),

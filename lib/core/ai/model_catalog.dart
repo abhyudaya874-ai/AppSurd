@@ -251,7 +251,13 @@ class CatalogNotifier extends AsyncNotifier<List<ModelSpec>> {
     final cached = <String, dynamic>{};
     for (final provider in AiProvider.values) {
       final key = keys[provider];
-      if (key == null || key.isEmpty) continue;
+      // No key → we can't fetch /models, but still show the provider's
+      // free seed models as locked rows so users can see what exists and
+      // tap through to Settings.
+      if (key == null || key.isEmpty) {
+        all.addAll(kModelCatalog.where((m) => m.provider == provider));
+        continue;
+      }
       try {
         final dio = Dio(
           BaseOptions(

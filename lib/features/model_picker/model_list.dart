@@ -13,6 +13,7 @@ import '../../core/widgets/drawn_check.dart';
 import '../../core/widgets/pressable.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../settings/settings_screen.dart';
+import 'model_picker_overlay.dart';
 import 'model_selection.dart';
 
 /// Last 3 model picks — persisted, shown at the top of the list.
@@ -205,9 +206,13 @@ class _ModelListPanelState extends ConsumerState<ModelListPanel> {
   }) {
     return InkWell(
       onTap: locked
-          ? () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-            )
+          ? () {
+              // Close the picker first — it floats above the Navigator.
+              PickerScope.of(context)?.dismiss();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+              );
+            }
           : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -275,9 +280,15 @@ class _Row extends ConsumerWidget {
                 ref.read(modelSelectionProvider.notifier).setCustomModel(m.id);
                 ref.read(_recentProvider.notifier).push(m.id);
               }
-            : () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-              ),
+            : () {
+                // Close the picker first — it floats above the Navigator.
+                PickerScope.of(context)?.dismiss();
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                );
+              },
         child: AnimatedContainer(
           duration: AppMotion.fast,
           margin: const EdgeInsets.symmetric(
