@@ -41,6 +41,17 @@ class SourcesEvent extends VerificationEvent {
   final List<SourceInfo> sources;
 }
 
+/// Real reasoning tokens from the judging model — emitted once the call
+/// completes (the router's `execute` can't yield mid-callback, so the
+/// screen gets the full trace in one shot and reveals it). Only models
+/// that actually emit reasoning tokens produce this — never fake text.
+class ThinkingEvent extends VerificationEvent {
+  const ThinkingEvent(this.text, this.modelName, this.ms);
+  final String text;
+  final String modelName;
+  final int ms;
+}
+
 /// Done — carries the verdict plus routing info for the chips.
 class VerdictReadyEvent extends VerificationEvent {
   const VerdictReadyEvent({
@@ -49,12 +60,17 @@ class VerdictReadyEvent extends VerificationEvent {
     this.reroutedFrom,
     this.visionSwappedTo,
     required this.roastIsFallback,
+    this.reasoning,
   });
 
   final Verdict verdict;
   final ModelSpec? usedBy;
   final AiProvider? reroutedFrom;
   final ModelSpec? visionSwappedTo;
+
+  /// Model reasoning captured alongside the verdict — persisted into the
+  /// attempt's verdictJson so detail views can show "how it decided".
+  final String? reasoning;
 
   /// True when the roast came from the local bank (model failed / offline).
   final bool roastIsFallback;
@@ -146,6 +162,7 @@ class VerifierService {
 
     Verdict verdict;
     ModelSpec? usedBy;
+    String? reasoningText; // real model reasoning, persisted with the attempt
     AiProvider? reroutedFrom;
     ModelSpec? visionSwap;
     var roastFallback = false;
@@ -209,15 +226,22 @@ class VerifierService {
                 'image_url': {'url': 'data:image/jpeg;base64,$imageB64'},
               },
           ];
-          final outcome = await const ModelRouter().execute<String>(
-            plan,
-            (client, spec) => client.complete(
+          // Streamed call: reasoning deltas go to the Thinking card, answer
+          // text accumulates into the same JSON contract complete() used.
+          final answerBuf = StringBuffer();
+          final thinkBuf = StringBuffer();
+          final thinkSw = Stopwatch()..start();
+          final outcome = await const ModelRouter().execute<String>(plan, (
+            client,
+            spec,
+          ) async {
+            // A fallback retry restarts the trace — only the winning
+            // candidate's reasoning is shown.
+            answerBuf.clear();
+            thinkBuf.clear();
+            await for (final chunk in client.streamRich(
               model: spec.id,
-              jsonMode: true,
               maxTokens: 900,
-              reasoningEffort: spec.supportsReasoning
-                  ? sel.reasoning.name
-                  : null,
               messages: [
                 const ChatMessage(role: 'system', content: verifierSystem),
                 ChatMessage(
@@ -227,9 +251,21 @@ class VerifierService {
                       : userContent,
                 ),
               ],
-            ),
-            keys,
-          );
+            )) {
+              thinkBuf.write(chunk.reasoning);
+              answerBuf.write(chunk.text);
+            }
+            return answerBuf.toString();
+          }, keys);
+          thinkSw.stop();
+          reasoningText = thinkBuf.isNotEmpty ? thinkBuf.toString() : null;
+          if (reasoningText != null) {
+            yield ThinkingEvent(
+              reasoningText,
+              outcome.used.displayName,
+              thinkSw.elapsedMilliseconds,
+            );
+          }
           usedBy = outcome.used;
           reroutedFrom = outcome.reroutedFrom;
           verdict = Verdict.parse(outcome.value);
@@ -281,6 +317,7 @@ class VerifierService {
       reroutedFrom: reroutedFrom,
       visionSwappedTo: visionSwap,
       roastIsFallback: roastFallback,
+      reasoning: reasoningText,
     );
   }
 

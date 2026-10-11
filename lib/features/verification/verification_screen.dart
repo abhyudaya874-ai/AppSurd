@@ -42,6 +42,11 @@ class VerificationScreen extends ConsumerStatefulWidget {
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   // ---- pipeline state ----
   final _stepStates = <VerifyStep, VerifyStepState>{};
+  final _thinking = StringBuffer();
+  String? _thinkingModel;
+  int? _thinkingMs;
+  bool _thinkingDone = false;
+  bool _thinkingExpanded = true;
   List<SourceInfo> _sources = const [];
   Verdict? _verdict;
   String? _usedByLabel;
@@ -84,6 +89,13 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       switch (event) {
         case StepEvent():
           setState(() => _stepStates[event.step] = event.state);
+        case ThinkingEvent():
+          setState(() {
+            _thinking.write(event.text);
+            _thinkingModel = event.modelName;
+            _thinkingMs = event.ms;
+            _thinkingDone = true;
+          });
         case SourcesEvent():
           setState(() => _sources = event.sources);
         case VerdictReadyEvent():
@@ -123,7 +135,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         .read(tasksProvider.notifier)
         .attachVerdict(
           widget.taskId,
-          e.verdict.toJson(),
+          {
+            ...e.verdict.toJson(),
+            if (e.reasoning != null) 'reasoning': e.reasoning,
+          },
           status: status,
           integrityDelta: delta,
         );
@@ -161,6 +176,19 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 children: [
+                  _ThinkingCard(
+                    text: _thinking.toString(),
+                    model: _thinkingModel,
+                    ms: _thinkingMs,
+                    done: _thinkingDone,
+                    started:
+                        _stepStates[VerifyStep.crossChecking] ==
+                        VerifyStepState.started,
+                    expanded: _thinkingExpanded,
+                    onToggle: () =>
+                        setState(() => _thinkingExpanded = !_thinkingExpanded),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   _StepList(states: _stepStates),
                   const SizedBox(height: AppSpacing.md),
                   if (_sources.isNotEmpty) ...[
@@ -827,4 +855,123 @@ class _RingPulsePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPulsePainter old) => old.t != t;
+}
+
+/// The live "Reasoning" card — shows REAL model thinking text, never
+/// fabricated. Streams while the judge reasons; once the verdict lands it
+/// collapses to "Thought for Ns ›" (tap to expand again). A model that
+/// emits no reasoning tokens shows an honest placeholder instead.
+class _ThinkingCard extends StatelessWidget {
+  const _ThinkingCard({
+    required this.text,
+    required this.model,
+    required this.ms,
+    required this.done,
+    required this.started,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final String text;
+  final String? model;
+  final int? ms;
+  final bool done;
+  final bool started;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Nothing to show before the model phase and nothing after if the
+    // model emitted no reasoning — no fake thoughts.
+    if (text.isEmpty && (done || !started)) {
+      return const SizedBox.shrink();
+    }
+    final seconds = ms != null ? (ms! / 1000).toStringAsFixed(1) : null;
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.psychology_alt_outlined,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      done
+                          ? 'Thought for ${seconds ?? '—'}s'
+                          : (text.isEmpty
+                                ? 'Waiting for the model\'s reasoning…'
+                                : 'Reasoning'),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!done && text.isEmpty)
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (model != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+              child: Text(
+                'Reasoning · $model',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          if (expanded && text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 150),
+                child: SingleChildScrollView(
+                  child: Text(
+                    text,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      fontStyle: FontStyle.italic,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
