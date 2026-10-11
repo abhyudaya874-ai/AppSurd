@@ -1,9 +1,5 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/motion.dart';
@@ -14,6 +10,7 @@ import '../arena/arena_state.dart';
 import '../model_picker/model_selection.dart';
 import '../verification/verification_screen.dart';
 import '../voice/voice_overlay.dart';
+import '../research/attachment_bar.dart';
 import 'task_model.dart';
 import 'tasks_provider.dart';
 
@@ -43,7 +40,7 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
   final _urlCtrl = TextEditingController();
   final _textCtrl = TextEditingController();
   final _commitCtrl = TextEditingController();
-  XFile? _image;
+  final List<Attachment> _attachments = [];
   String? _error;
   bool _submitting = false;
 
@@ -64,7 +61,7 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
         }
         return null;
       case EvidenceType.screenshot:
-        return _image == null ? 'Pick a screenshot first' : null;
+        return _attachments.isEmpty ? 'Attach a screenshot first' : null;
       case EvidenceType.text:
         return _textCtrl.text.trim().length < 20
             ? 'Tell the story properly — at least 20 characters'
@@ -79,17 +76,6 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
     }
   }
 
-  Future<void> _pickImage() async {
-    // Downscale to ≤1280px at capture — smaller base64, faster upload.
-    final img = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1280,
-      maxHeight: 1280,
-      imageQuality: 85,
-    );
-    if (img != null) setState(() => _image = img);
-  }
-
   Future<void> _submit() async {
     final err = _validate();
     setState(() => _error = err);
@@ -98,7 +84,7 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
 
     final payload = switch (_type) {
       EvidenceType.url => _urlCtrl.text.trim(),
-      EvidenceType.screenshot => _image!.path,
+      EvidenceType.screenshot => _attachments.first.file.path,
       EvidenceType.text => _textCtrl.text.trim(),
       EvidenceType.commit => _commitCtrl.text.trim(),
     };
@@ -172,8 +158,9 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
               duration: AppMotion.fast,
               child: switch (_type) {
                 EvidenceType.url => _UrlInput(key: const ValueKey('u'), ctrl: _urlCtrl),
-                EvidenceType.screenshot =>
-                  _ShotInput(key: const ValueKey('s'), image: _image, onPick: _pickImage),
+                EvidenceType.screenshot => _ShotInput(
+                    key: const ValueKey('s'),
+                    attachments: _attachments),
                 EvidenceType.text =>
                   _TextInput(key: const ValueKey('t'), ctrl: _textCtrl),
                 EvidenceType.commit =>
@@ -298,32 +285,13 @@ class _UrlInput extends StatelessWidget {
       );
 }
 
+/// Up to 4 screenshots — shared AttachmentBar (thumbnails + × + preview).
 class _ShotInput extends StatelessWidget {
-  const _ShotInput(
-      {super.key, required this.image, required this.onPick});
-  final XFile? image;
-  final VoidCallback onPick;
+  const _ShotInput({super.key, required this.attachments});
+  final List<Attachment> attachments;
   @override
-  Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      OutlinedButton.icon(
-        onPressed: onPick,
-        icon: const Icon(Icons.add_photo_alternate_outlined),
-        label: Text(image == null ? 'Pick screenshot' : 'Change screenshot'),
-      ),
-      if (image != null)
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.sm),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: kIsWeb
-                ? Image.network(image!.path, height: 140, fit: BoxFit.cover)
-                : Image.file(File(image!.path),
-                    height: 140, fit: BoxFit.cover),
-          ),
-        ),
-    ]);
-  }
+  Widget build(BuildContext context) =>
+      AttachmentBar(attachments: attachments);
 }
 
 class _TextInput extends StatelessWidget {

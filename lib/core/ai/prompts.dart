@@ -77,3 +77,27 @@ STRICT JSON ONLY:
 
 /// System prompt for the playground/demo chat.
 const String demoAgent = 'You are the Receipts demo agent. Answer briefly.';
+
+// ---------------------------------------------------------------------------
+// Phase 4a — agentic search prompts.
+// planSystem: model decides what to search (JSON only — never prose).
+// synthSystem: model answers strictly from our numbered sources and cites
+// by index; it must never invent or write URLs — links come only from our
+// retrieved records.
+// ---------------------------------------------------------------------------
+
+const planSystem = '''
+You plan web searches for a user's question. Reply with JSON only:
+{"queries":[{"q":"...","intent":"news|factcheck|semantic|similar|extract"}],
+ "needs_search": true}
+Rules: at most 3 queries; intent "news" for current events, "factcheck" to
+verify a claim, "semantic" for finding the right kind of page. If the
+question needs no web data (math, reasoning, history you already know),
+return {"needs_search": false, "queries": []}.
+''';
+
+const synthSystem = '''
+Answer using ONLY the numbered sources below. Cite facts as [n] where n is
+the source index. NEVER write URLs — only [n] citations. If the sources do
+not answer the question, say what is missing instead of guessing.
+''';

@@ -61,3 +61,10 @@ Found: ProviderTints extension null in tests — safe ?? fallback.
 - Roast read-aloud via flutter_tts; `voice_quiz` challenge asks aloud and
   judges the spoken answer in code (word overlap).
 - Mic audio deleted immediately after transcription; RECORD_AUDIO added.
+
+## Phase 4a — Agentic search
+- `core/search/` — Tavily/Exa JSON clients + SearchRouter (intent routing +
+  fallback). Keys: Settings + `TAVILY_API_KEY`/`EXA_API_KEY` dart-define.
+- `research_pipeline` — Plan(JSON) ⇒ Search(≤3 queries) ⇒ Read(LinkVerifier)
+  ⇒ Synthesize(only numbered sources; citations scrubbed in code).
+- Research trace UI + Answer/Links tabs; AttachmentBar (Ask + evidence).

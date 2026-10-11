@@ -80,3 +80,15 @@ No keys? ─► labelled "[demo verdict]" heuristic over the REAL fetches.
   filter chip bar.
 - Pill v2: dot-matrix glyph (tier = lit count), halftone-dot slider fill,
   big white thumb — routing/haptics unchanged.
+
+## Phase 4a — Agentic search + attachments (done)
+- `core/search/` — Tavily + Exa clients (plain JSON POSTs), `SearchRouter`
+  (intent ⇒ provider, Auto/Tavily/Exa/Off override, cross-fallback).
+- `features/research/` — `ResearchPipeline` (Plan ⇒ Search ⇒ Read ⇒
+  Synthesize, JSON-driven so any model can plan), `AttachmentBar`
+  (≤4 images, downscale+re-encode, Hero preview), `ResearchTraceView`
+  (collapsible timer header, step/query/source tree, favicons, status
+  chips, source detail sheet).
+- Ask composer: Search ▾ + Agentic ▾ chips, eye-icon vision-routing swap.
+- Citation scrub: `[n]` beyond retrieved sources and model-written URLs are
+  stripped — only our own records render as links.

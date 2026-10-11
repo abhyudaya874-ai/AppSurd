@@ -12,6 +12,7 @@ import '../../core/theme/spacing.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../tasks/tasks_provider.dart';
 import '../voice/voice_engines.dart';
+import '../../core/search/search_router.dart';
 
 /// Settings: paste a key per provider (stored in flutter_secure_storage),
 /// "Test key" validates it against GET /models, demo-mode toggle lives here
@@ -61,6 +62,24 @@ class SettingsScreen extends ConsumerWidget {
             index: 6,
             child: _EnginePickerTile(),
           ),
+          const SizedBox(height: AppSpacing.xl),
+          FadeSlideIn(
+            index: 7,
+            child: Text('Web search',
+                style: theme.textTheme.titleLarge),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          FadeSlideIn(
+            index: 8,
+            child: Text(
+              'Search keys let Ask fetch live sources. Only the query text '
+              'is sent to Tavily/Exa — never images or evidence.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          _SearchKeyTile(engine: 'tavily', label: 'Tavily'),
+          _SearchKeyTile(engine: 'exa', label: 'Exa'),
           const SizedBox(height: AppSpacing.xl),
           FadeSlideIn(
             index: 7,
@@ -337,5 +356,110 @@ class _EnginePickerTile extends ConsumerWidget {
               : null,
         ),
     ]);
+  }
+}
+
+/// Search-provider key tile — same save/test pattern as the AI providers.
+class _SearchKeyTile extends ConsumerStatefulWidget {
+  const _SearchKeyTile({required this.engine, required this.label});
+  final String engine;
+  final String label;
+
+  @override
+  ConsumerState<_SearchKeyTile> createState() => _SearchKeyTileState();
+}
+
+class _SearchKeyTileState extends ConsumerState<_SearchKeyTile> {
+  final _controller = TextEditingController();
+  _TestState _test = _TestState.idle;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final configured = ref
+            .watch(searchKeysProvider)
+            .value
+            ?[widget.engine]
+            ?.isNotEmpty ??
+        false;
+    return Card(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+          Row(children: [
+            Text(widget.label, style: theme.textTheme.titleMedium),
+            const Spacer(),
+            AnimatedSwitcher(
+              duration: AppMotion.fast,
+              child: switch (_test) {
+                _TestState.testing => const SizedBox(
+                    key: ValueKey('t'),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+                _TestState.ok => Icon(Icons.check_circle,
+                    key: const ValueKey('ok'),
+                    size: 18,
+                    color: theme.colorScheme.primary),
+                _TestState.failed => Icon(Icons.error_outline,
+                    key: const ValueKey('f'),
+                    size: 18,
+                    color: theme.colorScheme.error),
+                _TestState.idle => configured
+                    ? Icon(Icons.check_circle_outline,
+                        key: const ValueKey('c'),
+                        size: 18,
+                        color: theme.colorScheme.primary)
+                    : const SizedBox.shrink(key: ValueKey('n')),
+              },
+            ),
+          ]),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            controller: _controller,
+            obscureText: true,
+            enableSuggestions: false,
+            autocorrect: false,
+            decoration: InputDecoration(
+              isDense: true,
+              hintText:
+                  configured ? '••••••••  (saved)' : 'paste API key',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(children: [
+            TextButton(
+              onPressed: () async {
+                await ref
+                    .read(searchKeysProvider.notifier)
+                    .save(widget.engine, _controller.text.trim());
+              },
+              child: const Text('Save'),
+            ),
+            TextButton(
+              onPressed: () async {
+                setState(() => _test = _TestState.testing);
+                final ok = await ref
+                    .read(searchKeysProvider.notifier)
+                    .testKey(widget.engine);
+                if (mounted) {
+                  setState(() =>
+                      _test = ok ? _TestState.ok : _TestState.failed);
+                }
+              },
+              child: const Text('Test key'),
+            ),
+          ]),
+        ]),
+      ),
+    );
   }
 }
