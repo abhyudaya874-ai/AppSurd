@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
+import '../../core/widgets/drawn_check.dart';
 import '../../core/widgets/pressable.dart';
 import 'task_model.dart';
 
@@ -89,11 +90,17 @@ class TaskCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              AnimatedDefaultTextStyle(
-                duration: AppMotion.fast,
-                style: theme.textTheme.labelSmall!.copyWith(color: color),
-                child: Text(label),
-              ),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                if (task.status == TaskStatus.done) ...[
+                  DrawnCheck(size: 12, color: color, strokeWidth: 2),
+                  const SizedBox(width: 3),
+                ],
+                AnimatedDefaultTextStyle(
+                  duration: AppMotion.fast,
+                  style: theme.textTheme.labelSmall!.copyWith(color: color),
+                  child: Text(label),
+                ),
+              ]),
             ],
           ),
         ),

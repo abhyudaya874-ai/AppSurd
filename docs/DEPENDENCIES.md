@@ -1,34 +1,22 @@
-# Dependencies — Receipts
-
-Every third-party package and external API, one line each (required for the
-hackathon disclosure).
-
-## Packages
+# Dependencies
 
 | Package | Why |
-|---|---|
-| flutter_riverpod | State management (Notifier/AsyncNotifier) — mandated stack |
-| dio | HTTP client with SSE streaming support for AI responses |
-| hive_ce, hive_ce_flutter | Local persistence for tasks, chat, model selection |
-| flutter_secure_storage | API keys entered in-app live here, never in plain files |
-| flutter_animate | Staggered/declarative animation helpers |
-| google_fonts | Inter (body) + Space Grotesk (display) |
-| flutter_markdown_plus | Renders streamed AI verdict text (maintained fork of flutter_markdown) |
-| url_launcher | Opens verified sources in the external browser |
-| image_picker | Screenshot evidence capture |
-| confetti | Pass-verdict celebration burst |
-| html | Strips fetched pages to readable text for the verifier |
+| --- | --- |
+| flutter_riverpod | Feature state — notifiers/providers, no codegen needed. |
+| dio | HTTP for provider calls, link fetching, GitHub REST. Typed timeouts, redirects, interceptable. |
+| hive_ce + hive_ce_flutter | Local persistence for tasks, settings, model selection. No codegen via Map<String,dynamic> storage. |
+| flutter_secure_storage | API keys — Android Keystore backed, never Hive/shared-prefs. |
+| google_fonts | Inter + Space Grotesk — fonts are BUNDLED in assets/fonts (runtime fetching disabled, offline-proof). |
+| flutter_animate | Available for chained animations (kept light — most motion is hand-rolled for explainability). |
+| confetti | Pass-verdict celebration. |
+| image_picker | Screenshot evidence capture, downscaled ≤1280px at source. |
+| html | Strip fetched pages to title/meta/visible text. |
+| flutter_markdown_plus | Verdict/answer rendering (maintained fork of flutter_markdown). |
+| url_launcher | Open sources in browser. |
+| uuid | Task/attempt ids. |
+| intl | Timestamp formatting. |
+| cupertino_icons | Scaffold stock. |
 
-## External APIs
-
-| API | Use |
-|---|---|
-| Groq `api.groq.com/openai/v1` | Fast chat models (Swift/Balanced tiers) |
-| NVIDIA NIM `integrate.api.nvidia.com/v1` | Stronger models (Balanced/Smart/Deep) |
-| OpenRouter `openrouter.ai/api/v1` | Reasoning models + optional web plugin |
-| GitHub REST `api.github.com` | Commit evidence fetching (public, unauthenticated) |
-| Google favicons `google.com/s2/favicons` | Source-card icons |
-
-## Boilerplate
-
-`flutter create` scaffold only (platform folders, launcher icons, lints).
+## Versions
+Pinned to latest stable at build time (October 2026). `flutter pub outdated`
+warns about majors we intentionally skip mid-hackathon.

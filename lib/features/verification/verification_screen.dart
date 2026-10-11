@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -137,7 +139,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       appBar: AppBar(title: const Text('Verifying')),
       body: Stack(
         children: [
-          ConstrainedContent(
+          _VerdictShake(
+            verdict: _verdict?.kind,
+            child: ConstrainedContent(
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
@@ -190,6 +194,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   ),
               ],
             ),
+          ),
           ),
           Align(
             alignment: Alignment.topCenter,
@@ -421,17 +426,21 @@ class _VerdictSection extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: AppSpacing.sm),
       Row(children: [
-        AnimatedContainer(
-          duration: AppMotion.base,
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: color),
+        _PulseRing(
+          fire: verdict.kind == VerdictKind.pass,
+          color: color,
+          child: AnimatedContainer(
+            duration: AppMotion.base,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: color),
+            ),
+            child: Text(label,
+                style: theme.textTheme.labelLarge?.copyWith(color: color)),
           ),
-          child: Text(label,
-              style: theme.textTheme.labelLarge?.copyWith(color: color)),
         ),
         const SizedBox(width: AppSpacing.sm),
         Text('${(verdict.confidence * 100).round()}% confident',
@@ -600,4 +609,144 @@ class _CitationTextState extends State<_CitationText>
       },
     );
   }
+}
+
+/// Screen shake on a `fail` verdict — decays over 400ms, ≤6px amplitude.
+/// Pass verdicts trigger a green pulse ring instead (on the badge).
+class _VerdictShake extends StatefulWidget {
+  const _VerdictShake({required this.verdict, required this.child});
+  final VerdictKind? verdict;
+  final Widget child;
+
+  @override
+  State<_VerdictShake> createState() => _VerdictShakeState();
+}
+
+class _VerdictShakeState extends State<_VerdictShake>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
+  }
+
+  @override
+  void didUpdateWidget(_VerdictShake old) {
+    super.didUpdateWidget(old);
+    if (widget.verdict == VerdictKind.fail &&
+        old.verdict != VerdictKind.fail &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _c.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      // Damped sine: 3 wobbles decaying to zero over 400ms.
+      builder: (context, child) => Transform.translate(
+        offset: Offset(
+          6 * sin(_c.value * 3 * 2 * pi) * (1 - _c.value),
+          0,
+        ),
+        child: child,
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// Expanding ring that fires once behind the verdict badge on a pass — the
+/// green pulse moment. Static otherwise.
+class _PulseRing extends StatefulWidget {
+  const _PulseRing(
+      {required this.fire, required this.color, required this.child});
+  final bool fire;
+  final Color color;
+  final Widget child;
+
+  @override
+  State<_PulseRing> createState() => _PulseRingState();
+}
+
+class _PulseRingState extends State<_PulseRing>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: AppMotion.slow);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.fire && !MediaQuery.disableAnimationsOf(context)) {
+      _c.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, child) => Stack(children: [
+        if (_c.isAnimating || _c.value > 0 && _c.value < 1)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _RingPulsePainter(
+                  t: _c.value,
+                  color: widget.color,
+                ),
+              ),
+            ),
+          ),
+        child!,
+      ]),
+      child: widget.child,
+    );
+  }
+}
+
+class _RingPulsePainter extends CustomPainter {
+  const _RingPulsePainter({required this.t, required this.color});
+  final double t;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (t <= 0) return;
+    final paint = Paint()
+      ..color = color.withValues(alpha: (1 - t) * 0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final rect = Rect.fromCenter(
+      center: size.center(Offset.zero),
+      width: size.width + 28 * t,
+      height: size.height + 28 * t,
+    );
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(999)), paint);
+  }
+
+  @override
+  bool shouldRepaint(_RingPulsePainter old) => old.t != t;
 }

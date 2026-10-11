@@ -21,3 +21,26 @@ the final 150–200 word declaration in phase 7.
   generate verdicts, roasts, and quiz challenges.
 - Sources shown as "Verified" are fetched and status-checked by the app
   itself — never trusted from the model's output.
+
+## Round 7 — verification pipeline
+Drafted: prompts.dart verifier contract, LinkVerifier (real fetch + html parse,
+4-way concurrency), GitHubClient commit/PR fetch, VerifierService event stream,
+Verdict model with defensive extract-first-{...} parser and code-enforced
+confidence floor.
+Adapted: replaced speculative "sources suggested by model" with sources the
+app fetched itself; forced-fail on dead link in code, not prompt.
+Verified: `flutter analyze` clean; `flutter test` 10/10.
+
+## Round 8 — accountability loop
+Drafted: RoastBank (15 non-repeating lines), RoastCard (tilted note + NOPE
+stamp + drop-in), CountdownRing, ChallengeScreen (retype/quiz/reupload).
+Adapted: quiz questions generated via router with local fallback pair;
+reupload completes automatically when a fresh attempt arrives.
+Verified: `flutter analyze` clean; running on-device + linux desktop.
+
+## Round 9 — fixes from live run
+Found: MediaQuery.disableAnimationsOf called in initState threw on launch —
+moved every check to didChangeDependencies.
+Found: google_fonts runtime fetch failed on device network — bundled Inter +
+Space Grotesk TTFs under assets/fonts and disabled runtime fetching.
+Found: ProviderTints extension null in tests — safe ?? fallback.
