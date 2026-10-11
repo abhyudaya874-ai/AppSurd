@@ -14,7 +14,11 @@ import 'resolved_model.dart';
 /// model (provider glyph + name + preset + strength dots + chevron). Tapping
 /// morphs it into the floating picker card via [ModelPickerOverlay].
 class ModelPill extends ConsumerStatefulWidget {
-  const ModelPill({super.key});
+  const ModelPill({super.key, this.scope = ModelScope.task});
+
+  /// Which list the picker shows: curated-only for task/verification
+  /// surfaces, the full free catalog for Ask.
+  final ModelScope scope;
 
   @override
   ConsumerState<ModelPill> createState() => ModelPillState();
@@ -71,7 +75,11 @@ class ModelPillState extends ConsumerState<ModelPill>
     final theme = Theme.of(context);
     final tints = theme.extension<ProviderTints>() ?? const ProviderTints();
     final selection = ref.watch(modelSelectionProvider);
-    final model = ref.watch(resolvedModelProvider);
+    final model = ref.watch(
+      widget.scope == ModelScope.ask
+          ? askResolvedModelProvider
+          : resolvedModelProvider,
+    );
     final tint = model != null
         ? tints.forId(model.provider.id)
         : theme.colorScheme.onSurfaceVariant;

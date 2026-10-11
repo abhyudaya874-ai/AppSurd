@@ -6,12 +6,20 @@ import '../../core/theme/motion.dart';
 import '../../core/theme/spacing.dart';
 import 'model_selection.dart';
 import 'resolved_model.dart';
+import '../../core/ai/model_catalog.dart';
 import 'model_list.dart';
 
 /// The "Custom ›" sub-panel: pick an exact model (grouped by provider), set
 /// reasoning effort (only where supported), and bias speed toward Groq.
 class CustomPanel extends ConsumerWidget {
-  const CustomPanel({super.key, required this.onBack});
+  const CustomPanel({
+    super.key,
+    required this.onBack,
+    this.scope = ModelScope.task,
+  });
+
+  /// Which catalog the model list draws from.
+  final ModelScope scope;
 
   final VoidCallback onBack;
 
@@ -26,7 +34,7 @@ class CustomPanel extends ConsumerWidget {
       children: [
         // ---- Model list (rule 11): recents / recommended / all ----
         _SectionLabel('Model'),
-        const SizedBox(height: 320, child: ModelListPanel()),
+        SizedBox(height: 320, child: ModelListPanel(scope: scope)),
 
         // ---- Reasoning effort (hidden when unsupported) ----
         if (resolved?.supportsReasoning ?? false) ...[

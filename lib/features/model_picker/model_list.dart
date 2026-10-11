@@ -44,7 +44,11 @@ class _Recent extends Notifier<List<String>> {
 /// provider), strength bar + white dot, draw-on check, search. Sourced from
 /// the live free catalog (seed catalog when /models is unreachable).
 class ModelListPanel extends ConsumerStatefulWidget {
-  const ModelListPanel({super.key});
+  const ModelListPanel({super.key, this.scope = ModelScope.task});
+
+  /// Task scope lists the curated seed catalog; Ask scope the full free
+  /// catalog (live-fetched, hundreds of rows stay smooth via ListView).
+  final ModelScope scope;
 
   @override
   ConsumerState<ModelListPanel> createState() => _ModelListPanelState();
@@ -60,7 +64,11 @@ class _ModelListPanelState extends ConsumerState<ModelListPanel> {
     final selection = ref.watch(modelSelectionProvider);
     final keys = ref.watch(configuredKeysProvider).value ?? const {};
     final alive = ref.watch(aliveModelsProvider).value ?? const {};
-    final live = ref.watch(liveCatalogProvider);
+    final live = ref.watch(
+      widget.scope == ModelScope.ask
+          ? liveCatalogProvider
+          : curatedCatalogProvider,
+    );
     final recentIds = ref.watch(_recentProvider);
 
     return live.when(
@@ -169,7 +177,10 @@ class _ModelListPanelState extends ConsumerState<ModelListPanel> {
                                 : byProvider[p]!.take(4).toList())
                           _Row(
                             m: m,
-                            selectedId: selection.customModelId,
+                            scope: widget.scope,
+                            selectedId: widget.scope == ModelScope.ask
+                                ? selection.askModelId
+                                : selection.customModelId,
                             hasKey: keys.containsKey(p),
                           ),
                       ],
@@ -262,11 +273,17 @@ class _ModelListPanelState extends ConsumerState<ModelListPanel> {
 /// One model row: brand logo + name + variant labels + strength bar with
 /// white dot; the selected row swaps the bar for a draw-on check.
 class _Row extends ConsumerWidget {
-  const _Row({required this.m, required this.selectedId, required this.hasKey});
+  const _Row({
+    required this.m,
+    required this.selectedId,
+    required this.hasKey,
+    this.scope = ModelScope.task,
+  });
 
   final ModelSpec m;
   final String? selectedId;
   final bool hasKey;
+  final ModelScope scope;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -277,7 +294,12 @@ class _Row extends ConsumerWidget {
       child: Pressable(
         onTap: hasKey
             ? () {
-                ref.read(modelSelectionProvider.notifier).setCustomModel(m.id);
+                final n = ref.read(modelSelectionProvider.notifier);
+                if (scope == ModelScope.ask) {
+                  n.setAskModel(m.id);
+                } else {
+                  n.setCustomModel(m.id);
+                }
                 ref.read(_recentProvider.notifier).push(m.id);
               }
             : () {

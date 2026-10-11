@@ -12,6 +12,7 @@ import '../../core/widgets/animated_app_icon.dart';
 import '../../core/widgets/app_chip.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../../core/widgets/pressable.dart';
+import '../../core/ai/model_catalog.dart';
 import '../arena/arena_home_screen.dart';
 import '../model_picker/model_pill.dart';
 import '../playground/playground_screen.dart' show askSeedProvider;
@@ -374,7 +375,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: _plusSheet,
               ),
               const SizedBox(width: AppSpacing.xs),
-              const Flexible(child: ModelPill()),
+              Flexible(
+                child: ModelPill(
+                  scope: _mode == 1 ? ModelScope.ask : ModelScope.task,
+                ),
+              ),
               const Spacer(),
               _GhostIcon(
                 icon: Icons.inbox_outlined,

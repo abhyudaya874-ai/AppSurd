@@ -230,6 +230,19 @@ const List<ModelSpec> kModelCatalog = [
 // Seed catalog remains as the offline/first-boot fallback.
 // ---------------------------------------------------------------------------
 
+/// Which surface a model list is for: `task` = curated seed list only
+/// (composer, create-task, verification, arena jury), `ask` = every free
+/// model the providers expose. Keeps Task pickers compact and Ask rich.
+enum ModelScope { task, ask }
+
+/// The dependable, curated pool used by the router for proof verification
+/// and task surfaces — the seed catalog (alive-filtered when probed).
+/// Wrapped in AsyncData so scoped pickers can treat both providers as
+/// `AsyncValue<List<ModelSpec>>` and share one `.when` path.
+final curatedCatalogProvider = Provider<AsyncValue<List<ModelSpec>>>(
+  (ref) => const AsyncData(kModelCatalog),
+);
+
 /// Result of building the catalog — the list plus which models are free.
 final liveCatalogProvider =
     AsyncNotifierProvider<CatalogNotifier, List<ModelSpec>>(

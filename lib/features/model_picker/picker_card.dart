@@ -18,7 +18,10 @@ import 'strength_slider.dart';
 /// cross-fades as you drag), the strength slider with tier labels, and a
 /// "Custom ›" row that slides in the model/reasoning/speed sub-panel.
 class PickerCard extends ConsumerStatefulWidget {
-  const PickerCard({super.key});
+  const PickerCard({super.key, this.scope = ModelScope.task});
+
+  /// Task scope shows the curated list; Ask scope the full free catalog.
+  final ModelScope scope;
 
   @override
   ConsumerState<PickerCard> createState() => _PickerCardState();
@@ -41,7 +44,11 @@ class _PickerCardState extends ConsumerState<PickerCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final selection = ref.watch(modelSelectionProvider);
-    final resolved = ref.watch(resolvedModelProvider);
+    final resolved = ref.watch(
+      widget.scope == ModelScope.ask
+          ? askResolvedModelProvider
+          : resolvedModelProvider,
+    );
     final tints = ref.watch(tierTintsProvider);
 
     final shownTier = _preview ?? selection.preset;
@@ -134,6 +141,7 @@ class _PickerCardState extends ConsumerState<PickerCard> {
             child: _customOpen
                 ? CustomPanel(
                     key: const ValueKey('custom'),
+                    scope: widget.scope,
                     onBack: () => setState(() => _customOpen = false),
                   )
                 : selection.arenaMode

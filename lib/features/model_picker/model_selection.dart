@@ -20,6 +20,7 @@ class ModelSelection {
     this.arenaMode = false,
     this.arenaLineup = const [],
     this.strictness = Strictness.fair,
+    this.askModelId,
   });
 
   final Tier preset;
@@ -32,11 +33,16 @@ class ModelSelection {
   final List<String> arenaLineup;
   final Strictness strictness;
 
+  /// Ask-scope custom pick — independent of [customModelId] (the task/
+  /// verification pick) so choosing a model in Ask never reroutes proof.
+  final String? askModelId;
+
   ModelSelection copyWith({
     Tier? preset,
     String? Function()? customModelId,
     ReasoningLevel? reasoning,
     SpeedPref? speed,
+    String? Function()? askModelId,
     bool? arenaMode,
     List<String>? arenaLineup,
     Strictness? strictness,
@@ -51,6 +57,7 @@ class ModelSelection {
       arenaMode: arenaMode ?? this.arenaMode,
       arenaLineup: arenaLineup ?? this.arenaLineup,
       strictness: strictness ?? this.strictness,
+      askModelId: askModelId != null ? askModelId() : this.askModelId,
     );
   }
 
@@ -59,6 +66,7 @@ class ModelSelection {
     'customModelId': customModelId,
     'reasoning': reasoning.index,
     'speed': speed.index,
+    'askModelId': askModelId,
     'arenaMode': arenaMode,
     'arenaLineup': arenaLineup,
     'strictness': strictness.index,
@@ -74,6 +82,7 @@ class ModelSelection {
       for (final id in (json['arenaLineup'] as List? ?? const [])) '$id',
     ],
     strictness: Strictness.values[(json['strictness'] as num?)?.toInt() ?? 1],
+    askModelId: json['askModelId'] as String?,
   );
 }
 
@@ -117,6 +126,12 @@ class ModelSelectionNotifier extends Notifier<ModelSelection> {
 
   void setCustomModel(String? id) {
     state = state.copyWith(customModelId: () => id);
+    _persist();
+  }
+
+  /// Ask-scope custom pick — stored separately from the task pick.
+  void setAskModel(String? id) {
+    state = state.copyWith(askModelId: () => id);
     _persist();
   }
 

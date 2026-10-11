@@ -21,6 +21,25 @@ final resolvedModelProvider = Provider<ModelSpec?>((ref) {
   return plan.candidates.isEmpty ? null : plan.primary;
 });
 
+/// Ask-scope counterpart of [resolvedModelProvider]: plans over the FULL
+/// free catalog with the independent `askModelId`, so Ask answers can come
+/// from any free model without touching the task/verification pick.
+final askResolvedModelProvider = Provider<ModelSpec?>((ref) {
+  final selection = ref.watch(modelSelectionProvider);
+  final keys = ref.watch(configuredKeysProvider).value ?? const {};
+  final alive = ref.watch(aliveModelsProvider).value ?? const {};
+  final pool = ref.watch(liveCatalogProvider).value ?? kModelCatalog;
+  final plan = const ModelRouter().plan(
+    tier: selection.preset,
+    keys: keys,
+    aliveIds: alive,
+    speed: selection.speed,
+    customModelId: selection.askModelId,
+    pool: pool,
+  );
+  return plan.candidates.isEmpty ? null : plan.primary;
+});
+
 /// Provider → ARGB tint (kept in sync with `ProviderTints`).
 int providerTintValue(AiProvider p) => switch (p) {
   AiProvider.groq => 0xFFF97316,

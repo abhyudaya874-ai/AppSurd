@@ -53,8 +53,11 @@ class ModelRouter {
   /// Catalog entries whose provider reported them alive via GET /models.
   /// A provider whose fetch failed is left unfiltered — a transient error
   /// shouldn't remove models that are probably fine.
-  List<ModelSpec> _alive(Map<AiProvider, Set<String>?> aliveIds) {
-    return kModelCatalog.where((m) {
+  List<ModelSpec> _alive(
+    Map<AiProvider, Set<String>?> aliveIds, [
+    List<ModelSpec> pool = kModelCatalog,
+  ]) {
+    return pool.where((m) {
       final alive = aliveIds[m.provider];
       return alive == null || alive.contains(m.id);
     }).toList();
@@ -91,8 +94,11 @@ class ModelRouter {
     bool needsVision = false,
     SpeedPref speed = SpeedPref.normal,
     String? customModelId,
+    List<ModelSpec>? pool,
   }) {
-    final alive = _alive(aliveIds);
+    // Default pool is the curated seed catalog — verification + task routing
+    // never see the full free list. Ask passes its bigger pool explicitly.
+    final alive = _alive(aliveIds, pool ?? kModelCatalog);
     final candidates = <ModelSpec>[];
 
     if (customModelId != null) {

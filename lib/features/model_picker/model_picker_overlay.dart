@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/motion.dart';
+import '../../core/ai/model_catalog.dart';
 import 'picker_card.dart';
 
 /// The floating card the pill morphs into. Rendered in an [OverlayEntry]:
@@ -31,6 +32,7 @@ class ModelPickerOverlay extends StatefulWidget {
     required this.morph,
     required this.anchorRect,
     required this.onDismiss,
+    this.scope = ModelScope.task,
   });
 
   /// Unused for positioning math but kept for future shared-element upgrades.
@@ -38,6 +40,9 @@ class ModelPickerOverlay extends StatefulWidget {
   final AnimationController morph;
   final Rect anchorRect;
   final VoidCallback onDismiss;
+
+  /// Task scope shows the curated list; Ask scope the full free catalog.
+  final ModelScope scope;
 
   @override
   State<ModelPickerOverlay> createState() => _ModelPickerOverlayState();
@@ -156,7 +161,7 @@ class _ModelPickerOverlayState extends State<ModelPickerOverlay> {
                 },
                 child: PickerScope(
                   dismiss: widget.onDismiss,
-                  child: const PickerCard(),
+                  child: PickerCard(scope: widget.scope),
                 ),
               ),
             ),

@@ -113,7 +113,9 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
       keys: keys,
       aliveIds: alive,
       speed: sel.speed,
-      customModelId: sel.customModelId,
+      // Ask scope: independent pick over the full free catalog.
+      customModelId: sel.askModelId,
+      pool: ref.read(liveCatalogProvider).value ?? kModelCatalog,
     );
     if (plan.candidates.isEmpty) {
       _append(
@@ -342,7 +344,7 @@ class _PlaygroundScreenState extends ConsumerState<PlaygroundScreen> {
                     children: [
                       const Padding(
                         padding: EdgeInsets.only(bottom: 4),
-                        child: ModelPill(),
+                        child: ModelPill(scope: ModelScope.ask),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
